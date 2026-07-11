@@ -8,28 +8,26 @@ import Stats from "@/components/home/Stats";
 import ExportMarkets from "@/components/home/ExportCountries";
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import RequestQuoteCTA from "@/components/home/RequestQuoteCTA";
+import { getHomepageCategories } from "@/lib/services/category.service";
+import { getHomepageFeaturedProducts } from "@/lib/services/product.service";
 
-export default function Home() {
+export default async function Home() {
+  const [categories, featuredProducts] = await Promise.all([
+    getHomepageCategories(),
+    getHomepageFeaturedProducts(),
+  ]);
+
   return (
     <>
       <Header />
-
       <Hero />
-
       <SearchSection />
-
-      <CategoryGrid />
-
+      <CategoryGrid categories={categories} />
       <WhyChooseUs />
-
       <Stats />
-
       <ExportMarkets />
-
-      <FeaturedProducts />
-
+      <FeaturedProducts products={featuredProducts} />
       <RequestQuoteCTA />
-
       <Footer />
     </>
   );
