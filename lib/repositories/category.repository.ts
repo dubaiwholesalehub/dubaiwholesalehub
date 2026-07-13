@@ -1,22 +1,46 @@
 import { createClient } from "@/lib/supabase/server";
 
+export async function getCategories() {
+  const supabase = await createClient();
 
-export async function getCategories(){
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order")
+    .order("name");
 
-    const supabase = await createClient();
+  if (error) {
+    throw new Error(`Unable to load categories: ${error.message}`);
+  }
 
+  return data ?? [];
+}
 
-    const {data,error}= await supabase
-        .from("categories")
-        .select("*")
-        .eq("is_active",true)
-        .order("sort_order");
+export async function getAdminCategories() {
+  const supabase = await createClient();
 
+  const { data, error } = await supabase
+    .from("categories")
+    .select(
+      `
+        id,
+        name,
+        slug,
+        description,
+        sort_order,
+        is_featured,
+        is_active,
+        created_at,
+        updated_at
+      `,
+    )
+    .order("sort_order")
+    .order("name");
 
-    if(error){
-        throw error;
-    }
+  if (error) {
+    throw new Error(`Unable to load categories: ${error.message}`);
+  }
 
-
-    return data;
+  return data ?? [];
 }
