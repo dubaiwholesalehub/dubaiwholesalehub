@@ -291,20 +291,25 @@ export type Database = {
         Row: {
           barcode: string | null
           brand_id: string | null
+          carton_quantity: number | null
           category_id: string
           country_id: string | null
           created_at: string | null
           description: string | null
           featured: boolean | null
           height: number | null
+          hs_code: string | null
           id: string
+          is_new: boolean
           lead_time: string | null
           length: number | null
           meta_description: string | null
           meta_title: string | null
+          model_number: string | null
           moq: number | null
           name: string
           packaging: string | null
+          published_at: string | null
           short_description: string | null
           sku: string | null
           slug: string
@@ -312,26 +317,32 @@ export type Database = {
           subcategory_id: string | null
           unit_id: string | null
           updated_at: string | null
+          warranty: string | null
           weight: number | null
           width: number | null
         }
         Insert: {
           barcode?: string | null
           brand_id?: string | null
+          carton_quantity?: number | null
           category_id: string
           country_id?: string | null
           created_at?: string | null
           description?: string | null
           featured?: boolean | null
           height?: number | null
+          hs_code?: string | null
           id?: string
+          is_new?: boolean
           lead_time?: string | null
           length?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          model_number?: string | null
           moq?: number | null
           name: string
           packaging?: string | null
+          published_at?: string | null
           short_description?: string | null
           sku?: string | null
           slug: string
@@ -339,26 +350,32 @@ export type Database = {
           subcategory_id?: string | null
           unit_id?: string | null
           updated_at?: string | null
+          warranty?: string | null
           weight?: number | null
           width?: number | null
         }
         Update: {
           barcode?: string | null
           brand_id?: string | null
+          carton_quantity?: number | null
           category_id?: string
           country_id?: string | null
           created_at?: string | null
           description?: string | null
           featured?: boolean | null
           height?: number | null
+          hs_code?: string | null
           id?: string
+          is_new?: boolean
           lead_time?: string | null
           length?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          model_number?: string | null
           moq?: number | null
           name?: string
           packaging?: string | null
+          published_at?: string | null
           short_description?: string | null
           sku?: string | null
           slug?: string
@@ -366,6 +383,7 @@ export type Database = {
           subcategory_id?: string | null
           unit_id?: string | null
           updated_at?: string | null
+          warranty?: string | null
           weight?: number | null
           width?: number | null
         }
