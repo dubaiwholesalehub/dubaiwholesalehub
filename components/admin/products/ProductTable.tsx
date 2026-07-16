@@ -11,6 +11,7 @@ import {
   Send,
 } from "lucide-react";
 
+import { getProductImageUrl } from "@/lib/supabase/storage";
 import ProductStatusBadge from "@/components/admin/products/ProductStatusBadge";
 import type {
   Product,
@@ -85,7 +86,32 @@ export default function ProductTable({
               <td className="px-6 py-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                    <ImageIcon className="h-6 w-6 text-slate-400" />
+                    {(() => {
+  const primaryImage =
+    product.product_images.find(
+      (image) => image.is_primary,
+    ) ??
+    [...product.product_images].sort(
+      (first, second) =>
+        (first.sort_order ?? 0) -
+        (second.sort_order ?? 0),
+    )[0];
+
+  const imageUrl = getProductImageUrl(
+    primaryImage?.storage_path,
+  );
+
+  return imageUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageUrl}
+      alt={primaryImage?.alt_text || product.name}
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <ImageIcon className="h-6 w-6 text-slate-400" />
+  );
+})()}
                   </div>
 
                   <div>

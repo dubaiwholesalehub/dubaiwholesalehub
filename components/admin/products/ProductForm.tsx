@@ -1,10 +1,11 @@
 "use client";
-
+import ProductImageManager from "@/components/admin/products/ProductImageManager";
 import { useMemo, useState } from "react";
 import {
   Box,
   FileText,
   Globe2,
+  ImageIcon,
   Package,
   SearchCheck,
   Settings2,
@@ -58,6 +59,7 @@ export default function ProductForm({
   const suffix = product?.id ?? "new";
 
   return (
+  <div className="space-y-8">
     <form action={action} className="space-y-8">
       {product && (
         <input
@@ -545,7 +547,6 @@ export default function ProductForm({
           />
         </div>
       </FormSection>
-
       <button
         type="submit"
         className="flex h-12 w-full items-center justify-center rounded-xl bg-slate-950 font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
@@ -553,6 +554,24 @@ export default function ProductForm({
         {submitLabel}
       </button>
     </form>
+
+    {product ? (
+      <ProductImageManager product={product} />
+    ) : (
+      <section className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+        <ImageIcon className="mx-auto h-8 w-8 text-slate-400" />
+
+        <h3 className="mt-3 font-semibold text-slate-900">
+          Save the product before uploading images
+        </h3>
+
+        <p className="mt-2 text-sm text-slate-500">
+          Create the product first, then open Edit to upload its gallery
+          images.
+        </p>
+      </section>
+    )}
+  </div>
   );
 }
 
