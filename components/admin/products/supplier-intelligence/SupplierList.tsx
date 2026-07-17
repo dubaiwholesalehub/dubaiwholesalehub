@@ -11,11 +11,15 @@ import SupplierCard from "./SupplierCard";
 
 type SupplierListProps = {
   mappings: ProductSupplierMapping[];
+  suppliers: ProductSupplierOption[];
+  productName: string;
   summary: ProductSupplierSummary;
 };
 
 export default function SupplierList({
   mappings,
+  suppliers,
+  productName,
   summary,
 }: SupplierListProps) {
   if (mappings.length === 0) {
@@ -40,17 +44,18 @@ export default function SupplierList({
     <section className="space-y-5">
       {mappings.map((mapping) => (
         <SupplierCard
-          key={mapping.id}
-          mapping={mapping}
-          isLowestCost={
-            summary.lowestCost?.mappingId ===
-            mapping.id
-          }
-          isFastest={
-            summary.fastestSupplier?.mappingId ===
-            mapping.id
-          }
-        />
+  key={mapping.id}
+  mapping={mapping}
+  suppliers={suppliers}
+  productName={productName}
+  isLowestCost={
+    summary.lowestCost?.mappingId === mapping.id
+  }
+  isFastest={
+    summary.fastestSupplier?.mappingId ===
+    mapping.id
+  }
+/>
       ))}
     </section>
   );

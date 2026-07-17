@@ -101,9 +101,11 @@ export default async function ProductSupplierPage({
       <SupplierSummary summary={summary} />
 
       <SupplierList
-        mappings={mappings}
-        summary={summary}
-      />
+  mappings={mappings}
+  suppliers={suppliers}
+  productName={product.name}
+  summary={summary}
+/>
     </main>
   );
 }

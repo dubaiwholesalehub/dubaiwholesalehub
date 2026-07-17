@@ -20,10 +20,16 @@ import {
 } from "@/app/admin/(protected)/products/supplier-actions";
 import type {
   ProductSupplierMapping,
+  ProductSupplierOption,
 } from "@/lib/repositories/product-supplier.repository";
+
+import EditSupplierSheet from "./EditSupplierSheet";
+
 
 type SupplierCardProps = {
   mapping: ProductSupplierMapping;
+  suppliers: ProductSupplierOption[];
+  productName: string;
   isLowestCost: boolean;
   isFastest: boolean;
 };
@@ -65,6 +71,8 @@ function isStalePrice(value: string | null) {
 
 export default function SupplierCard({
   mapping,
+  suppliers,
+  productName,
   isLowestCost,
   isFastest,
 }: SupplierCardProps) {
@@ -92,7 +100,6 @@ export default function SupplierCard({
               {supplier?.company_name ??
                 "Unknown supplier"}
             </h3>
-
             {mapping.is_preferred ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                 <Star className="h-3.5 w-3.5 fill-current" />
@@ -255,6 +262,12 @@ export default function SupplierCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          <EditSupplierSheet
+    productId={mapping.product_id}
+    productName={productName}
+    mapping={mapping}
+    suppliers={suppliers}
+  />
           {mapping.is_active &&
           !mapping.is_preferred ? (
             <form

@@ -1,10 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Building2,
-  Plus,
-} from "lucide-react";
+import { Building2, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -16,39 +13,46 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import type {
+  ProductSupplierMapping,
   ProductSupplierOption,
 } from "@/lib/repositories/product-supplier.repository";
 
 import SupplierForm from "./SupplierForm";
 
-type SupplierSheetProps = {
+type EditSupplierSheetProps = {
   productId: string;
   productName: string;
+  mapping: ProductSupplierMapping;
   suppliers: ProductSupplierOption[];
 };
 
-export default function SupplierSheet({
+export default function EditSupplierSheet({
   productId,
   productName,
+  mapping,
   suppliers,
-}: SupplierSheetProps) {
+}: EditSupplierSheetProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
   function handleSuccess() {
-    router.refresh();
     setOpen(false);
+    router.refresh();
   }
+
+  const supplierName =
+    mapping.supplier?.company_name ??
+    "Product supplier";
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-amber-600"
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
         >
-          <Plus className="h-5 w-5" />
-          Add Supplier
+          <Pencil className="h-4 w-4" />
+          Edit
         </button>
       </SheetTrigger>
 
@@ -59,14 +63,17 @@ export default function SupplierSheet({
               <Building2 className="h-5 w-5 text-white" />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <SheetTitle>
-                Add Product Supplier
+                Edit Product Supplier
               </SheetTitle>
 
               <SheetDescription className="mt-1">
-                Connect a supplier to {productName} and
-                record its pricing and commercial terms.
+                Update pricing and commercial terms for{" "}
+                <span className="font-medium text-slate-700">
+                  {supplierName}
+                </span>{" "}
+                on {productName}.
               </SheetDescription>
             </div>
           </div>
@@ -74,12 +81,15 @@ export default function SupplierSheet({
 
         <div className="px-6 py-6">
           {open ? (
-  <SupplierForm
-    productId={productId}
-    suppliers={suppliers}
-    onSuccess={handleSuccess}
-  />
-) : null}
+            <SupplierForm
+              key={mapping.updated_at}
+              productId={productId}
+              suppliers={suppliers}
+              mode="edit"
+              mapping={mapping}
+              onSuccess={handleSuccess}
+            />
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>
