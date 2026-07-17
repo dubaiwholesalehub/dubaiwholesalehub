@@ -10,7 +10,8 @@ import {
   PackageSearch,
   Send,
 } from "lucide-react";
-
+import Link from "next/link";
+import { Building2 } from "lucide-react";
 import { getProductImageUrl } from "@/lib/supabase/storage";
 import ProductStatusBadge from "@/components/admin/products/ProductStatusBadge";
 import type {
@@ -116,6 +117,14 @@ export default function ProductTable({
 
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <Link
+  href={`/admin/products/${product.id}/suppliers`}
+  className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
+>
+  <Building2 className="h-4 w-4" />
+  Suppliers
+</Link>
+                      
                       <p className="max-w-sm font-semibold text-slate-900">
                         {product.name}
                       </p>

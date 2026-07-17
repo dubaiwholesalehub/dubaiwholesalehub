@@ -548,3 +548,11 @@ export async function getProductSupplierSummary(
   };
 }
 
+export type ProductSupplierMapping = Awaited<
+  ReturnType<typeof getProductSupplierMappings>
+>[number];
+
+export type ProductSupplierOption = Awaited<
+  ReturnType<typeof getProductSupplierOptions>
+>[number];
+
