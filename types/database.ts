@@ -230,11 +230,19 @@ export type Database = {
           created_at: string | null
           currency_code: string | null
           id: string
+          incoterm: string | null
           is_active: boolean | null
           is_preferred: boolean | null
+          last_price_update: string | null
+          last_purchase_price: number | null
           lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
           moq: number | null
+          notes: string | null
           packaging: string | null
+          payment_terms: string | null
+          priority: number
           product_id: string
           supplier_id: string
           supplier_sku: string | null
@@ -245,11 +253,19 @@ export type Database = {
           created_at?: string | null
           currency_code?: string | null
           id?: string
+          incoterm?: string | null
           is_active?: boolean | null
           is_preferred?: boolean | null
+          last_price_update?: string | null
+          last_purchase_price?: number | null
           lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
           moq?: number | null
+          notes?: string | null
           packaging?: string | null
+          payment_terms?: string | null
+          priority?: number
           product_id: string
           supplier_id: string
           supplier_sku?: string | null
@@ -260,11 +276,19 @@ export type Database = {
           created_at?: string | null
           currency_code?: string | null
           id?: string
+          incoterm?: string | null
           is_active?: boolean | null
           is_preferred?: boolean | null
+          last_price_update?: string | null
+          last_purchase_price?: number | null
           lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
           moq?: number | null
+          notes?: string | null
           packaging?: string | null
+          payment_terms?: string | null
+          priority?: number
           product_id?: string
           supplier_id?: string
           supplier_sku?: string | null
