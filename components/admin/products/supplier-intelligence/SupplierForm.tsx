@@ -24,7 +24,7 @@ import type {
 } from "@/lib/repositories/product-supplier.repository";
 
 import SupplierCombobox from "./SupplierCombobox";
-
+import { toast } from "sonner";
 import type {
   SupplierActionResult,
   SupplierFormMode,
@@ -52,20 +52,24 @@ export default function SupplierForm({
 }: SupplierFormProps) {
   const formRef =
     useRef<HTMLFormElement>(null);
-  const [result, setResult] =
+
+  const [formState, setFormState] =
     useState<SupplierActionResult>(
       initialResult,
     );
+
   const [isPending, startTransition] =
     useTransition();
 
   const fieldError = (name: string) =>
-    result.fieldErrors?.[name]?.[0];
+    formState.fieldErrors?.[name]?.[0];
 
   function handleSubmit(
     event: React.FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+
+    setFormState(initialResult);
 
     const formData = new FormData(
       event.currentTarget,
@@ -81,15 +85,31 @@ export default function SupplierForm({
               formData,
             );
 
-      setResult(response);
+      if (!response.success) {
+        setFormState(response);
 
-      if (response.success) {
-        if (mode === "create") {
-          formRef.current?.reset();
-        }
+        toast.error(
+          response.message ||
+            "Unable to save supplier.",
+        );
 
-        onSuccess?.();
+        return;
       }
+
+      setFormState(initialResult);
+
+      toast.success(
+        response.message ||
+          (mode === "edit"
+            ? "Supplier updated successfully."
+            : "Supplier added successfully."),
+      );
+
+      if (mode === "create") {
+        formRef.current?.reset();
+      }
+
+      onSuccess?.();
     });
   }
 
@@ -457,18 +477,7 @@ export default function SupplierForm({
         </Field>
       </FormSection>
 
-      {result.message ? (
-        <div
-          className={[
-            "rounded-xl border px-4 py-3 text-sm font-medium",
-            result.success
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-red-200 bg-red-50 text-red-700",
-          ].join(" ")}
-        >
-          {result.message}
-        </div>
-      ) : null}
+      
 
       <div className="sticky bottom-0 -mx-6 flex justify-end border-t border-slate-200 bg-white px-6 py-4">
         <button
