@@ -42,15 +42,12 @@ export default function SupplierSheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-amber-600"
-        >
-          <Plus className="h-5 w-5" />
-          Add Supplier
-        </button>
-      </SheetTrigger>
+      <SheetTrigger
+  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 font-semibold text-white transition hover:bg-amber-600"
+>
+  <Plus className="h-5 w-5" />
+  Add Supplier
+</SheetTrigger>
 
       <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-2xl">
         <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">

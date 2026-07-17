@@ -46,15 +46,12 @@ export default function EditSupplierSheet({
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </button>
-      </SheetTrigger>
+      <SheetTrigger
+  className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
+>
+  <Pencil className="h-4 w-4" />
+  Edit
+</SheetTrigger>
 
       <SheetContent className="w-full overflow-y-auto p-0 sm:max-w-2xl">
         <SheetHeader className="border-b border-slate-200 px-6 py-5 text-left">
