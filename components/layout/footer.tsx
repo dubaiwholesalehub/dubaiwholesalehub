@@ -9,7 +9,7 @@ export default function Footer() {
         </h3>
 
         <p className="mt-4 max-w-2xl text-slate-300">
-          Dubai's trusted wholesale, export and product sourcing partner.
+          Dubai&apos;s trusted wholesale, export and product sourcing partner.
         </p>
 
         <div className="mt-8 border-t border-slate-800 pt-8 text-sm text-slate-400">

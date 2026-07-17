@@ -54,10 +54,17 @@ export const productSupplierSchema = z.object({
     )
     .default("AED"),
 
-  moq: optionalPositiveInteger.refine(
-    (value) => value === undefined || value > 0,
-    "MOQ must be greater than zero.",
-  ),
+  moq: z
+  .union([
+    z.literal(""),
+    z.coerce.number().int().positive(
+      "MOQ must be a positive whole number.",
+    ),
+  ])
+  .transform((value) =>
+    value === "" ? undefined : value,
+  )
+  .optional(),
 
   leadTime: z
     .string()

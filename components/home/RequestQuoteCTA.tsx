@@ -12,7 +12,7 @@ export default function RequestQuoteCTA() {
           </p>
 
           <h2 className="mt-5 text-4xl font-bold lg:text-5xl">
-            Can't Find the Product You're Looking For?
+            Can&apos;t Find the Product You&apos;re Looking For?
           </h2>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg text-slate-300">

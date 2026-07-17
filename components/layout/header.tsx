@@ -1,5 +1,6 @@
 import Logo from "../common/logo";
 import Container from "./container";
+import Link from "next/link";
 
 export default function Header() {
   return (
@@ -8,17 +9,17 @@ export default function Header() {
         <Logo />
 
         <nav className="hidden gap-8 lg:flex">
-          <a href="/">Home</a>
+          <Link href="/">Home</Link>
 
-          <a href="#">Products</a>
+  <Link href="/products">Products</Link>
 
-          <a href="#">Categories</a>
+  <Link href="/categories">Categories</Link>
 
-          <a href="#">Sourcing</a>
+  <Link href="/sourcing">Sourcing</Link>
 
-          <a href="#">Export</a>
+  <Link href="/export">Export</Link>
 
-          <a href="#">Contact</a>
+  <Link href="/contact">Contact</Link>
         </nav>
 
         <button className="rounded-xl bg-slate-900 px-5 py-3 text-white transition hover:bg-amber-600">

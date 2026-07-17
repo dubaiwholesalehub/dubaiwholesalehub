@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { PackageSearch } from "lucide-react";
 
 import ProductFilters, {
   type ProductStatusFilter,

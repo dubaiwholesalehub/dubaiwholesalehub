@@ -626,7 +626,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_product_supplier: {
+        Args: { p_mapping_id: string; p_product_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
+      restore_product_supplier: {
+        Args: { p_mapping_id: string; p_product_id: string }
+        Returns: undefined
+      }
+      set_product_preferred_supplier: {
+        Args: { p_mapping_id: string; p_product_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "super_admin" | "admin" | "manager" | "sales" | "viewer"

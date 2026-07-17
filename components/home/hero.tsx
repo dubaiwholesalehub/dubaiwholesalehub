@@ -9,7 +9,7 @@ export default function Hero() {
         </span>
 
         <h1 className="mt-8 max-w-4xl text-6xl font-bold leading-tight text-slate-900">
-          Dubai's Trusted Wholesale &
+          Dubai&apos;s Trusted Wholesale &
           <span className="text-amber-600"> Export Partner</span>
         </h1>
 
