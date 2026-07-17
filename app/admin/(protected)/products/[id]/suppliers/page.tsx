@@ -2,17 +2,17 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Building2,
-  Plus,
 } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   getProductSupplierMappings,
+  getProductSupplierOptions,
   getProductSupplierSummary,
 } from "@/lib/repositories/product-supplier.repository";
 import { createClient } from "@/lib/supabase/server";
-
+import SupplierSheet from "@/components/admin/products/supplier-intelligence/SupplierSheet";
 import SupplierList from "@/components/admin/products/supplier-intelligence/SupplierList";
 import SupplierSummary from "@/components/admin/products/supplier-intelligence/SupplierSummary";
 
@@ -52,9 +52,11 @@ export default async function ProductSupplierPage({
     notFound();
   }
 
-  const [mappings, summary] = await Promise.all([
+  const [mappings, summary, suppliers] =
+  await Promise.all([
     getProductSupplierMappings(id),
     getProductSupplierSummary(id),
+    getProductSupplierOptions(),
   ]);
 
   return (
@@ -89,15 +91,11 @@ export default async function ProductSupplierPage({
           </div>
         </div>
 
-        <button
-          type="button"
-          disabled
-          title="The add-supplier form is coming in the next step."
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-300 px-5 font-semibold text-slate-600"
-        >
-          <Plus className="h-5 w-5" />
-          Add Supplier
-        </button>
+        <SupplierSheet
+  productId={product.id}
+  productName={product.name}
+  suppliers={suppliers}
+/>
       </div>
 
       <SupplierSummary summary={summary} />
