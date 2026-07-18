@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  useCallback,
+  useEffect,
   useRef,
   useState,
   useTransition,
@@ -36,6 +38,7 @@ type SupplierFormProps = {
   mode?: SupplierFormMode;
   mapping?: ProductSupplierMapping;
   onSuccess?: () => void;
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 const initialResult: SupplierActionResult = {
@@ -49,10 +52,12 @@ export default function SupplierForm({
   mode = "create",
   mapping,
   onSuccess,
+  onDirtyChange,
 }: SupplierFormProps) {
   const formRef =
     useRef<HTMLFormElement>(null);
-
+    const initialSnapshotRef = useRef("");
+    const snapshotReadyRef = useRef(false);
   const [formState, setFormState] =
     useState<SupplierActionResult>(
       initialResult,
@@ -60,6 +65,64 @@ export default function SupplierForm({
 
   const [isPending, startTransition] =
     useTransition();
+
+    const createFormSnapshot = useCallback(
+  (form: HTMLFormElement) => {
+    const formData = new FormData(form);
+
+    return Array.from(formData.entries())
+      .map(([key, value]) => [
+        key,
+        typeof value === "string"
+          ? value
+          : value.name,
+      ])
+      .sort(([firstKey, firstValue], [secondKey, secondValue]) => {
+        return `${firstKey}:${firstValue}`.localeCompare(
+          `${secondKey}:${secondValue}`,
+        );
+      })
+      .map(([key, value]) => `${key}=${value}`)
+      .join("&");
+  },
+  [],
+);
+
+const updateDirtyState = useCallback(() => {
+  const form = formRef.current;
+
+  if (!form || !snapshotReadyRef.current) {
+    return;
+  }
+
+  const currentSnapshot =
+    createFormSnapshot(form);
+
+  onDirtyChange?.(
+    currentSnapshot !==
+      initialSnapshotRef.current,
+  );
+}, [createFormSnapshot, onDirtyChange]);
+
+useEffect(() => {
+  const form = formRef.current;
+
+  if (!form) {
+    return;
+  }
+
+  const frame = window.requestAnimationFrame(() => {
+    initialSnapshotRef.current =
+      createFormSnapshot(form);
+
+    snapshotReadyRef.current = true;
+    onDirtyChange?.(false);
+  });
+
+  return () => {
+    window.cancelAnimationFrame(frame);
+  };
+}, [createFormSnapshot, onDirtyChange]);
 
   const fieldError = (name: string) =>
     formState.fieldErrors?.[name]?.[0];
@@ -104,7 +167,8 @@ export default function SupplierForm({
             ? "Supplier updated successfully."
             : "Supplier added successfully."),
       );
-
+      onDirtyChange?.(false);
+      snapshotReadyRef.current = false;
       if (mode === "create") {
         formRef.current?.reset();
       }
@@ -115,10 +179,12 @@ export default function SupplierForm({
 
   return (
     <form
-      ref={formRef}
-      onSubmit={handleSubmit}
-      className="space-y-8"
-    >
+  ref={formRef}
+  onSubmit={handleSubmit}
+  onInput={updateDirtyState}
+  onChange={updateDirtyState}
+  className="space-y-8"
+>
       <input
         type="hidden"
         name="productId"
