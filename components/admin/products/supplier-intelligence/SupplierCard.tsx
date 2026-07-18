@@ -1,13 +1,11 @@
 import {
   AlertTriangle,
-  Archive,
   BadgeCheck,
   Clock3,
   Mail,
   MapPin,
   Package,
   Phone,
-  RotateCcw,
   Star,
   Tag,
   Truck,
@@ -18,6 +16,8 @@ import {
   restoreProductSupplierAction,
   setPreferredSupplierAction,
 } from "@/app/admin/(protected)/products/supplier-actions";
+
+import SupplierConfirmationAction from "./SupplierConfirmationAction";
 import type {
   ProductSupplierMapping,
   ProductSupplierOption,
@@ -76,6 +76,10 @@ export default function SupplierCard({
   isLowestCost,
   isFastest,
 }: SupplierCardProps) {
+   const supplierName =
+    mapping.supplier?.company_name ??
+    mapping.supplier?.name ??
+    "Unknown Supplier";
   const supplier = mapping.supplier;
   const stalePrice =
     mapping.cost_price !== null &&
@@ -262,89 +266,46 @@ export default function SupplierCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <EditSupplierSheet
+  <EditSupplierSheet
     productId={mapping.product_id}
     productName={productName}
     mapping={mapping}
     suppliers={suppliers}
   />
-          {mapping.is_active &&
-          !mapping.is_preferred ? (
-            <form
-              action={setPreferredSupplierAction}
-            >
-              <input
-                type="hidden"
-                name="productId"
-                value={mapping.product_id}
-              />
 
-              <input
-                type="hidden"
-                name="mappingId"
-                value={mapping.id}
-              />
+  {mapping.is_active &&
+  !mapping.is_preferred ? (
+    <SupplierConfirmationAction
+      productId={mapping.product_id}
+      mappingId={mapping.id}
+      supplierName={supplierName}
+      variant="preferred"
+      action={setPreferredSupplierAction}
+    />
+  ) : null}
 
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
-              >
-                <Star className="h-4 w-4" />
-                Make preferred
-              </button>
-            </form>
-          ) : null}
-
-          {mapping.is_active ? (
-            <form
-              action={archiveProductSupplierAction}
-            >
-              <input
-                type="hidden"
-                name="productId"
-                value={mapping.product_id}
-              />
-
-              <input
-                type="hidden"
-                name="mappingId"
-                value={mapping.id}
-              />
-
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-              >
-                <Archive className="h-4 w-4" />
-                Archive
-              </button>
-            </form>
-          ) : (
-            <form
-              action={restoreProductSupplierAction}
-            >
-              <input
-                type="hidden"
-                name="productId"
-                value={mapping.product_id}
-              />
-
-              <input
-                type="hidden"
-                name="mappingId"
-                value={mapping.id}
-              />
-
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Restore
-              </button>
-            </form>
-          )}
-        </div>
+  {mapping.is_active ? (
+    <SupplierConfirmationAction
+      productId={mapping.product_id}
+      mappingId={mapping.id}
+      supplierName={supplierName}
+      variant="archive"
+      action={
+        archiveProductSupplierAction
+      }
+    />
+  ) : (
+    <SupplierConfirmationAction
+      productId={mapping.product_id}
+      mappingId={mapping.id}
+      supplierName={supplierName}
+      variant="restore"
+      action={
+        restoreProductSupplierAction
+      }
+    />
+  )}
+</div>
       </div>
     </article>
   );

@@ -229,69 +229,117 @@ export async function updateProductSupplierAction(
 
 export async function setPreferredSupplierAction(
   formData: FormData,
-) {
+): Promise<SupplierActionResult> {
   await requireAdmin();
 
-  const productId = getRequiredFormValue(
-    formData,
-    "productId",
-  );
+  try {
+    const productId = getRequiredFormValue(
+      formData,
+      "productId",
+    );
 
-  const mappingId = getRequiredFormValue(
-    formData,
-    "mappingId",
-  );
+    const mappingId = getRequiredFormValue(
+      formData,
+      "mappingId",
+    );
 
-  await setPreferredProductSupplier(
-    productId,
-    mappingId,
-  );
+    await setPreferredProductSupplier(
+      productId,
+      mappingId,
+    );
 
-  revalidateSupplierPages(productId);
+    revalidateSupplierPages(productId);
+
+    return {
+      success: true,
+      message:
+        "Preferred supplier updated successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to update the preferred supplier.",
+    };
+  }
 }
 
 export async function archiveProductSupplierAction(
   formData: FormData,
-) {
+): Promise<SupplierActionResult> {
   await requireAdmin();
 
-  const productId = getRequiredFormValue(
-    formData,
-    "productId",
-  );
+  try {
+    const productId = getRequiredFormValue(
+      formData,
+      "productId",
+    );
 
-  const mappingId = getRequiredFormValue(
-    formData,
-    "mappingId",
-  );
+    const mappingId = getRequiredFormValue(
+      formData,
+      "mappingId",
+    );
 
-  await archiveProductSupplier(
-    productId,
-    mappingId,
-  );
+    await archiveProductSupplier(
+      productId,
+      mappingId,
+    );
 
-  revalidateSupplierPages(productId);
+    revalidateSupplierPages(productId);
+
+    return {
+      success: true,
+      message:
+        "Supplier mapping archived successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to archive the supplier mapping.",
+    };
+  }
 }
 
 export async function restoreProductSupplierAction(
   formData: FormData,
-) {
+): Promise<SupplierActionResult> {
   await requireAdmin();
 
-  const productId = getRequiredFormValue(
-    formData,
-    "productId",
-  );
+  try {
+    const productId = getRequiredFormValue(
+      formData,
+      "productId",
+    );
 
-  const mappingId = getRequiredFormValue(
-    formData,
-    "mappingId",
-  );
+    const mappingId = getRequiredFormValue(
+      formData,
+      "mappingId",
+    );
 
-  await restoreProductSupplier(
-    productId,
-    mappingId,
-  );
+    await restoreProductSupplier(
+      productId,
+      mappingId,
+    );
 
-  revalidateSupplierPages(productId);
+    revalidateSupplierPages(productId);
+
+    return {
+      success: true,
+      message:
+        "Supplier mapping restored successfully.",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Unable to restore the supplier mapping.",
+    };
+  }
 }
