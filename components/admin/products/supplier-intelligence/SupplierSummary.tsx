@@ -88,14 +88,17 @@ export default function SupplierSummary({
   ];
 
   return (
-    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <section
+      aria-label="Supplier intelligence summary"
+      className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+    >
       {cards.map((card) => {
         const Icon = card.icon;
 
         return (
           <article
             key={card.title}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -113,7 +116,10 @@ export default function SupplierSummary({
               </div>
 
               <div className="rounded-xl bg-slate-100 p-3">
-                <Icon className="h-5 w-5 text-slate-700" />
+                <Icon
+                  aria-hidden="true"
+                  className="h-5 w-5 text-slate-700"
+                />
               </div>
             </div>
           </article>

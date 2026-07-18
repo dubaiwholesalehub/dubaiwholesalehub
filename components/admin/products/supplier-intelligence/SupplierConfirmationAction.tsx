@@ -50,11 +50,10 @@ const config = {
   preferred: {
     triggerLabel: "Set Preferred",
     title: "Set preferred supplier?",
-    description: (
-      supplierName: string,
-    ) =>
+    description: (supplierName: string) =>
       `${supplierName} will become the default supplier for this product. Any currently preferred supplier will be replaced.`,
     confirmLabel: "Set Preferred",
+    pendingLabel: "Updating...",
     triggerIcon: Star,
     dialogIcon: Star,
     triggerClassName:
@@ -64,14 +63,14 @@ const config = {
     mediaClassName:
       "bg-amber-100 text-amber-700",
   },
+
   archive: {
     triggerLabel: "Archive",
     title: "Archive supplier mapping?",
-    description: (
-      supplierName: string,
-    ) =>
+    description: (supplierName: string) =>
       `${supplierName} will no longer be available as an active purchasing source until the mapping is restored.`,
     confirmLabel: "Archive",
+    pendingLabel: "Archiving...",
     triggerIcon: Archive,
     dialogIcon: TriangleAlert,
     triggerClassName:
@@ -81,14 +80,14 @@ const config = {
     mediaClassName:
       "bg-red-100 text-red-700",
   },
+
   restore: {
     triggerLabel: "Restore",
     title: "Restore supplier mapping?",
-    description: (
-      supplierName: string,
-    ) =>
+    description: (supplierName: string) =>
       `${supplierName} will become available again as an active purchasing source for this product.`,
     confirmLabel: "Restore",
+    pendingLabel: "Restoring...",
     triggerIcon: RotateCcw,
     dialogIcon: Check,
     triggerClassName:
@@ -107,6 +106,7 @@ const config = {
       supplierName: string,
     ) => string;
     confirmLabel: string;
+    pendingLabel: string;
     triggerIcon: React.ElementType;
     dialogIcon: React.ElementType;
     triggerClassName: string;
@@ -213,26 +213,27 @@ export default function SupplierConfirmationAction({
             Cancel
           </AlertDialogCancel>
 
-          <AlertDialogAction
-            type="button"
-            disabled={isPending}
-            onClick={handleConfirm}
-            className={
-              selectedConfig.confirmClassName
-            }
-          >
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <TriggerIcon className="h-4 w-4" />
-                {selectedConfig.confirmLabel}
-              </>
-            )}
-          </AlertDialogAction>
+            <AlertDialogAction
+                type="button"
+                aria-busy={isPending}
+                disabled={isPending}
+                onClick={handleConfirm}
+                className={
+                  selectedConfig.confirmClassName
+                }
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {selectedConfig.pendingLabel}
+                  </>
+                ) : (
+                  <>
+                    <TriggerIcon className="h-4 w-4" />
+                    {selectedConfig.confirmLabel}
+                  </>
+                )}
+              </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

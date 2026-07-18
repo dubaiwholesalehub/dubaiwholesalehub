@@ -10,9 +10,7 @@ import {
 import {
   CircleDollarSign,
   FileText,
-  Loader2,
   Package,
-  Save,
   Truck,
 } from "lucide-react";
 
@@ -549,16 +547,14 @@ useEffect(() => {
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+          aria-disabled={isPending}
+          aria-busy={isPending}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-
           {isPending
-            ? "Saving..."
+            ? mode === "edit"
+              ? "Updating Supplier..."
+              : "Adding Supplier..."
             : mode === "edit"
               ? "Update Supplier"
               : "Add Supplier"}
