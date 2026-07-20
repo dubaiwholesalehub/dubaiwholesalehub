@@ -1,4 +1,4 @@
-import type { Database } from "@/types/database";
+import type { Database } from "@/lib/database.types";
 
 export type ProductRow =
   Database["public"]["Tables"]["products"]["Row"];

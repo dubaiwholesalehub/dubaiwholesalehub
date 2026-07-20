@@ -22,6 +22,7 @@ type SupplierListProps = {
 export default function SupplierList({
   mappings,
   suppliers,
+  productId,
   productName,
   summary,
 }: SupplierListProps) {

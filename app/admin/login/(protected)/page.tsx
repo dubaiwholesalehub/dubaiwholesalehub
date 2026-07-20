@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Building2, LockKeyhole, Mail } from "lucide-react";
 
-import { login } from "./actions";
+import { login } from "../actions";
 
 interface AdminLoginPageProps {
   searchParams: Promise<{

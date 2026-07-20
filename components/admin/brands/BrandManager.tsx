@@ -16,7 +16,7 @@ import {
 import EmptyState from "@/components/admin/ui/EmptyState";
 import SlideOver from "@/components/admin/ui/SlideOver";
 import StatusBadge from "@/components/admin/ui/StatusBadge";
-import type { Database } from "@/types/database";
+import type { Database } from "@/lib/database.types";
 
 import {
   createBrand,

@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-const MANAGEMENT_ROLES = [
+const MANAGEMENT_ROLES = new Set([
   "super_admin",
   "admin",
   "manager",
-] as const;
+]);
 
 export async function requireAdmin() {
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export async function requireAdmin() {
     error ||
     !profile ||
     !profile.is_active ||
-    !MANAGEMENT_ROLES.includes(profile.role)
+    !MANAGEMENT_ROLES.has(profile.role)
   ) {
     redirect(
       "/admin?error=" +

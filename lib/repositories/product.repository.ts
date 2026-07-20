@@ -4,65 +4,69 @@ export async function getAdminProducts() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("products")
-    .select(`
+  .from("products")
+  .select(`
+    id,
+    name,
+    slug,
+    sku,
+    barcode,
+    model_number,
+    short_description,
+    description,
+    category_id,
+    subcategory_id,
+    brand_id,
+    country_id,
+    unit_id,
+    moq,
+    carton_quantity,
+    lead_time,
+    packaging,
+    warranty,
+    hs_code,
+    weight,
+    length,
+    width,
+    height,
+    status,
+    featured,
+    is_new,
+    meta_title,
+    meta_description,
+    created_at,
+    updated_at,
+    published_at,
+    category:categories (
+      id,
+      name
+    ),
+    subcategory:subcategories (
+      id,
+      name
+    ),
+    brand:brands (
+      id,
+      name
+    ),
+    country:countries (
+      id,
+      name
+    ),
+    unit:units (
       id,
       name,
-      slug,
-      sku,
-      barcode,
-      model_number,
-      short_description,
-      description,
-      category_id,
-      subcategory_id,
-      brand_id,
-      country_id,
-      unit_id,
-      moq,
-      carton_quantity,
-      lead_time,
-      packaging,
-      warranty,
-      hs_code,
-      status,
-      featured,
-      is_new,
-      meta_title,
-      meta_description,
-      created_at,
-      updated_at,
-      published_at,
-      category:categories (
-        id,
-        name
-      ),
-      subcategory:subcategories (
-        id,
-        name
-      ),
-      brand:brands (
-        id,
-        name
-      ),
-      country:countries (
-        id,
-        name
-      ),
-      unit:units (
-        id,
-        name,
-        short_name
-      ),
-      product_images (
-        id,
-        storage_path,
-        is_primary,
-        sort_order,
-        alt_text
-      )
-    `)
-    .order("created_at", { ascending: false });
+      short_name
+    ),
+    product_images (
+      id,
+      storage_path,
+      is_primary,
+      sort_order,
+      alt_text
+    )
+  `)
+  .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(`Unable to load products: ${error.message}`);

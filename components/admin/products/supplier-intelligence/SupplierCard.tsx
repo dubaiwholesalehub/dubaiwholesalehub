@@ -78,8 +78,7 @@ export default function SupplierCard({
 }: SupplierCardProps) {
    const supplierName =
     mapping.supplier?.company_name ??
-    mapping.supplier?.name ??
-    "Unknown Supplier";
+  "Unknown Supplier";
   const supplier = mapping.supplier;
   const stalePrice =
     mapping.cost_price !== null &&

@@ -1,0 +1,2 @@
+components/ui/message-scroller.tsx(9,8): error TS2307: Cannot find module '@shadcn/react/message-scroller' or its corresponding type declarations.
+components/ui/sidebar.tsx(8,29): error TS2307: Cannot find module '@/hooks/use-mobile' or its corresponding type declarations.

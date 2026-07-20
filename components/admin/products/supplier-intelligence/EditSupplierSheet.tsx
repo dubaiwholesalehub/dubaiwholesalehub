@@ -161,6 +161,7 @@ export default function EditSupplierSheet({
         open={showDiscardDialog}
         onOpenChange={setShowDiscardDialog}
         onDiscard={handleDiscard}
+        onContinueEditing={() => setShowDiscardDialog(false)}
       />
     </>
   );

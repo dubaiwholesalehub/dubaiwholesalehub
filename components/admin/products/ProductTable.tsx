@@ -191,7 +191,7 @@ export default function ProductTable({
 
               <td className="px-6 py-4">
                 <ProductStatusBadge
-                  status={product.status}
+                  status={product.status ?? "draft"}
                 />
               </td>
 
@@ -222,7 +222,9 @@ export default function ProductTable({
 }
 
 function StatusAction({ product }: { product: Product }) {
-  const nextAction = getNextStatusAction(product.status);
+  const nextAction = getNextStatusAction(
+  product.status ?? "draft",
+);
   const Icon = nextAction.icon;
 
   return (
