@@ -160,6 +160,21 @@ function buildRfqPayload(
   };
 }
 
+function requireId(
+  value: string,
+  fieldName: string,
+): string {
+  const id = value.trim();
+
+  if (!id) {
+    throw new Error(
+      `${fieldName} is required.`,
+    );
+  }
+
+  return id;
+}
+
 export async function getRfqs(
   filters: RfqListFilters = {},
 ) {
@@ -555,7 +570,7 @@ export async function getRfqById(
         reason,
         notes,
         changed_by,
-        changed_at,
+        changed_at
       )
     `)
     .eq("id", rfqId)
@@ -631,7 +646,7 @@ export async function createRfq(
       input.currencyCode,
     );
 
-  if (currencyCode.length !== 3) {
+  if (!/^[A-Z]{3}$/.test(currencyCode)) {
     throw new Error(
       "Currency code must contain exactly three letters.",
     );
@@ -644,6 +659,7 @@ export async function createRfq(
     .insert({
       ...buildRfqPayload(input),
       title,
+      currency_code: currencyCode,
     })
     .select(`
       id,
@@ -680,6 +696,11 @@ export async function createRfq(
 export async function updateRfq(
   input: UpdateRfqInput,
 ) {
+  const rfqId = requireId(
+    input.id,
+    "RFQ ID",
+  );
+
   const title = input.title.trim();
 
   if (!title) {
@@ -693,7 +714,9 @@ export async function updateRfq(
       input.currencyCode,
     );
 
-  if (currencyCode.length !== 3) {
+  if (
+    !/^[A-Z]{3}$/.test(currencyCode)
+  ) {
     throw new Error(
       "Currency code must contain exactly three letters.",
     );
@@ -704,6 +727,7 @@ export async function updateRfq(
   const payload = {
     ...buildRfqPayload(input),
     title,
+    currency_code: currencyCode,
     ...(input.status
       ? {
           status: input.status,
@@ -714,7 +738,7 @@ export async function updateRfq(
   const { data, error } = await supabase
     .from("rfqs")
     .update(payload)
-    .eq("id", input.id)
+    .eq("id", rfqId)
     .select(`
       id,
       rfq_number,
@@ -724,7 +748,7 @@ export async function updateRfq(
       currency_code,
       updated_at
     `)
-    .single();
+    .maybeSingle();
 
   if (error) {
     if (error.code === "23514") {
@@ -738,18 +762,28 @@ export async function updateRfq(
     );
   }
 
+  if (!data) {
+    throw new Error(
+      "RFQ was not found or could not be updated.",
+    );
+  }
+
   return data;
 }
 
 export async function deleteDraftRfq(
   rfqId: string,
 ) {
+  const id = requireId(
+    rfqId,
+    "RFQ ID",
+  );
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("rfqs")
     .delete()
-    .eq("id", rfqId)
+    .eq("id", id)
     .eq("status", "draft")
     .select("id")
     .maybeSingle();
@@ -772,12 +806,17 @@ export async function deleteDraftRfq(
 export async function sendRfq(
   rfqId: string,
 ) {
+  const id = requireId(
+    rfqId,
+    "RFQ ID",
+  );
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
     "send_rfq",
     {
-      target_rfq_id: rfqId,
+      target_rfq_id: id,
     },
   );
 
@@ -794,14 +833,23 @@ export async function awardSupplierQuotation(
   rfqId: string,
   quotationId: string,
 ) {
+  const id = requireId(
+    rfqId,
+    "RFQ ID",
+  );
+
+  const quoteId = requireId(
+    quotationId,
+    "Quotation ID",
+  );
+
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
     "award_supplier_quotation",
     {
-      target_rfq_id: rfqId,
-      target_quotation_id:
-        quotationId,
+      target_rfq_id: id,
+      target_quotation_id:quoteId,
     },
   );
 
@@ -817,12 +865,16 @@ export async function awardSupplierQuotation(
 export async function closeRfq(
   rfqId: string,
 ) {
+  const id = requireId(
+  rfqId,
+  "RFQ ID",
+);
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
     "close_rfq",
     {
-      target_rfq_id: rfqId,
+      target_rfq_id: id,
     },
   );
 
@@ -927,3 +979,16 @@ export type RfqDetails = NonNullable<
 export type CreatedRfq = Awaited<
   ReturnType<typeof createRfq>
 >;
+
+export type UpdatedRfq = Awaited<
+  ReturnType<typeof updateRfq>
+>;
+
+export type RfqByNumber = Awaited<
+  ReturnType<typeof getRfqByNumber>
+>;
+
+export type DeletedDraftRfq =
+  Awaited<
+    ReturnType<typeof deleteDraftRfq>
+  >;
