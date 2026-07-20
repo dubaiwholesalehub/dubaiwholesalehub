@@ -1169,11 +1169,126 @@ export type Database = {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
       }
+      award_supplier_quotation: {
+        Args: { target_quotation_id: string; target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      can_approve_rfqs: { Args: never; Returns: boolean }
+      can_manage_rfqs: { Args: never; Returns: boolean }
+      can_view_rfqs: { Args: never; Returns: boolean }
+      close_rfq: {
+        Args: { target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       generate_rfq_number: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      recalculate_quotation_totals: {
+        Args: { target_quotation_id: string }
+        Returns: undefined
+      }
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      send_rfq: {
+        Args: { target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       set_product_preferred_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
