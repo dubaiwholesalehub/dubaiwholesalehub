@@ -1250,9 +1250,99 @@ export type Database = {
         Args: { target_quotation_id: string }
         Returns: undefined
       }
+      reject_supplier_quotation: {
+        Args: { rejection_reason?: string; target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      review_supplier_quotation: {
+        Args: { target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       send_rfq: {
         Args: { target_rfq_id: string }
@@ -1293,6 +1383,51 @@ export type Database = {
       set_product_preferred_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      submit_supplier_quotation: {
+        Args: { target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
