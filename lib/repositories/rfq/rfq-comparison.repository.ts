@@ -13,14 +13,12 @@ export interface RfqComparisonItem {
 export interface RfqComparisonSupplier {
     id: string;
     supplierId: string;
-
+    supplierName: string;
     status: string;
-
     sentAt: string | null;
     viewedAt: string | null;
     respondedAt: string | null;
     awardedAt: string | null;
-
     quotation: RfqSupplierQuotation | null;
 }
 
@@ -69,22 +67,26 @@ export async function getRfqComparisonData(
         throw rfqItemsError;
     }
 
-    const { data: rfqSuppliers, error: rfqSuppliersError } = await supabase
-        .from("rfq_suppliers")
-        .select(`
-    id,
-    supplier_id,
-    status,
-    sent_at,
-    viewed_at,
-    responded_at,
-    awarded_at
-  `)
-        .eq("rfq_id", rfqId)
-        .order("created_at", { ascending: true });
+    const { data: rfqSuppliers, error: suppliersError } =
+  await supabase
+    .from("rfq_suppliers")
+    .select(`
+      id,
+      supplier_id,
+      status,
+      sent_at,
+      viewed_at,
+      responded_at,
+      awarded_at,
+      supplier:suppliers (
+        id,
+        company_name
+      )
+    `)
+    .eq("rfq_id", rfqId);
 
-    if (rfqSuppliersError) {
-        throw rfqSuppliersError;
+    if (suppliersError) {
+        throw suppliersError;
     }
 
     const items: RfqComparisonItem[] = (rfqItems ?? []).map((item) => ({
@@ -185,6 +187,8 @@ export async function getRfqComparisonData(
         (supplier) => ({
             id: supplier.id,
             supplierId: supplier.supplier_id,
+            supplierName:
+                supplier.supplier?.company_name ?? "Unnamed supplier",
 
             status: supplier.status,
 

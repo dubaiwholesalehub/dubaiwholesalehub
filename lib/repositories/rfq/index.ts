@@ -7,3 +7,4 @@ export * from "./rfq-header.repository";
 export * from "./rfq-summary.repository";
 export * from "./rfq-timeline.repository";
 export * from "./rfq-comparison.repository";
+export * from "./supplier-quotation-entry.repository";
