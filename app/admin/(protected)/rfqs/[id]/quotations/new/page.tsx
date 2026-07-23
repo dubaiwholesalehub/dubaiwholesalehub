@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getSupplierQuotationEntryData } from "@/lib/repositories/rfq";
+import { QuotationForm } from "@/components/admin/rfqs/quotation";
 
 export default async function NewSupplierQuotationPage({
   params,
@@ -26,52 +27,7 @@ export default async function NewSupplierQuotationPage({
           {data.rfqNumber} — {data.title}
         </p>
       </div>
-
-      <div className="rounded-lg border p-6">
-        <h2 className="font-semibold">
-          Supplier Selection
-        </h2>
-
-        <div className="mt-4 space-y-3">
-          {data.suppliers.map((supplier) => (
-            <div
-              key={supplier.rfqSupplierId}
-              className="rounded border p-3"
-            >
-              <div className="font-medium">
-                {supplier.supplierName}
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                Status: {supplier.status}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-lg border p-6">
-        <h2 className="font-semibold">
-          RFQ Items
-        </h2>
-
-        <div className="mt-4 space-y-3">
-          {data.items.map((item) => (
-            <div
-              key={item.rfqItemId}
-              className="rounded border p-3"
-            >
-              <div className="font-medium">
-                {item.lineNumber}. {item.itemName}
-              </div>
-
-              <div className="text-sm text-muted-foreground">
-                Qty: {item.requestedQuantity}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <QuotationForm data={data} />
     </div>
   );
 }
