@@ -13,6 +13,10 @@ import {
   RfqSummaryCards,
 } from "@/components/admin/rfqs/detail";
 
+import { getRfqTimeline } from "@/lib/repositories/rfq";
+import { RfqTimeline } from "@/components/admin/rfqs/timeline";
+
+
 interface RfqDetailPageProps {
   params: Promise<{
     id: string;
@@ -24,9 +28,10 @@ export default async function RfqDetailPage({
 }: RfqDetailPageProps) {
   const { id } = await params;
 
-  const [rfq, summary] = await Promise.all([
+  const [rfq, summary, timeline] = await Promise.all([
     getRfqHeaderById(id),
     getRfqDetailSummary(id),
+    getRfqTimeline(id),
   ]);
 
   if (!rfq || !summary) {
@@ -86,6 +91,9 @@ export default async function RfqDetailPage({
             createdAt={rfq.created_at}
             updatedAt={rfq.updated_at}
           />
+        </div>
+        <div className="mt-6">
+          <RfqTimeline events={timeline} />
         </div>
       </div>
     </div>
