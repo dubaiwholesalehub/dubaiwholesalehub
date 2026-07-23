@@ -15,6 +15,8 @@ import {
 
 import { getRfqTimeline } from "@/lib/repositories/rfq";
 import { RfqTimeline } from "@/components/admin/rfqs/timeline";
+import { getRfqComparisonData } from "@/lib/repositories/rfq";
+import { ComparisonTable } from "@/components/admin/rfqs/comparison";
 
 
 interface RfqDetailPageProps {
@@ -28,10 +30,11 @@ export default async function RfqDetailPage({
 }: RfqDetailPageProps) {
   const { id } = await params;
 
-  const [rfq, summary, timeline] = await Promise.all([
+  const [rfq, summary, timeline, comparison] = await Promise.all([
     getRfqHeaderById(id),
     getRfqDetailSummary(id),
     getRfqTimeline(id),
+    getRfqComparisonData(id),
   ]);
 
   if (!rfq || !summary) {
@@ -91,6 +94,9 @@ export default async function RfqDetailPage({
             createdAt={rfq.created_at}
             updatedAt={rfq.updated_at}
           />
+        </div>
+        <div className="mt-6">
+          <ComparisonTable data={comparison} />
         </div>
         <div className="mt-6">
           <RfqTimeline events={timeline} />
