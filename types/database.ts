@@ -482,6 +482,309 @@ export type Database = {
         }
         Relationships: []
       }
+      rfq_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_description: string | null
+          item_name: string
+          line_number: number
+          notes: string | null
+          packaging_requirements: string | null
+          product_id: string | null
+          product_sku: string | null
+          requested_quantity: number
+          rfq_id: string
+          specifications: string | null
+          target_currency_code: string | null
+          target_delivery_date: string | null
+          target_unit_price: number | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_description?: string | null
+          item_name: string
+          line_number: number
+          notes?: string | null
+          packaging_requirements?: string | null
+          product_id?: string | null
+          product_sku?: string | null
+          requested_quantity: number
+          rfq_id: string
+          specifications?: string | null
+          target_currency_code?: string | null
+          target_delivery_date?: string | null
+          target_unit_price?: number | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_description?: string | null
+          item_name?: string
+          line_number?: number
+          notes?: string | null
+          packaging_requirements?: string | null
+          product_id?: string | null
+          product_sku?: string | null
+          requested_quantity?: number
+          rfq_id?: string
+          specifications?: string | null
+          target_currency_code?: string | null
+          target_delivery_date?: string | null
+          target_unit_price?: number | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_items_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfq_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["rfq_status"]
+          notes: string | null
+          previous_status: Database["public"]["Enums"]["rfq_status"] | null
+          reason: string | null
+          rfq_id: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status: Database["public"]["Enums"]["rfq_status"]
+          notes?: string | null
+          previous_status?: Database["public"]["Enums"]["rfq_status"] | null
+          reason?: string | null
+          rfq_id: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["rfq_status"]
+          notes?: string | null
+          previous_status?: Database["public"]["Enums"]["rfq_status"] | null
+          reason?: string | null
+          rfq_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_status_history_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfq_suppliers: {
+        Row: {
+          awarded_at: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          created_at: string
+          decline_reason: string | null
+          declined_at: string | null
+          id: string
+          invitation_message: string | null
+          notes: string | null
+          responded_at: string | null
+          rfq_id: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_supplier_status"]
+          supplier_id: string
+          supplier_reference: string | null
+          updated_at: string
+          viewed_at: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          invitation_message?: string | null
+          notes?: string | null
+          responded_at?: string | null
+          rfq_id: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["rfq_supplier_status"]
+          supplier_id: string
+          supplier_reference?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          id?: string
+          invitation_message?: string | null
+          notes?: string | null
+          responded_at?: string | null
+          rfq_id?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["rfq_supplier_status"]
+          supplier_id?: string
+          supplier_reference?: string | null
+          updated_at?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfq_suppliers_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfq_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rfqs: {
+        Row: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          awarded_at?: string | null
+          awarded_quotation_id?: string | null
+          awarded_supplier_id?: string | null
+          cancelled_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          description?: string | null
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          packaging_requirements?: string | null
+          payment_terms?: string | null
+          priority?: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date?: string | null
+          response_deadline?: string | null
+          rfq_number?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes?: string | null
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          awarded_at?: string | null
+          awarded_quotation_id?: string | null
+          awarded_supplier_id?: string | null
+          cancelled_at?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          description?: string | null
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          packaging_requirements?: string | null
+          payment_terms?: string | null
+          priority?: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date?: string | null
+          response_deadline?: string | null
+          rfq_number?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes?: string | null
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rfqs_awarded_quotation_fk"
+            columns: ["awarded_quotation_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfqs_awarded_supplier_id_fkey"
+            columns: ["awarded_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -531,6 +834,242 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_quotation_items: {
+        Row: {
+          available_quantity: number | null
+          compliance_notes: string | null
+          country_of_origin_id: string | null
+          created_at: string
+          discount_amount: number
+          discount_percent: number
+          id: string
+          is_compliant: boolean
+          item_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          line_subtotal: number
+          line_total: number
+          moq: number | null
+          packaging: string | null
+          quotation_id: string
+          quoted_quantity: number
+          rfq_item_id: string
+          supplier_sku: string | null
+          tax_amount: number
+          tax_percent: number
+          unit_price: number
+          updated_at: string
+          warranty: string | null
+        }
+        Insert: {
+          available_quantity?: number | null
+          compliance_notes?: string | null
+          country_of_origin_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          discount_percent?: number
+          id?: string
+          is_compliant?: boolean
+          item_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          line_subtotal?: number
+          line_total?: number
+          moq?: number | null
+          packaging?: string | null
+          quotation_id: string
+          quoted_quantity: number
+          rfq_item_id: string
+          supplier_sku?: string | null
+          tax_amount?: number
+          tax_percent?: number
+          unit_price: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Update: {
+          available_quantity?: number | null
+          compliance_notes?: string | null
+          country_of_origin_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          discount_percent?: number
+          id?: string
+          is_compliant?: boolean
+          item_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          line_subtotal?: number
+          line_total?: number
+          moq?: number | null
+          packaging?: string | null
+          quotation_id?: string
+          quoted_quantity?: number
+          rfq_item_id?: string
+          supplier_sku?: string | null
+          tax_amount?: number
+          tax_percent?: number
+          unit_price?: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_quotation_items_country_of_origin_id_fkey"
+            columns: ["country_of_origin_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_quotation_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_quotation_items_rfq_item_id_fkey"
+            columns: ["rfq_item_id"]
+            isOneToOne: false
+            referencedRelation: "rfq_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_quotations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          discount_amount?: number
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
+          other_charges?: number
+          packaging?: string | null
+          payment_terms?: string | null
+          quotation_date?: string
+          quotation_number?: string | null
+          rejected_at?: string | null
+          reviewed_at?: string | null
+          revision_number?: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount?: number
+          status?: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at?: string | null
+          subtotal?: number
+          supplier_id: string
+          supplier_notes?: string | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          warranty?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          discount_amount?: number
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
+          other_charges?: number
+          packaging?: string | null
+          payment_terms?: string | null
+          quotation_date?: string
+          quotation_number?: string | null
+          rejected_at?: string | null
+          reviewed_at?: string | null
+          revision_number?: number
+          rfq_id?: string
+          rfq_supplier_id?: string
+          shipping_amount?: number
+          status?: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at?: string | null
+          subtotal?: number
+          supplier_id?: string
+          supplier_notes?: string | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_quotations_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_quotations_rfq_supplier_id_fkey"
+            columns: ["rfq_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "rfq_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -630,14 +1169,272 @@ export type Database = {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
       }
+      award_supplier_quotation: {
+        Args: { target_quotation_id: string; target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      can_approve_rfqs: { Args: never; Returns: boolean }
+      can_manage_rfqs: { Args: never; Returns: boolean }
+      can_view_rfqs: { Args: never; Returns: boolean }
+      close_rfq: {
+        Args: { target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_rfq_transaction: {
+        Args: { p_items: Json; p_rfq: Json; p_suppliers: Json }
+        Returns: {
+          rfq_id: string
+          rfq_number: string
+        }[]
+      }
+      generate_rfq_number: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
+      recalculate_quotation_totals: {
+        Args: { target_quotation_id: string }
+        Returns: undefined
+      }
+      reject_supplier_quotation: {
+        Args: { rejection_reason?: string; target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
       }
+      review_supplier_quotation: {
+        Args: { target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      send_rfq: {
+        Args: { target_rfq_id: string }
+        Returns: {
+          awarded_at: string | null
+          awarded_quotation_id: string | null
+          awarded_supplier_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          description: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          packaging_requirements: string | null
+          payment_terms: string | null
+          priority: Database["public"]["Enums"]["rfq_priority"]
+          required_delivery_date: string | null
+          response_deadline: string | null
+          rfq_number: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["rfq_status"]
+          supplier_notes: string | null
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rfqs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_product_preferred_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      submit_supplier_quotation: {
+        Args: { target_quotation_id: string }
+        Returns: {
+          accepted_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          discount_amount: number
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          other_charges: number
+          packaging: string | null
+          payment_terms: string | null
+          quotation_date: string
+          quotation_number: string | null
+          rejected_at: string | null
+          reviewed_at: string | null
+          revision_number: number
+          rfq_id: string
+          rfq_supplier_id: string
+          shipping_amount: number
+          status: Database["public"]["Enums"]["supplier_quotation_status"]
+          submitted_at: string | null
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "supplier_quotations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -649,6 +1446,35 @@ export type Database = {
         | "certificate"
         | "other"
       product_status: "draft" | "pending_review" | "published" | "archived"
+      rfq_priority: "low" | "normal" | "high" | "urgent"
+      rfq_status:
+        | "draft"
+        | "ready"
+        | "sent"
+        | "partially_quoted"
+        | "quoted"
+        | "under_review"
+        | "awarded"
+        | "closed"
+        | "cancelled"
+      rfq_supplier_status:
+        | "invited"
+        | "sent"
+        | "viewed"
+        | "declined"
+        | "partially_quoted"
+        | "quoted"
+        | "awarded"
+        | "rejected"
+        | "cancelled"
+      supplier_quotation_status:
+        | "draft"
+        | "submitted"
+        | "under_review"
+        | "revised"
+        | "accepted"
+        | "rejected"
+        | "withdrawn"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -779,6 +1605,38 @@ export const Constants = {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],
       document_type: ["catalog", "datasheet", "manual", "certificate", "other"],
       product_status: ["draft", "pending_review", "published", "archived"],
+      rfq_priority: ["low", "normal", "high", "urgent"],
+      rfq_status: [
+        "draft",
+        "ready",
+        "sent",
+        "partially_quoted",
+        "quoted",
+        "under_review",
+        "awarded",
+        "closed",
+        "cancelled",
+      ],
+      rfq_supplier_status: [
+        "invited",
+        "sent",
+        "viewed",
+        "declined",
+        "partially_quoted",
+        "quoted",
+        "awarded",
+        "rejected",
+        "cancelled",
+      ],
+      supplier_quotation_status: [
+        "draft",
+        "submitted",
+        "under_review",
+        "revised",
+        "accepted",
+        "rejected",
+        "withdrawn",
+      ],
     },
   },
 } as const

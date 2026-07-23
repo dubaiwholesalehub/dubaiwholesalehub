@@ -238,11 +238,12 @@ export async function getRfqs(
           id,
           status
         ),
-        supplier_quotations (
+        supplier_quotations:supplier_quotations!supplier_quotations_rfq_id_fkey(
           id,
+          quotation_number,
           status,
           total_amount,
-          currency_code
+          supplier_id
         )
       `,
       {
@@ -414,12 +415,6 @@ export async function getRfqById(
           currency_code
         )
       ),
-      created_by_profile:profiles!rfqs_created_by_fkey (
-        id,
-        full_name,
-        email,
-        avatar_url
-      ),
       items:rfq_items (
         id,
         rfq_id,
@@ -487,7 +482,7 @@ export async function getRfqById(
           )
         )
       ),
-      quotations:supplier_quotations (
+      quotations:supplier_quotations!supplier_quotations_rfq_id_fkey(
         id,
         rfq_id,
         rfq_supplier_id,
@@ -730,8 +725,8 @@ export async function updateRfq(
     currency_code: currencyCode,
     ...(input.status
       ? {
-          status: input.status,
-        }
+        status: input.status,
+      }
       : {}),
   };
 
@@ -849,7 +844,7 @@ export async function awardSupplierQuotation(
     "award_supplier_quotation",
     {
       target_rfq_id: id,
-      target_quotation_id:quoteId,
+      target_quotation_id: quoteId,
     },
   );
 
@@ -866,9 +861,9 @@ export async function closeRfq(
   rfqId: string,
 ) {
   const id = requireId(
-  rfqId,
-  "RFQ ID",
-);
+    rfqId,
+    "RFQ ID",
+  );
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
@@ -888,7 +883,7 @@ export async function closeRfq(
 }
 
 export async function getRfqDashboardSummary():
-Promise<RfqDashboardSummary> {
+  Promise<RfqDashboardSummary> {
   const supabase = await createClient();
 
   const { data, error } = await supabase

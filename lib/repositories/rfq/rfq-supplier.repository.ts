@@ -569,3 +569,62 @@ export type RemovedRfqSupplier =
       typeof removeSupplierFromRfq
     >
   >;
+
+export async function getRfqSupplierOptions() {
+  const supabase = await createClient();
+
+  const [suppliersResult, countriesResult] =
+    await Promise.all([
+      supabase
+        .from("suppliers")
+        .select(`
+          id,
+          company_name,
+          contact_name,
+          email,
+          phone,
+          whatsapp,
+          website,
+          city,
+          notes,
+          country_id,
+          is_active,
+          country:countries (
+            id,
+            name,
+            iso2
+          )
+        `)
+        .eq("is_active", true)
+        .order("company_name", {
+          ascending: true,
+        }),
+
+      supabase
+        .from("countries")
+        .select(`
+          id,
+          name,
+          iso2
+        `)
+        .eq("is_active", true)
+        .order("name", {
+          ascending: true,
+        }),
+    ]);
+
+  const error =
+    suppliersResult.error ??
+    countriesResult.error;
+
+  if (error) {
+    throw new Error(
+      `Unable to load RFQ supplier options: ${error.message}`,
+    );
+  }
+
+  return {
+    suppliers: suppliersResult.data ?? [],
+    countries: countriesResult.data ?? [],
+  };
+}

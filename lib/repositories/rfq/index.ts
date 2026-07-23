@@ -3,3 +3,5 @@ export * from "./rfq-item.repository";
 export * from "./rfq-supplier.repository";
 export * from "./supplier-quotation.repository";
 export * from "./supplier-quotation-item.repository";
+export * from "./rfq-header.repository";
+export * from "./rfq-summary.repository";

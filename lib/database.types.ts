@@ -1244,6 +1244,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_rfq_transaction: {
+        Args: { p_items: Json; p_rfq: Json; p_suppliers: Json }
+        Returns: {
+          rfq_id: string
+          rfq_number: string
+        }[]
+      }
       generate_rfq_number: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       recalculate_quotation_totals: {

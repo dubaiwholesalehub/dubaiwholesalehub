@@ -193,3 +193,60 @@ export async function getFeaturedProducts(limit = 4) {
 
   return data ?? [];
 }
+
+export async function getRfqItemOptions() {
+  const supabase = await createClient();
+
+  const [productsResult, unitsResult] = await Promise.all([
+    supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        sku,
+        short_description,
+        unit_id,
+        moq,
+        packaging,
+        unit:units (
+          id,
+          name,
+          short_name
+        ),
+        brand:brands (
+          id,
+          name
+        ),
+        category:categories (
+          id,
+          name
+        )
+      `)
+      .in("status", ["draft", "published"])
+      .order("name"),
+
+    supabase
+      .from("units")
+      .select(`
+        id,
+        name,
+        short_name
+      `)
+      .eq("is_active", true)
+      .order("name"),
+  ]);
+
+  const firstError =
+    productsResult.error ?? unitsResult.error;
+
+  if (firstError) {
+    throw new Error(
+      `Unable to load RFQ item options: ${firstError.message}`,
+    );
+  }
+
+  return {
+    products: productsResult.data ?? [],
+    units: unitsResult.data ?? [],
+  };
+}
