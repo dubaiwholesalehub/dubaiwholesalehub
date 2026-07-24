@@ -13,28 +13,45 @@ type SupplierQuotationInsert =
 type SupplierQuotationUpdate =
   Database["public"]["Tables"]["supplier_quotations"]["Update"];
 
+export type CreateSupplierQuotationLineInput = {
+  rfqItemId: string;
+  quotedQuantity: number;
+  unitPrice: number;
+  moq?: number;
+  leadTimeDays?: number;
+  isCompliant?: boolean;
+};
+
 export type CreateSupplierQuotationInput = {
   rfqId: string;
   rfqSupplierId: string;
   supplierId: string;
+
   quotationNumber?: string;
   currencyCode: string;
   quotationDate?: string;
   validUntil?: string;
+
   discountAmount?: number;
   shippingAmount?: number;
   taxAmount?: number;
   otherCharges?: number;
+
   paymentTerms?: string;
   incoterm?: string;
   loadingPort?: string;
   deliveryLocation?: string;
+
   leadTime?: string;
   leadTimeDays?: number;
+
   packaging?: string;
   warranty?: string;
+
   supplierNotes?: string;
   internalNotes?: string;
+
+  items: CreateSupplierQuotationLineInput[];
 };
 
 export type UpdateSupplierQuotationInput =
@@ -48,8 +65,8 @@ export type SupplierQuotationListFilters = {
   rfqSupplierId?: string;
   supplierId?: string;
   status?:
-    | SupplierQuotationStatus
-    | "all";
+  | SupplierQuotationStatus
+  | "all";
   currencyCode?: string;
 };
 
@@ -384,14 +401,14 @@ function buildQuotationPayload(
         input.currencyCode,
       ),
     quotation_date:
-  emptyToUndefined(
-    input.quotationDate,
-  ),
+      emptyToUndefined(
+        input.quotationDate,
+      ),
 
-valid_until:
-  emptyToUndefined(
-    input.validUntil,
-  ),
+    valid_until:
+      emptyToUndefined(
+        input.validUntil,
+      ),
     discount_amount:
       validateOptionalAmount(
         input.discountAmount,
@@ -445,43 +462,125 @@ valid_until:
 
 export async function createSupplierQuotation(
   input: CreateSupplierQuotationInput,
-) {
+): Promise<string> {
   const supabase = await createClient();
 
-  const payload =
-    buildQuotationPayload(input);
+  if (!input.items.length) {
+    throw new Error(
+      "At least one quotation item is required.",
+    );
+  }
 
-  const { data, error } =
-    await supabase
-      .from("supplier_quotations")
-      .insert(payload)
-      .select(`
-        id,
-        quotation_number,
-        status,
-        currency_code,
-        quotation_date,
-        valid_until,
-        total_amount,
-        created_at
-      `)
-      .single();
+  const quotationDate =
+    emptyToUndefined(input.quotationDate) ??
+    new Date().toISOString().slice(0, 10);
+
+  const { data, error } = await supabase.rpc(
+    "create_supplier_quotation",
+    {
+      p_rfq_id: input.rfqId,
+      p_rfq_supplier_id: input.rfqSupplierId,
+
+      p_quotation_number:
+        input.quotationNumber?.trim() ?? "",
+
+      p_quotation_date:
+        input.quotationDate?.trim() ||
+        new Date().toISOString().slice(0, 10),
+
+      p_valid_until:
+        input.validUntil?.trim() ?? "",
+
+      p_currency_code:
+        normalizeCurrencyCode(input.currencyCode),
+
+      p_payment_terms:
+        input.paymentTerms?.trim() ?? "",
+
+      p_lead_time_days:
+        validateOptionalDays(
+          input.leadTimeDays,
+        ) ?? 0,
+
+      p_incoterm:
+        input.incoterm?.trim() ?? "",
+
+      p_loading_port:
+        input.loadingPort?.trim() ?? "",
+
+      p_delivery_location:
+        input.deliveryLocation?.trim() ?? "",
+
+      p_packaging:
+        input.packaging?.trim() ?? "",
+
+      p_warranty:
+        input.warranty?.trim() ?? "",
+
+      p_supplier_notes:
+        input.supplierNotes?.trim() ?? "",
+
+      p_internal_notes:
+        input.internalNotes?.trim() ?? "",
+
+      p_discount_amount:
+        validateOptionalAmount(
+          input.discountAmount,
+          "Discount amount",
+        ) ?? 0,
+
+      p_shipping_amount:
+        validateOptionalAmount(
+          input.shippingAmount,
+          "Shipping amount",
+        ) ?? 0,
+
+      p_other_charges:
+        validateOptionalAmount(
+          input.otherCharges,
+          "Other charges",
+        ) ?? 0,
+
+      p_tax_amount:
+        validateOptionalAmount(
+          input.taxAmount,
+          "Tax amount",
+        ) ?? 0,
+
+      p_items: input.items.map((item) => ({
+        rfq_item_id: item.rfqItemId,
+        quoted_quantity: item.quotedQuantity,
+        unit_price: item.unitPrice,
+        moq: item.moq ?? 0,
+        lead_time_days:
+          item.leadTimeDays ?? 0,
+        is_compliant:
+          item.isCompliant ?? true,
+      })),
+    },
+  );
 
   if (error) {
     if (error.code === "23503") {
       throw new Error(
-        "The selected RFQ or supplier does not exist.",
+        "The selected RFQ, supplier, or RFQ item does not exist.",
       );
     }
 
     if (error.code === "23505") {
       throw new Error(
-        "Quotation number already exists.",
+        "A quotation with this number already exists.",
       );
     }
 
     throw new Error(
       `Unable to create supplier quotation: ${error.message}`,
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      "The quotation was created, but no quotation ID was returned.",
     );
   }
 
@@ -494,16 +593,16 @@ export async function updateSupplierQuotation(
   const supabase = await createClient();
 
   const payload: SupplierQuotationUpdate =
-    {
-      ...buildQuotationPayload(
-        input,
-      ),
-      ...(input.status
-        ? {
-            status: input.status,
-          }
-        : {}),
-    };
+  {
+    ...buildQuotationPayload(
+      input,
+    ),
+    ...(input.status
+      ? {
+        status: input.status,
+      }
+      : {}),
+  };
 
   const { data, error } =
     await supabase
