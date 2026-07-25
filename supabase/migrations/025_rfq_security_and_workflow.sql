@@ -884,19 +884,18 @@ begin
     set
       status = case
         when new.status = 'accepted'
-          then 'awarded'
-        else 'quoted'
+          then 'awarded'::public.rfq_supplier_status
+        else 'quoted'::public.rfq_supplier_status
       end,
       responded_at = coalesce(
         responded_at,
         now()
       )
     where id = target_rfq_supplier_id;
-  end if;
 
   if new.status = 'rejected' then
     update public.rfq_suppliers
-    set status = 'rejected'
+    set status = 'rejected'::public.rfq_supplier_status
     where id = target_rfq_supplier_id;
   end if;
 

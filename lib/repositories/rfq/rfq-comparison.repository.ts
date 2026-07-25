@@ -68,9 +68,9 @@ export async function getRfqComparisonData(
     }
 
     const { data: rfqSuppliers, error: suppliersError } =
-  await supabase
-    .from("rfq_suppliers")
-    .select(`
+        await supabase
+            .from("rfq_suppliers")
+            .select(`
       id,
       supplier_id,
       status,
@@ -83,7 +83,7 @@ export async function getRfqComparisonData(
         company_name
       )
     `)
-    .eq("rfq_id", rfqId);
+            .eq("rfq_id", rfqId);
 
     if (suppliersError) {
         throw suppliersError;
@@ -120,12 +120,20 @@ export async function getRfqComparisonData(
         throw quotationsError;
     }
 
-    const quotationLookup = new Map(
-        (quotations ?? []).map((quotation) => [
-            quotation.rfq_supplier_id,
-            quotation,
-        ])
-    );
+    const quotationLookup = new Map<
+        string,
+        NonNullable<typeof quotations>[number]
+    >();
+
+    for (const quotation of quotations ?? []) {
+        if (!quotationLookup.has(quotation.rfq_supplier_id)) {
+            quotationLookup.set(
+                quotation.rfq_supplier_id,
+                quotation,
+            );
+        }
+    }
+
     const quotationIds = (quotations ?? []).map((quotation) => quotation.id);
 
     const { data: quotationItems, error: quotationItemsError } =

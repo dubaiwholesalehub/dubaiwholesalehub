@@ -730,3 +730,39 @@ export async function deleteDraftSupplierQuotation(
 
   return data;
 }
+
+export async function getLatestQuotationForRfq(
+  rfqId: string,
+) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("supplier_quotations")
+    .select(`
+      id,
+      rfq_id,
+      rfq_supplier_id,
+      quotation_number,
+      revision_number,
+      status,
+      created_at,
+      updated_at
+    `)
+    .eq("rfq_id", rfqId)
+    .order("revision_number", {
+      ascending: false,
+    })
+    .order("created_at", {
+      ascending: false,
+    })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Unable to load supplier quotation: ${error.message}`,
+    );
+  }
+
+  return data;
+}

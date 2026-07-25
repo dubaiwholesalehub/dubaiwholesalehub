@@ -1,3 +1,9 @@
+"use client";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+
+import { Button } from "@/components/ui/button";
+import { awardSupplierQuotationAction } from "@/app/admin/actions/rfq/award-supplier-quotation";
 import type { RfqComparisonData } from "@/lib/repositories/rfq";
 
 import { DetailSection } from "../detail";
@@ -11,6 +17,8 @@ import {
     isBestPrice,
 } from "@/lib/domain/rfq/comparison";
 
+import { submitSupplierQuotationAction } from "@/app/admin/actions/rfq/submit-supplier-quotation";
+
 interface ComparisonTableProps {
     data: RfqComparisonData;
 }
@@ -18,6 +26,65 @@ interface ComparisonTableProps {
 export function ComparisonTable({
     data,
 }: ComparisonTableProps) {
+
+    const router = useRouter();
+    const [isPending, startTransition] = useTransition();
+
+    function handleAward(
+        quotationId: string,
+    ) {
+        const confirmed = window.confirm(
+            "Award this supplier quotation?\n\nThis will mark the RFQ as awarded."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        startTransition(async () => {
+            const result =
+                await awardSupplierQuotationAction(
+                    data.rfqId,
+                    quotationId,
+                );
+
+            if (!result.success) {
+                window.alert(result.message);
+                return;
+            }
+
+            window.alert(result.message);
+            router.refresh();
+        });
+    }
+
+    function handleSubmitQuotation(
+        quotationId: string,
+    ) {
+        const confirmed = window.confirm(
+            "Submit this supplier quotation?\n\nAfter submission, it will become eligible for review and award."
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        startTransition(async () => {
+            const result =
+                await submitSupplierQuotationAction(
+                    data.rfqId,
+                    quotationId,
+                );
+
+            if (!result.success) {
+                window.alert(result.message);
+                return;
+            }
+
+            window.alert(result.message);
+            router.refresh();
+        });
+    }
     const suppliersWithQuotations = data.suppliers.filter(
         (supplier) => supplier.quotation
     );
@@ -57,13 +124,72 @@ export function ComparisonTable({
                                         key={supplier.id}
                                         className="px-4 py-3 text-right font-medium"
                                     >
-                                        <div className="flex flex-col items-end">
+                                        <div className="flex flex-col items-end gap-2">
                                             <span>{supplier.supplierName}</span>
 
                                             {supplier.quotation ? (
-                                                <span className="mt-1 text-xs font-normal text-muted-foreground">
-                                                    {supplier.quotation.quotationNumber}
-                                                </span>
+                                                <>
+                                                    <span className="text-xs font-normal text-muted-foreground">
+                                                        {supplier.quotation.quotationNumber}
+                                                    </span>
+
+                                                    <span className="text-xs font-normal capitalize text-muted-foreground">
+                                                        Status: {supplier.quotation.status.replaceAll("_", " ")}
+                                                    </span>
+
+                                                    {supplier.quotation.status === "draft" ? (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            disabled={isPending}
+                                                            onClick={() =>
+                                                                handleSubmitQuotation(
+                                                                    supplier.quotation!.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            {isPending ? "Submitting..." : "Submit Quotation"}
+                                                        </Button>
+                                                    ) : ["submitted", "under_review", "revised"].includes(
+                                                        supplier.quotation.status
+                                                    ) ? (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="default"
+                                                            disabled={isPending}
+                                                            onClick={() =>
+                                                                handleAward(
+                                                                    supplier.quotation!.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            {isPending ? "Awarding..." : "🏆 Award"}
+                                                        </Button>
+                                                    ) : supplier.quotation.status === "accepted" ? (
+                                                        <Button
+                                                            size="sm"
+                                                            disabled
+                                                        >
+                                                            🏆 Awarded
+                                                        </Button>
+                                                    ) : supplier.quotation.status === "rejected" ? (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            disabled
+                                                        >
+                                                            Rejected
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            disabled
+                                                        >
+                                                            {supplier.quotation.status.replaceAll("_", " ")}
+                                                        </Button>
+                                                    )}
+                                                </>
                                             ) : null}
                                         </div>
                                     </th>
