@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       brands: {
@@ -481,6 +506,308 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      purchase_order_items: {
+        Row: {
+          country_of_origin_id: string | null
+          created_at: string
+          discount_amount: number
+          discount_percent: number
+          id: string
+          item_description: string | null
+          item_name: string
+          item_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          ordered_quantity: number
+          packaging: string | null
+          product_id: string | null
+          product_sku: string | null
+          purchase_order_id: string
+          received_quantity: number
+          rfq_item_id: string | null
+          supplier_quotation_item_id: string | null
+          supplier_sku: string | null
+          tax_amount: number
+          tax_percent: number
+          unit_id: string | null
+          unit_price: number
+          updated_at: string
+          warranty: string | null
+        }
+        Insert: {
+          country_of_origin_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          discount_percent?: number
+          id?: string
+          item_description?: string | null
+          item_name: string
+          item_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          line_number: number
+          line_subtotal?: number
+          line_total?: number
+          ordered_quantity: number
+          packaging?: string | null
+          product_id?: string | null
+          product_sku?: string | null
+          purchase_order_id: string
+          received_quantity?: number
+          rfq_item_id?: string | null
+          supplier_quotation_item_id?: string | null
+          supplier_sku?: string | null
+          tax_amount?: number
+          tax_percent?: number
+          unit_id?: string | null
+          unit_price: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Update: {
+          country_of_origin_id?: string | null
+          created_at?: string
+          discount_amount?: number
+          discount_percent?: number
+          id?: string
+          item_description?: string | null
+          item_name?: string
+          item_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          ordered_quantity?: number
+          packaging?: string | null
+          product_id?: string | null
+          product_sku?: string | null
+          purchase_order_id?: string
+          received_quantity?: number
+          rfq_item_id?: string | null
+          supplier_quotation_item_id?: string | null
+          supplier_sku?: string | null
+          tax_amount?: number
+          tax_percent?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_country_of_origin_id_fkey"
+            columns: ["country_of_origin_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_rfq_item_id_fkey"
+            columns: ["rfq_item_id"]
+            isOneToOne: false
+            referencedRelation: "rfq_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_supplier_quotation_item_id_fkey"
+            columns: ["supplier_quotation_item_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_quotation_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_order_number_counters: {
+        Row: {
+          counter_year: number
+          last_number: number
+          updated_at: string
+        }
+        Insert: {
+          counter_year: number
+          last_number?: number
+          updated_at?: string
+        }
+        Update: {
+          counter_year?: number
+          last_number?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      purchase_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          delivery_terms: string | null
+          discount_amount: number
+          expected_delivery_date: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          order_date: string
+          other_charges: number
+          packaging: string | null
+          partially_received_at: string | null
+          payment_terms: string | null
+          po_number: string
+          received_at: string | null
+          rfq_id: string | null
+          sent_at: string | null
+          shipping_amount: number
+          source: Database["public"]["Enums"]["purchase_order_source"]
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          supplier_quotation_id: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          warranty: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          expected_delivery_date?: string | null
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
+          order_date?: string
+          other_charges?: number
+          packaging?: string | null
+          partially_received_at?: string | null
+          payment_terms?: string | null
+          po_number?: string
+          received_at?: string | null
+          rfq_id?: string | null
+          sent_at?: string | null
+          shipping_amount?: number
+          source?: Database["public"]["Enums"]["purchase_order_source"]
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          subtotal?: number
+          supplier_id: string
+          supplier_notes?: string | null
+          supplier_quotation_id?: string | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          warranty?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          delivery_location?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          expected_delivery_date?: string | null
+          id?: string
+          incoterm?: string | null
+          internal_notes?: string | null
+          lead_time?: string | null
+          lead_time_days?: number | null
+          loading_port?: string | null
+          order_date?: string
+          other_charges?: number
+          packaging?: string | null
+          partially_received_at?: string | null
+          payment_terms?: string | null
+          po_number?: string
+          received_at?: string | null
+          rfq_id?: string | null
+          sent_at?: string | null
+          shipping_amount?: number
+          source?: Database["public"]["Enums"]["purchase_order_source"]
+          status?: Database["public"]["Enums"]["purchase_order_status"]
+          subtotal?: number
+          supplier_id?: string
+          supplier_notes?: string | null
+          supplier_quotation_id?: string | null
+          tax_amount?: number
+          total_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          warranty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "rfqs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_quotation_id_fkey"
+            columns: ["supplier_quotation_id"]
+            isOneToOne: true
+            referencedRelation: "supplier_quotations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rfq_items: {
         Row: {
@@ -1244,6 +1571,56 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_purchase_order_from_award: {
+        Args: { target_rfq_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          delivery_terms: string | null
+          discount_amount: number
+          expected_delivery_date: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          order_date: string
+          other_charges: number
+          packaging: string | null
+          partially_received_at: string | null
+          payment_terms: string | null
+          po_number: string
+          received_at: string | null
+          rfq_id: string | null
+          sent_at: string | null
+          shipping_amount: number
+          source: Database["public"]["Enums"]["purchase_order_source"]
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          supplier_quotation_id: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_rfq_transaction: {
         Args: { p_items: Json; p_rfq: Json; p_suppliers: Json }
         Returns: {
@@ -1276,6 +1653,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
       is_admin: { Args: never; Returns: boolean }
       recalculate_quotation_totals: {
@@ -1471,6 +1849,15 @@ export type Database = {
         | "certificate"
         | "other"
       product_status: "draft" | "pending_review" | "published" | "archived"
+      purchase_order_source: "manual" | "rfq_award"
+      purchase_order_status:
+        | "draft"
+        | "approved"
+        | "sent"
+        | "partially_received"
+        | "received"
+        | "closed"
+        | "cancelled"
       rfq_priority: "low" | "normal" | "high" | "urgent"
       rfq_status:
         | "draft"
@@ -1625,11 +2012,24 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],
       document_type: ["catalog", "datasheet", "manual", "certificate", "other"],
       product_status: ["draft", "pending_review", "published", "archived"],
+      purchase_order_source: ["manual", "rfq_award"],
+      purchase_order_status: [
+        "draft",
+        "approved",
+        "sent",
+        "partially_received",
+        "received",
+        "closed",
+        "cancelled",
+      ],
       rfq_priority: ["low", "normal", "high", "urgent"],
       rfq_status: [
         "draft",
