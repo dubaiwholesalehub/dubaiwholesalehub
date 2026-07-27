@@ -1,9 +1,6 @@
 import { notFound } from "next/navigation";
 
-import {
-  getRfqDetailSummary,
-  getRfqHeaderById,
-} from "@/lib/repositories/rfq";
+import { getRfqDetailSummary, getRfqHeaderById } from "@/lib/repositories/rfq";
 
 import { RfqStatusBadge } from "@/components/admin/rfqs/rfq-status-badge";
 import { RfqWorkspaceTabs } from "@/components/admin/rfqs/rfq-workspace-tabs";
@@ -17,7 +14,7 @@ import { getRfqTimeline } from "@/lib/repositories/rfq";
 import { RfqTimeline } from "@/components/admin/rfqs/timeline";
 import { getRfqComparisonData } from "@/lib/repositories/rfq";
 import { ComparisonTable } from "@/components/admin/rfqs/comparison";
-
+import { CreatePurchaseOrderButton } from "@/components/admin/rfqs/create-purchase-order-button";
 
 interface RfqDetailPageProps {
   params: Promise<{
@@ -25,9 +22,7 @@ interface RfqDetailPageProps {
   }>;
 }
 
-export default async function RfqDetailPage({
-  params,
-}: RfqDetailPageProps) {
+export default async function RfqDetailPage({ params }: RfqDetailPageProps) {
   const { id } = await params;
 
   const [rfq, summary, timeline, comparison] = await Promise.all([
@@ -60,15 +55,18 @@ export default async function RfqDetailPage({
           )}
         </div>
 
-        <RfqStatusBadge status={rfq.status} />
+        <div className="flex flex-col items-start gap-3 lg:items-end">
+          <RfqStatusBadge status={rfq.status} />
+
+          {rfq.status === "awarded" ? (
+            <CreatePurchaseOrderButton rfqId={rfq.id} />
+          ) : null}
+        </div>
       </header>
 
       <div className="rounded-lg border bg-card">
         <div className="border-b p-4">
-          <RfqWorkspaceTabs
-            rfqId={rfq.id}
-            active="overview"
-          />
+          <RfqWorkspaceTabs rfqId={rfq.id} active="overview" />
         </div>
 
         <div className="p-6">
@@ -102,28 +100,6 @@ export default async function RfqDetailPage({
           <RfqTimeline events={timeline} />
         </div>
       </div>
-    </div>
-  );
-}
-
-interface InfoCardProps {
-  label: string;
-  value: string;
-}
-
-function InfoCard({
-  label,
-  value,
-}: InfoCardProps) {
-  return (
-    <div className="rounded-lg border bg-background p-5">
-      <p className="text-sm text-muted-foreground">
-        {label}
-      </p>
-
-      <p className="mt-2 text-3xl font-semibold tracking-tight">
-        {value}
-      </p>
     </div>
   );
 }

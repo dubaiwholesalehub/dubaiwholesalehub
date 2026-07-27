@@ -39,6 +39,29 @@ export interface GetPurchaseOrdersResult {
   totalPages: number;
 }
 
+export interface PurchaseOrderSupplier {
+  id: string;
+  company_name: string;
+  contact_name: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+}
+
+export interface PurchaseOrderHeader
+  extends PurchaseOrder {
+  supplier: PurchaseOrderSupplier;
+}
+
+export interface PurchaseOrderDetailSummary {
+  itemCount: number;
+  totalOrderedQuantity: number;
+  totalReceivedQuantity: number;
+  remainingQuantity: number;
+}
+
 interface PurchaseOrderListQueryRow {
   id: string;
   po_number: string;
@@ -286,6 +309,15 @@ export async function getPurchaseOrderById(
 
   return data;
 }
+
+/**
+ * Returns a Purchase Order header together with its supplier.
+ */
+
+/**
+ * Returns quantity and item summary information for a
+ * Purchase Order.
+ */
 
 /**
  * Creates a draft Purchase Order from the quotation
