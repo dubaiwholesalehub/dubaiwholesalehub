@@ -4,14 +4,20 @@ import { notFound } from "next/navigation";
 import {
   getPurchaseOrderDetailSummary,
   getPurchaseOrderHeaderById,
+  getPurchaseOrderItems,
 } from "@/lib/repositories/purchase-orders";
 
 import { PurchaseOrderStatusBadge } from "@/components/admin/purchase-orders/purchase-order-status-badge";
 
 import {
+  PurchaseOrderAttachments,
   PurchaseOrderGeneralInformation,
+  PurchaseOrderItems,
+  PurchaseOrderNotes,
   PurchaseOrderQuantitySummary,
+  PurchaseOrderReference,
   PurchaseOrderSummaryCards,
+  PurchaseOrderWorkflow,
 } from "@/components/admin/purchase-orders/detail";
 
 interface PurchaseOrderDetailPageProps {
@@ -25,11 +31,11 @@ export default async function PurchaseOrderDetailPage({
 }: PurchaseOrderDetailPageProps) {
   const { id } = await params;
 
-  const [purchaseOrder, summary] =
-    await Promise.all([
-      getPurchaseOrderHeaderById(id),
-      getPurchaseOrderDetailSummary(id),
-    ]);
+  const [purchaseOrder, summary, items] = await Promise.all([
+    getPurchaseOrderHeaderById(id),
+    getPurchaseOrderDetailSummary(id),
+    getPurchaseOrderItems(id),
+  ]);
 
   if (!purchaseOrder) {
     notFound();
@@ -59,10 +65,7 @@ export default async function PurchaseOrderDetailPage({
           <p className="mt-2 text-sm text-muted-foreground">
             Supplier:{" "}
             <span className="font-medium text-foreground">
-              {
-                purchaseOrder.supplier
-                  .company_name
-              }
+              {purchaseOrder.supplier.company_name}
             </span>
           </p>
         </div>
@@ -77,56 +80,35 @@ export default async function PurchaseOrderDetailPage({
             </Link>
           ) : null}
 
-          <PurchaseOrderStatusBadge
-            status={purchaseOrder.status}
-          />
+          <PurchaseOrderStatusBadge status={purchaseOrder.status} />
         </div>
       </header>
 
       <section className="rounded-lg border bg-card">
         <div className="border-b px-6 py-4">
-          <h2 className="font-semibold">
-            Financial Summary
-          </h2>
+          <h2 className="font-semibold">Financial Summary</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Purchase Order value and commercial
-            charges.
+            Purchase Order value and commercial charges.
           </p>
         </div>
 
         <div className="p-6">
           <PurchaseOrderSummaryCards
-            currencyCode={
-              purchaseOrder.currency_code
-            }
-            subtotal={Number(
-              purchaseOrder.subtotal ?? 0,
-            )}
-            discountAmount={Number(
-              purchaseOrder.discount_amount ?? 0,
-            )}
-            shippingAmount={Number(
-              purchaseOrder.shipping_amount ?? 0,
-            )}
-            taxAmount={Number(
-              purchaseOrder.tax_amount ?? 0,
-            )}
-            otherCharges={Number(
-              purchaseOrder.other_charges ?? 0,
-            )}
-            totalAmount={Number(
-              purchaseOrder.total_amount ?? 0,
-            )}
+            currencyCode={purchaseOrder.currency_code}
+            subtotal={Number(purchaseOrder.subtotal ?? 0)}
+            discountAmount={Number(purchaseOrder.discount_amount ?? 0)}
+            shippingAmount={Number(purchaseOrder.shipping_amount ?? 0)}
+            taxAmount={Number(purchaseOrder.tax_amount ?? 0)}
+            otherCharges={Number(purchaseOrder.other_charges ?? 0)}
+            totalAmount={Number(purchaseOrder.total_amount ?? 0)}
           />
         </div>
       </section>
 
       <section className="rounded-lg border bg-card">
         <div className="border-b px-6 py-4">
-          <h2 className="font-semibold">
-            Order Progress
-          </h2>
+          <h2 className="font-semibold">Order Progress</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
             Item and receiving quantity overview.
@@ -134,15 +116,25 @@ export default async function PurchaseOrderDetailPage({
         </div>
 
         <div className="p-6">
-          <PurchaseOrderQuantitySummary
-            summary={summary}
-          />
+          <PurchaseOrderQuantitySummary summary={summary} />
         </div>
       </section>
-
-      <PurchaseOrderGeneralInformation
-        purchaseOrder={purchaseOrder}
+      <PurchaseOrderItems
+        items={items}
+        currencyCode={purchaseOrder.currency_code}
       />
+
+      <PurchaseOrderGeneralInformation purchaseOrder={purchaseOrder} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PurchaseOrderWorkflow purchaseOrder={purchaseOrder} />
+
+        <PurchaseOrderNotes purchaseOrder={purchaseOrder} />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <PurchaseOrderReference purchaseOrder={purchaseOrder} />
+        <PurchaseOrderAttachments />
+      </div>
     </div>
   );
 }

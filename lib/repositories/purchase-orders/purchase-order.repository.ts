@@ -53,6 +53,14 @@ export interface PurchaseOrderSupplier {
 export interface PurchaseOrderHeader
   extends PurchaseOrder {
   supplier: PurchaseOrderSupplier;
+  approved_at: string | null;
+  sent_at: string | null;
+  partially_received_at: string | null;
+  received_at: string | null;
+  closed_at: string | null;
+  cancelled_at: string | null;
+  rfq_id: string | null;
+  supplier_quotation_id: string | null;
 }
 
 export interface PurchaseOrderDetailSummary {
@@ -74,13 +82,13 @@ interface PurchaseOrderListQueryRow {
   total_amount: number;
   created_at: string;
   suppliers:
-    | {
-        company_name: string;
-      }
-    | {
-        company_name: string;
-      }[]
-    | null;
+  | {
+    company_name: string;
+  }
+  | {
+    company_name: string;
+  }[]
+  | null;
 }
 
 function requireId(
@@ -130,11 +138,11 @@ function sanitizeSearchTerm(value: string): string {
 function getSupplierName(
   supplier:
     | {
-        company_name: string;
-      }
+      company_name: string;
+    }
     | {
-        company_name: string;
-      }[]
+      company_name: string;
+    }[]
     | null,
 ): string {
   if (!supplier) {

@@ -3,3 +3,8 @@ export * from "./info-card";
 export * from "./purchase-order-general-information";
 export * from "./purchase-order-quantity-summary";
 export * from "./purchase-order-summary-cards";
+export * from "./purchase-order-items";
+export * from "./purchase-order-workflow";
+export * from "./purchase-order-notes";
+export * from "./purchase-order-reference";
+export * from "./purchase-order-attachments";
