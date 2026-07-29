@@ -8,6 +8,13 @@ import { GoodsReceiptTable } from "@/components/admin/goods-receipts/list";
 
 import { getGoodsReceiptHeaders } from "@/lib/repositories/goods-receipts";
 
+<Link
+  href="/admin/goods-receipts/new"
+  className="inline-flex h-10 items-center justify-center rounded-md bg-orange-600 px-4 text-sm font-semibold text-white transition hover:bg-orange-700"
+>
+  New Goods Receipt
+</Link>
+
 export default async function GoodsReceiptsPage() {
   const goodsReceipts = await getGoodsReceiptHeaders();
 
