@@ -51,7 +51,7 @@ const navigationGroups = [
         icon: Tags,
       },
       {
-        title: "Inventory",
+        label: "Inventory",
         href: "/admin/inventory",
         icon: Warehouse,
       },

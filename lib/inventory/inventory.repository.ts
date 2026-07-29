@@ -115,3 +115,74 @@ export interface InventoryDashboardSummary {
 
     activeWarehouses: number;
 }
+
+export type WarehouseStockStatus =
+  | "in_stock"
+  | "low_stock"
+  | "out_of_stock";
+
+export type WarehouseStockSort =
+  | "product_name"
+  | "sku"
+  | "warehouse_name"
+  | "quantity_on_hand"
+  | "quantity_available"
+  | "average_unit_cost"
+  | "stock_value";
+
+export type SortDirection = "asc" | "desc";
+
+export interface WarehouseStockListItem {
+  id: string;
+
+  warehouse_id: string;
+  product_id: string;
+
+  warehouse_code: string;
+  warehouse_name: string;
+
+  sku: string;
+  barcode: string | null;
+  product_name: string;
+
+  category_id: string | null;
+  category_name: string | null;
+
+  brand_id: string | null;
+  brand_name: string | null;
+
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  quantity_available: number;
+
+  average_unit_cost: number;
+  stock_value: number;
+
+  stock_status: WarehouseStockStatus;
+
+  last_transaction_at: string | null;
+  updated_at: string;
+}
+
+export interface WarehouseStockPage {
+  items: WarehouseStockListItem[];
+
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
+}
+
+export interface WarehouseStockFilters {
+  search?: string;
+  warehouseId?: string;
+  categoryId?: string;
+  brandId?: string;
+  stockStatus?: WarehouseStockStatus;
+  sortBy?: WarehouseStockSort;
+  sortDirection?: SortDirection;
+  page?: number;
+  pageSize?: number;
+}
