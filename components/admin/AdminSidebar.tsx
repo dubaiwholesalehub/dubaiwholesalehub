@@ -13,6 +13,7 @@ import {
   Tags,
   Users,
   X,
+  Warehouse,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -48,6 +49,11 @@ const navigationGroups = [
         label: "Brands",
         href: "/admin/brands",
         icon: Tags,
+      },
+      {
+        title: "Inventory",
+        href: "/admin/inventory",
+        icon: Warehouse,
       },
     ],
   },
@@ -183,9 +189,7 @@ export default function AdminSidebar({
 
         <div className="border-t border-slate-800 p-5">
           <div className="rounded-2xl bg-slate-900 p-4">
-            <p className="text-sm font-semibold text-white">
-              SANWAN ALSHAMS
-            </p>
+            <p className="text-sm font-semibold text-white">SANWAN ALSHAMS</p>
 
             <p className="mt-1 text-xs leading-5 text-slate-400">
               Wholesale, export and sourcing management.

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       brands: {
@@ -2121,6 +2146,7 @@ export type Database = {
       }
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
+      get_inventory_dashboard_summary: { Args: never; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       recalculate_quotation_totals: {
         Args: { target_quotation_id: string }
@@ -2478,6 +2504,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],
