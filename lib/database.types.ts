@@ -2147,6 +2147,21 @@ export type Database = {
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
+      get_inventory_transaction_page: {
+        Args: {
+          p_from_date?: string
+          p_page?: number
+          p_page_size?: number
+          p_search?: string
+          p_sort_by?: string
+          p_sort_direction?: string
+          p_status?: string
+          p_to_date?: string
+          p_transaction_type?: string
+          p_warehouse_id?: string
+        }
+        Returns: Json
+      }
       get_warehouse_stock_page: {
         Args: {
           p_brand_id?: string
