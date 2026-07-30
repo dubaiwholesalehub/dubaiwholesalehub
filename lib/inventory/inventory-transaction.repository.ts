@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 
 import type {
-  InventoryTransaction,
   InventoryTransactionItem,
 } from "./inventory.repository";
 
 import type {
+  InventoryTransactionDetail,
+  InventoryTransactionDetailHeader,
+  InventoryTransactionDetailItem,
   InventoryTransactionFilters,
   InventoryTransactionListItem,
   InventoryTransactionPage,
@@ -13,69 +15,6 @@ import type {
   InventoryTransactionType,
 } from "./inventory.repository";
 
-export interface InventoryTransactionDetail
-  extends InventoryTransaction {
-  warehouse: {
-    id: string;
-    code: string;
-    name: string;
-  };
-}
-
-export async function getInventoryTransactions(): Promise<
-  InventoryTransactionDetail[]
-> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("inventory_transactions")
-    .select(`
-      *,
-      warehouse:warehouses!inventory_transactions_warehouse_id_fkey (
-        id,
-        code,
-        name
-      )
-    `)
-    .order("created_at", {
-      ascending: false,
-    });
-
-  if (error) {
-    throw new Error(
-      `Failed to load inventory transactions: ${error.message}`,
-    );
-  }
-
-  return (data ?? []) as InventoryTransactionDetail[];
-}
-
-export async function getInventoryTransactionById(
-  id: string,
-): Promise<InventoryTransactionDetail | null> {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("inventory_transactions")
-    .select(`
-      *,
-      warehouse:warehouses!inventory_transactions_warehouse_id_fkey (
-        id,
-        code,
-        name
-      )
-    `)
-    .eq("id", id)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(
-      `Failed to load inventory transaction: ${error.message}`,
-    );
-  }
-
-  return data as InventoryTransactionDetail | null;
-}
 
 export async function getInventoryTransactionItems(
   transactionId: string,
@@ -290,5 +229,228 @@ export async function getInventoryTransactionPage(
         response.pagination?.total_pages,
       ),
     },
+  };
+}
+
+interface InventoryTransactionDetailsRpcResponse {
+  transaction?: unknown;
+  items?: unknown;
+}
+
+function mapWarehouse(value: unknown): {
+  id: string;
+  name: string;
+} | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const row = value as Record<string, unknown>;
+
+  const id = requiredString(row.id);
+  const name = requiredString(row.name);
+
+  if (!id || !name) {
+    return null;
+  }
+
+  return {
+    id,
+    name,
+  };
+}
+
+function mapInventoryTransactionDetailHeader(
+  value: unknown,
+): InventoryTransactionDetailHeader | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const row = value as Record<string, unknown>;
+
+  const warehouse = mapWarehouse(row.warehouse);
+
+  if (!warehouse) {
+    return null;
+  }
+
+  const id = requiredString(row.id);
+  const transactionNumber = requiredString(
+    row.transaction_number,
+  );
+
+  if (!id || !transactionNumber) {
+    return null;
+  }
+
+  return {
+    id,
+    transaction_number: transactionNumber,
+
+    transaction_type: mapTransactionType(
+      row.transaction_type,
+    ),
+
+    status: mapTransactionStatus(row.status),
+
+    transaction_date: requiredString(
+      row.transaction_date,
+    ),
+
+    warehouse,
+
+    related_warehouse: mapWarehouse(
+      row.related_warehouse,
+    ),
+
+    reference_type: nullableString(
+      row.reference_type,
+    ),
+
+    reference_id: nullableString(row.reference_id),
+
+    reference_number: nullableString(
+      row.reference_number,
+    ),
+
+    description: nullableString(row.description),
+
+    internal_notes: nullableString(
+      row.internal_notes,
+    ),
+
+    line_count: toNumber(row.line_count),
+
+    total_quantity: toNumber(
+      row.total_quantity,
+    ),
+
+    total_value: toNumber(row.total_value),
+
+    created_at: requiredString(row.created_at),
+    updated_at: requiredString(row.updated_at),
+
+    posted_at: nullableString(row.posted_at),
+
+    reversed_at: nullableString(row.reversed_at),
+
+    cancelled_at: nullableString(
+      row.cancelled_at,
+    ),
+
+    created_by: nullableString(row.created_by),
+
+    posted_by: nullableString(row.posted_by),
+
+    reversed_by: nullableString(row.reversed_by),
+
+    cancelled_by: nullableString(
+      row.cancelled_by,
+    ),
+  };
+}
+
+function mapInventoryTransactionDetailItem(
+  value: unknown,
+): InventoryTransactionDetailItem {
+  const row =
+    typeof value === "object" && value !== null
+      ? (value as Record<string, unknown>)
+      : {};
+
+  return {
+    id: requiredString(row.id),
+    line_number: toNumber(row.line_number),
+
+    product_id: requiredString(row.product_id),
+
+    sku: nullableString(row.sku),
+
+    product_name: requiredString(
+      row.product_name,
+    ),
+
+    quantity: toNumber(row.quantity),
+
+    unit_cost: toNumber(row.unit_cost),
+
+    total_cost: toNumber(row.total_cost),
+
+    batch_number: nullableString(
+      row.batch_number,
+    ),
+
+    lot_number: nullableString(row.lot_number),
+
+    serial_number: nullableString(
+      row.serial_number,
+    ),
+
+    manufacturing_date: nullableString(
+      row.manufacturing_date,
+    ),
+
+    expiry_date: nullableString(
+      row.expiry_date,
+    ),
+
+    notes: nullableString(row.notes),
+
+    source_document_item_id: nullableString(
+      row.source_document_item_id,
+    ),
+  };
+}
+
+export async function getInventoryTransactionDetails(
+  transactionId: string,
+): Promise<InventoryTransactionDetail | null> {
+  const normalizedId = transactionId.trim();
+
+  if (!normalizedId) {
+    return null;
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "get_inventory_transaction_details",
+    {
+      p_transaction_id: normalizedId,
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      `Failed to load inventory transaction details: ${error.message}`,
+    );
+  }
+
+  if (typeof data !== "object" || data === null) {
+    return null;
+  }
+
+  const response =
+    data as InventoryTransactionDetailsRpcResponse;
+
+  const transaction =
+    mapInventoryTransactionDetailHeader(
+      response.transaction,
+    );
+
+  if (!transaction) {
+    return null;
+  }
+
+  const rawItems = Array.isArray(response.items)
+    ? response.items
+    : [];
+
+  return {
+    transaction,
+    items: rawItems.map(
+      mapInventoryTransactionDetailItem,
+    ),
   };
 }

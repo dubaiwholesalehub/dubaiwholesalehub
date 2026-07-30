@@ -545,6 +545,159 @@ export type Database = {
           },
         ]
       }
+      inventory_transfer_items: {
+        Row: {
+          created_at: string
+          dispatched_quantity: number
+          id: string
+          inventory_transfer_id: string
+          line_notes: string | null
+          line_number: number
+          product_id: string
+          received_quantity: number
+          requested_quantity: number
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dispatched_quantity?: number
+          id?: string
+          inventory_transfer_id: string
+          line_notes?: string | null
+          line_number: number
+          product_id: string
+          received_quantity?: number
+          requested_quantity?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dispatched_quantity?: number
+          id?: string
+          inventory_transfer_id?: string
+          line_notes?: string | null
+          line_number?: number
+          product_id?: string
+          received_quantity?: number
+          requested_quantity?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transfer_items_inventory_transfer_id_fkey"
+            columns: ["inventory_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transfers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfer_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transfers: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string | null
+          destination_warehouse_id: string
+          dispatched_at: string | null
+          dispatched_by: string | null
+          expected_arrival_date: string | null
+          id: string
+          internal_notes: string | null
+          reason: string | null
+          received_at: string | null
+          received_by: string | null
+          reference_number: string | null
+          source_warehouse_id: string
+          status: string
+          transfer_date: string
+          transfer_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          destination_warehouse_id: string
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          expected_arrival_date?: string | null
+          id?: string
+          internal_notes?: string | null
+          reason?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reference_number?: string | null
+          source_warehouse_id: string
+          status?: string
+          transfer_date?: string
+          transfer_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          destination_warehouse_id?: string
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          expected_arrival_date?: string | null
+          id?: string
+          internal_notes?: string | null
+          reason?: string | null
+          received_at?: string | null
+          received_by?: string | null
+          reference_number?: string | null
+          source_warehouse_id?: string
+          status?: string
+          transfer_date?: string
+          transfer_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transfers_destination_warehouse_id_fkey"
+            columns: ["destination_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transfers_source_warehouse_id_fkey"
+            columns: ["source_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_documents: {
         Row: {
           created_at: string | null
@@ -2144,9 +2297,14 @@ export type Database = {
         }
         Returns: string
       }
+      generate_inventory_transfer_number: { Args: never; Returns: string }
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
+      get_inventory_transaction_details: {
+        Args: { p_transaction_id: string }
+        Returns: Json
+      }
       get_inventory_transaction_page: {
         Args: {
           p_from_date?: string

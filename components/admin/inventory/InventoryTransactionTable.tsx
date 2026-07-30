@@ -1,3 +1,5 @@
+"use client";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -30,14 +32,13 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 function formatDate(value: string): string {
   const date = new Date(`${value}T00:00:00`);
 
-  return Number.isNaN(date.getTime())
-    ? value
-    : dateFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? value : dateFormatter.format(date);
 }
 
 export function InventoryTransactionTable({
   items,
 }: InventoryTransactionTableProps) {
+  const router = useRouter();
   if (items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
@@ -77,11 +78,24 @@ export function InventoryTransactionTable({
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="transition hover:bg-slate-50"
+                tabIndex={0}
+                role="button"
+                onClick={() =>
+                  router.push(`/admin/inventory/transactions/${item.id}`)
+                }
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+
+                    router.push(`/admin/inventory/transactions/${item.id}`);
+                  }
+                }}
+                className="cursor-pointer transition-colors hover:bg-muted/50 focus:bg-muted/50 focus:outline-none"
               >
                 <TableCell>
                   <Link
                     href={`/admin/inventory/transactions/${item.id}`}
+                    onClick={(event) => event.stopPropagation()}
                     className="font-semibold text-slate-950 transition hover:text-amber-700"
                   >
                     {item.transaction_number}
@@ -94,14 +108,10 @@ export function InventoryTransactionTable({
                   )}
                 </TableCell>
 
-                <TableCell>
-                  {formatDate(item.transaction_date)}
-                </TableCell>
+                <TableCell>{formatDate(item.transaction_date)}</TableCell>
 
                 <TableCell>
-                  <InventoryTransactionTypeBadge
-                    type={item.transaction_type}
-                  />
+                  <InventoryTransactionTypeBadge type={item.transaction_type} />
                 </TableCell>
 
                 <TableCell>
@@ -126,9 +136,7 @@ export function InventoryTransactionTable({
 
                 <TableCell align="right">
                   <span className="font-medium text-slate-900">
-                    {numberFormatter.format(
-                      item.total_quantity,
-                    )}
+                    {numberFormatter.format(item.total_quantity)}
                   </span>
                 </TableCell>
 
@@ -139,14 +147,14 @@ export function InventoryTransactionTable({
                 </TableCell>
 
                 <TableCell>
-                  <InventoryTransactionStatusBadge
-                    status={item.status}
-                  />
+                  <InventoryTransactionStatusBadge status={item.status} />
                 </TableCell>
 
                 <TableCell align="right">
                   <Link
                     href={`/admin/inventory/transactions/${item.id}`}
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
                     aria-label={`View ${item.transaction_number}`}
                     className="inline-flex size-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-amber-50 hover:text-amber-700"
                   >
@@ -167,10 +175,7 @@ interface TableHeadingProps {
   align?: "left" | "right";
 }
 
-function TableHeading({
-  children,
-  align = "left",
-}: TableHeadingProps) {
+function TableHeading({ children, align = "left" }: TableHeadingProps) {
   return (
     <th
       className={[
@@ -188,10 +193,7 @@ interface TableCellProps {
   align?: "left" | "right";
 }
 
-function TableCell({
-  children,
-  align = "left",
-}: TableCellProps) {
+function TableCell({ children, align = "left" }: TableCellProps) {
   return (
     <td
       className={[

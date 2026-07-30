@@ -243,3 +243,70 @@ export interface InventoryTransactionFilters {
   page?: number;
   pageSize?: number;
 }
+
+export interface InventoryTransactionWarehouse {
+  id: string;
+  name: string;
+}
+
+export interface InventoryTransactionDetailHeader {
+  id: string;
+  transaction_number: string;
+  transaction_type: InventoryTransactionType;
+  status: InventoryTransactionStatus;
+  transaction_date: string;
+
+  warehouse: InventoryTransactionWarehouse;
+  related_warehouse: InventoryTransactionWarehouse | null;
+
+  reference_type: string | null;
+  reference_id: string | null;
+  reference_number: string | null;
+
+  description: string | null;
+  internal_notes: string | null;
+
+  line_count: number;
+  total_quantity: number;
+  total_value: number;
+
+  created_at: string;
+  updated_at: string;
+
+  posted_at: string | null;
+  reversed_at: string | null;
+  cancelled_at: string | null;
+
+  created_by: string | null;
+  posted_by: string | null;
+  reversed_by: string | null;
+  cancelled_by: string | null;
+}
+
+export interface InventoryTransactionDetailItem {
+  id: string;
+  line_number: number;
+
+  product_id: string;
+  sku: string | null;
+  product_name: string;
+
+  quantity: number;
+  unit_cost: number;
+  total_cost: number;
+
+  batch_number: string | null;
+  lot_number: string | null;
+  serial_number: string | null;
+
+  manufacturing_date: string | null;
+  expiry_date: string | null;
+
+  notes: string | null;
+  source_document_item_id: string | null;
+}
+
+export interface InventoryTransactionDetail {
+  transaction: InventoryTransactionDetailHeader;
+  items: InventoryTransactionDetailItem[];
+}
