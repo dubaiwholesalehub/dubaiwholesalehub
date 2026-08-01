@@ -19,10 +19,10 @@ export type InventoryTransferStatus =
  * ========================================================= */
 
 type InventoryTransferRow =
-  Database["public"]["Tables"]["inventory_transfers"]["Row"];
+    Database["public"]["Tables"]["inventory_transfers"]["Row"];
 
 type WarehouseRow =
-  Database["public"]["Tables"]["warehouses"]["Row"];
+    Database["public"]["Tables"]["warehouses"]["Row"];
 
 export interface InventoryTransferHeader {
     id: string;
@@ -196,13 +196,10 @@ export interface UpdateInventoryTransferInput
 
 export interface CreateInventoryTransferItemInput {
     inventory_transfer_id: string;
-
     product_id: string;
-
     line_number: number;
-
     requested_quantity: number;
-
+    unit_cost?: number;
     line_notes?: string | null;
 }
 
@@ -223,22 +220,22 @@ export interface UpdateInventoryTransferItemInput {
 }
 
 export interface GetInventoryTransfersInput {
-  search?: string;
-  status?: InventoryTransferStatus | "all";
-  sourceWarehouseId?: string;
-  destinationWarehouseId?: string;
-  fromDate?: string;
-  toDate?: string;
-  page?: number;
-  pageSize?: number;
+    search?: string;
+    status?: InventoryTransferStatus | "all";
+    sourceWarehouseId?: string;
+    destinationWarehouseId?: string;
+    fromDate?: string;
+    toDate?: string;
+    page?: number;
+    pageSize?: number;
 }
 
 export interface GetInventoryTransfersResult {
-  data: InventoryTransferListRow[];
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
+    data: InventoryTransferListRow[];
+    count: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
 }
 
 /* =========================================================
@@ -292,6 +289,16 @@ interface InventoryTransferDetailsDatabaseRow
  * Helpers
  * ========================================================= */
 
+function validateUnitCost(unitCost: number): void {
+    if (
+        !Number.isFinite(unitCost) ||
+        unitCost < 0
+    ) {
+        throw new Error(
+            "Unit cost must be zero or greater.",
+        );
+    }
+}
 function getSingleRelation<T>(
     relation: T | T[] | null,
 ): T | null {
@@ -370,38 +377,38 @@ function validateLineNumber(
 }
 
 function normalizePage(
-  value: number | undefined,
+    value: number | undefined,
 ): number {
-  if (!value || !Number.isFinite(value)) {
-    return 1;
-  }
+    if (!value || !Number.isFinite(value)) {
+        return 1;
+    }
 
-  return Math.max(Math.floor(value), 1);
+    return Math.max(Math.floor(value), 1);
 }
 
 function normalizePageSize(
-  value: number | undefined,
+    value: number | undefined,
 ): number {
-  if (!value || !Number.isFinite(value)) {
-    return 25;
-  }
+    if (!value || !Number.isFinite(value)) {
+        return 25;
+    }
 
-  return Math.min(
-    Math.max(Math.floor(value), 1),
-    100,
-  );
+    return Math.min(
+        Math.max(Math.floor(value), 1),
+        100,
+    );
 }
 
 function sanitizeSearchTerm(
-  value: string,
+    value: string,
 ): string {
-  return value
-    .trim()
-    .replaceAll(",", " ")
-    .replaceAll("(", " ")
-    .replaceAll(")", " ")
-    .replaceAll('"', " ")
-    .replace(/\s+/g, " ");
+    return value
+        .trim()
+        .replaceAll(",", " ")
+        .replaceAll("(", " ")
+        .replaceAll(")", " ")
+        .replaceAll('"', " ")
+        .replace(/\s+/g, " ");
 }
 
 /* =========================================================
@@ -514,34 +521,34 @@ export async function getInventoryTransfers():
 }
 
 export async function getInventoryTransferPage({
-  search,
-  status,
-  sourceWarehouseId,
-  destinationWarehouseId,
-  fromDate,
-  toDate,
-  page,
-  pageSize,
+    search,
+    status,
+    sourceWarehouseId,
+    destinationWarehouseId,
+    fromDate,
+    toDate,
+    page,
+    pageSize,
 }: GetInventoryTransfersInput = {}): Promise<GetInventoryTransfersResult> {
-  const supabase = await createClient();
+    const supabase = await createClient();
 
-  const currentPage = normalizePage(page);
-  const currentPageSize =
-    normalizePageSize(pageSize);
+    const currentPage = normalizePage(page);
+    const currentPageSize =
+        normalizePageSize(pageSize);
 
-  const rangeStart =
-    (currentPage - 1) * currentPageSize;
+    const rangeStart =
+        (currentPage - 1) * currentPageSize;
 
-  const rangeEnd =
-    rangeStart + currentPageSize - 1;
+    const rangeEnd =
+        rangeStart + currentPageSize - 1;
 
-  const searchTerm =
-    sanitizeSearchTerm(search ?? "");
+    const searchTerm =
+        sanitizeSearchTerm(search ?? "");
 
-  let query = supabase
-    .from("inventory_transfers")
-    .select(
-      `
+    let query = supabase
+        .from("inventory_transfers")
+        .select(
+            `
         *,
         source_warehouse:warehouses!inventory_transfers_source_warehouse_id_fkey (
           id,
@@ -555,134 +562,134 @@ export async function getInventoryTransferPage({
           count
         )
       `,
-      {
-        count: "exact",
-      },
-    );
+            {
+                count: "exact",
+            },
+        );
 
-  if (status && status !== "all") {
-    query = query.eq("status", status);
-  }
+    if (status && status !== "all") {
+        query = query.eq("status", status);
+    }
 
-  if (sourceWarehouseId) {
-    query = query.eq(
-      "source_warehouse_id",
-      sourceWarehouseId,
-    );
-  }
+    if (sourceWarehouseId) {
+        query = query.eq(
+            "source_warehouse_id",
+            sourceWarehouseId,
+        );
+    }
 
-  if (destinationWarehouseId) {
-    query = query.eq(
-      "destination_warehouse_id",
-      destinationWarehouseId,
-    );
-  }
+    if (destinationWarehouseId) {
+        query = query.eq(
+            "destination_warehouse_id",
+            destinationWarehouseId,
+        );
+    }
 
-  if (fromDate) {
-    query = query.gte(
-      "transfer_date",
-      fromDate,
-    );
-  }
+    if (fromDate) {
+        query = query.gte(
+            "transfer_date",
+            fromDate,
+        );
+    }
 
-  if (toDate) {
-    query = query.lte(
-      "transfer_date",
-      toDate,
-    );
-  }
+    if (toDate) {
+        query = query.lte(
+            "transfer_date",
+            toDate,
+        );
+    }
 
-  if (searchTerm) {
-    query = query.or(
-      [
-        `transfer_number.ilike.%${searchTerm}%`,
-        `reference_number.ilike.%${searchTerm}%`,
-      ].join(","),
-    );
-  }
+    if (searchTerm) {
+        query = query.or(
+            [
+                `transfer_number.ilike.%${searchTerm}%`,
+                `reference_number.ilike.%${searchTerm}%`,
+            ].join(","),
+        );
+    }
 
-  const {
-    data,
-    error,
-    count,
-  } = await query
-    .order("transfer_date", {
-      ascending: false,
-    })
-    .order("created_at", {
-      ascending: false,
-    })
-    .range(rangeStart, rangeEnd);
+    const {
+        data,
+        error,
+        count,
+    } = await query
+        .order("transfer_date", {
+            ascending: false,
+        })
+        .order("created_at", {
+            ascending: false,
+        })
+        .range(rangeStart, rangeEnd);
 
-  if (error) {
-    throw new Error(
-      `Unable to load inventory transfers: ${error.message}`,
-    );
-  }
+    if (error) {
+        throw new Error(
+            `Unable to load inventory transfers: ${error.message}`,
+        );
+    }
 
-  const rows =
-    (data ?? []) as unknown as
-      InventoryTransferListDatabaseRow[];
+    const rows =
+        (data ?? []) as unknown as
+        InventoryTransferListDatabaseRow[];
 
-  const transfers: InventoryTransferListRow[] =
-    rows.map((row) => ({
-      id: row.id,
-      transfer_number: row.transfer_number,
-      source_warehouse_id:
-        row.source_warehouse_id,
-      destination_warehouse_id:
-        row.destination_warehouse_id,
-      transfer_date: row.transfer_date,
-      expected_arrival_date:
-        row.expected_arrival_date,
-      status: row.status,
-      reference_number: row.reference_number,
-      reason: row.reason,
-      internal_notes: row.internal_notes,
-      approved_at: row.approved_at,
-      dispatched_at: row.dispatched_at,
-      received_at: row.received_at,
-      completed_at: row.completed_at,
-      cancelled_at: row.cancelled_at,
-      created_by: row.created_by,
-      approved_by: row.approved_by,
-      dispatched_by: row.dispatched_by,
-      received_by: row.received_by,
-      completed_by: row.completed_by,
-      cancelled_by: row.cancelled_by,
-      cancellation_reason:
-        row.cancellation_reason,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+    const transfers: InventoryTransferListRow[] =
+        rows.map((row) => ({
+            id: row.id,
+            transfer_number: row.transfer_number,
+            source_warehouse_id:
+                row.source_warehouse_id,
+            destination_warehouse_id:
+                row.destination_warehouse_id,
+            transfer_date: row.transfer_date,
+            expected_arrival_date:
+                row.expected_arrival_date,
+            status: row.status,
+            reference_number: row.reference_number,
+            reason: row.reason,
+            internal_notes: row.internal_notes,
+            approved_at: row.approved_at,
+            dispatched_at: row.dispatched_at,
+            received_at: row.received_at,
+            completed_at: row.completed_at,
+            cancelled_at: row.cancelled_at,
+            created_by: row.created_by,
+            approved_by: row.approved_by,
+            dispatched_by: row.dispatched_by,
+            received_by: row.received_by,
+            completed_by: row.completed_by,
+            cancelled_by: row.cancelled_by,
+            cancellation_reason:
+                row.cancellation_reason,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
 
-      source_warehouse: getSingleRelation(
-        row.source_warehouse,
-      ),
+            source_warehouse: getSingleRelation(
+                row.source_warehouse,
+            ),
 
-      destination_warehouse:
-        getSingleRelation(
-          row.destination_warehouse,
+            destination_warehouse:
+                getSingleRelation(
+                    row.destination_warehouse,
+                ),
+
+            item_count:
+                row.inventory_transfer_items?.[0]
+                    ?.count ?? 0,
+        }));
+
+    const totalCount = count ?? 0;
+
+    return {
+        data: transfers,
+        count: totalCount,
+        page: currentPage,
+        pageSize: currentPageSize,
+        totalPages: Math.max(
+            Math.ceil(
+                totalCount / currentPageSize,
+            ),
+            1,
         ),
-
-      item_count:
-        row.inventory_transfer_items?.[0]
-          ?.count ?? 0,
-    }));
-
-  const totalCount = count ?? 0;
-
-  return {
-    data: transfers,
-    count: totalCount,
-    page: currentPage,
-    pageSize: currentPageSize,
-    totalPages: Math.max(
-      Math.ceil(
-        totalCount / currentPageSize,
-      ),
-      1,
-    ),
-  };
+    };
 }
 
 /* =========================================================
@@ -1082,6 +1089,9 @@ export async function createInventoryTransferItem(
     );
 
     const supabase = await createClient();
+    const unitCost = input.unit_cost ?? 0;
+
+    validateUnitCost(unitCost);
 
     const { data, error } = await supabase
         .from("inventory_transfer_items")
@@ -1100,7 +1110,7 @@ export async function createInventoryTransferItem(
 
             received_quantity: 0,
 
-            unit_cost: 0,
+            unit_cost: unitCost,
 
             line_notes:
                 input.line_notes?.trim() || null,
@@ -1163,6 +1173,9 @@ export async function updateInventoryTransferItem(
         );
     }
 
+    if (input.unit_cost !== undefined) {
+        validateUnitCost(input.unit_cost);
+    }
     const supabase = await createClient();
 
     type InventoryTransferItemUpdate =
@@ -1305,7 +1318,7 @@ export function calculateInventoryTransferSummary(
                 Number(item.received_quantity);
 
             summary.total_value +=
-                Number(item.dispatched_quantity) *
+                Number(item.requested_quantity) *
                 Number(item.unit_cost);
 
             return summary;

@@ -250,3 +250,37 @@ export async function getRfqItemOptions() {
     units: unitsResult.data ?? [],
   };
 }
+
+export interface ProductLookupOption {
+  id: string;
+  name: string;
+  sku: string | null;
+}
+
+export async function getProductLookupOptions(): Promise<
+  ProductLookupOption[]
+> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      id,
+      name,
+      sku
+    `)
+    .in("status", ["draft", "published"])
+    .order("name");
+
+  if (error) {
+    throw new Error(
+      `Unable to load product lookup options: ${error.message}`,
+    );
+  }
+
+  return (data ?? []).map((product) => ({
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+  }));
+}
