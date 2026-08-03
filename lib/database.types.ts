@@ -176,6 +176,202 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_addresses: {
+        Row: {
+          address_line_1: string
+          address_line_2: string | null
+          address_name: string | null
+          address_type: string
+          city: string | null
+          contact_name: string | null
+          country: string | null
+          created_at: string
+          customer_id: string
+          delivery_instructions: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          phone: string | null
+          postal_code: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line_1: string
+          address_line_2?: string | null
+          address_name?: string | null
+          address_type?: string
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          customer_id: string
+          delivery_instructions?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line_1?: string
+          address_line_2?: string | null
+          address_name?: string | null
+          address_type?: string
+          city?: string | null
+          contact_name?: string | null
+          country?: string | null
+          created_at?: string
+          customer_id?: string
+          delivery_instructions?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          phone?: string | null
+          postal_code?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_contacts: {
+        Row: {
+          contact_name: string
+          created_at: string
+          customer_id: string
+          email: string | null
+          id: string
+          is_active: boolean
+          is_primary: boolean
+          job_title: string | null
+          notes: string | null
+          phone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          customer_id: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          job_title?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          customer_id?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          is_primary?: boolean
+          job_title?: string | null
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          created_by: string | null
+          credit_limit: number
+          currency_code: string
+          customer_number: string
+          customer_type: string
+          display_name: string
+          email: string | null
+          external_customer_id: string | null
+          first_name: string | null
+          id: string
+          internal_notes: string | null
+          last_name: string | null
+          payment_terms_days: number
+          phone: string | null
+          source: string
+          status: string
+          tax_registration_number: string | null
+          updated_at: string
+          updated_by: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_limit?: number
+          currency_code?: string
+          customer_number: string
+          customer_type?: string
+          display_name: string
+          email?: string | null
+          external_customer_id?: string | null
+          first_name?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_name?: string | null
+          payment_terms_days?: number
+          phone?: string | null
+          source?: string
+          status?: string
+          tax_registration_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_limit?: number
+          currency_code?: string
+          customer_number?: string
+          customer_type?: string
+          display_name?: string
+          email?: string | null
+          external_customer_id?: string | null
+          first_name?: string | null
+          id?: string
+          internal_notes?: string | null
+          last_name?: string | null
+          payment_terms_days?: number
+          phone?: string | null
+          source?: string
+          status?: string
+          tax_registration_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       goods_receipt_items: {
         Row: {
           accepted_quantity: number
@@ -2080,6 +2276,7 @@ export type Database = {
           is_active: boolean
           is_default: boolean
           name: string
+          notes: string | null
           phone: string | null
           postal_code: string | null
           state: string | null
@@ -2098,6 +2295,7 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name: string
+          notes?: string | null
           phone?: string | null
           postal_code?: string | null
           state?: string | null
@@ -2116,6 +2314,7 @@ export type Database = {
           is_active?: boolean
           is_default?: boolean
           name?: string
+          notes?: string | null
           phone?: string | null
           postal_code?: string | null
           state?: string | null
@@ -2297,6 +2496,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_customer_number: { Args: never; Returns: string }
       generate_inventory_transfer_number: { Args: never; Returns: string }
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }

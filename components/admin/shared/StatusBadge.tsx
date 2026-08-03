@@ -12,13 +12,13 @@ import { cn } from "@/lib/utils";
 export type StatusBadgeVariant =
   | "active"
   | "inactive"
+  | "blocked"
   | "draft"
   | "published"
   | "pending"
   | "completed"
   | "cancelled"
   | "processing";
-
 interface StatusBadgeProps {
   status: StatusBadgeVariant;
   className?: string;
@@ -37,64 +37,59 @@ const STATUS_CONFIG: Record<
   active: {
     label: "Active",
     icon: CheckCircle2,
-    className:
-      "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
   },
 
   inactive: {
     label: "Inactive",
     icon: XCircle,
-    className:
-      "border-red-200 bg-red-50 text-red-700",
+    className: "border-red-200 bg-red-50 text-red-700",
+  },
+
+  blocked: {
+    label: "Blocked",
+    icon: XCircle,
+    className: "border-orange-200 bg-orange-50 text-orange-700",
   },
 
   draft: {
     label: "Draft",
     icon: Circle,
-    className:
-      "border-slate-200 bg-slate-50 text-slate-700",
+    className: "border-slate-200 bg-slate-50 text-slate-700",
   },
 
   pending: {
     label: "Pending",
     icon: Clock3,
-    className:
-      "border-amber-200 bg-amber-50 text-amber-700",
+    className: "border-amber-200 bg-amber-50 text-amber-700",
   },
 
   processing: {
     label: "Processing",
     icon: Package,
-    className:
-      "border-blue-200 bg-blue-50 text-blue-700",
+    className: "border-blue-200 bg-blue-50 text-blue-700",
   },
 
   completed: {
     label: "Completed",
     icon: CheckCircle2,
-    className:
-      "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
   },
 
   cancelled: {
     label: "Cancelled",
     icon: XCircle,
-    className:
-      "border-red-200 bg-red-50 text-red-700",
+    className: "border-red-200 bg-red-50 text-red-700",
   },
 
   published: {
     label: "Published",
     icon: Truck,
-    className:
-      "border-indigo-200 bg-indigo-50 text-indigo-700",
+    className: "border-indigo-200 bg-indigo-50 text-indigo-700",
   },
 };
 
-export default function StatusBadge({
-  status,
-  className,
-}: StatusBadgeProps) {
+export default function StatusBadge({ status, className }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status];
 
   const Icon = config.icon;
