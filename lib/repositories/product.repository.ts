@@ -4,8 +4,8 @@ export async function getAdminProducts() {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-  .from("products")
-  .select(`
+    .from("products")
+    .select(`
     id,
     name,
     slug,
@@ -14,6 +14,10 @@ export async function getAdminProducts() {
     model_number,
     short_description,
     description,
+    fulfilment_method,
+    procurement_lead_time_days,
+    allow_backorder,
+    procurement_notes,
     category_id,
     subcategory_id,
     brand_id,
@@ -66,7 +70,7 @@ export async function getAdminProducts() {
       alt_text
     )
   `)
-  .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false });
 
   if (error) {
     throw new Error(`Unable to load products: ${error.message}`);
@@ -152,6 +156,10 @@ export async function getFeaturedProducts(limit = 4) {
       lead_time,
       packaging,
       short_description,
+      fulfilment_method,
+      procurement_lead_time_days,
+      allow_backorder,
+      procurement_notes,
       category:categories (
         id,
         name,
@@ -205,6 +213,10 @@ export async function getRfqItemOptions() {
         name,
         sku,
         short_description,
+        fulfilment_method,
+        procurement_lead_time_days,
+        allow_backorder,
+        procurement_notes,
         unit_id,
         moq,
         packaging,

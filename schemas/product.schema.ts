@@ -10,6 +10,19 @@ const optionalNumber = z
   .transform((value) => (value === "" ? undefined : value))
   .optional();
 
+export const productFulfilmentMethodSchema =
+  z.enum([
+    "stock",
+    "local_purchase",
+    "import_on_demand",
+    "dropship",
+    "service",
+  ]);
+
+export type ProductFulfilmentMethod =
+  z.infer<
+    typeof productFulfilmentMethodSchema
+  >;
 export const productSchema = z.object({
   name: z
     .string()
@@ -113,6 +126,40 @@ export const productSchema = z.object({
     .string()
     .trim()
     .max(170, "Meta description should not exceed 170 characters.")
+    .optional(),
+
+  fulfilmentMethod:
+    productFulfilmentMethodSchema.default(
+      "stock",
+    ),
+
+  procurementLeadTimeDays: z.coerce
+    .number({
+      message:
+        "Procurement lead time must be a valid number.",
+    })
+    .int(
+      "Procurement lead time must be a whole number.",
+    )
+    .min(
+      0,
+      "Procurement lead time cannot be negative.",
+    )
+    .max(
+      3650,
+      "Procurement lead time cannot exceed 3650 days.",
+    )
+    .default(0),
+
+  allowBackorder: z.boolean().default(false),
+
+  procurementNotes: z
+    .string()
+    .trim()
+    .max(
+      2000,
+      "Procurement notes must be 2000 characters or fewer.",
+    )
     .optional(),
 });
 

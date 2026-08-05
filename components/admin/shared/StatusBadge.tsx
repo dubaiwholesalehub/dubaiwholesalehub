@@ -16,9 +16,14 @@ export type StatusBadgeVariant =
   | "draft"
   | "published"
   | "pending"
+  | "processing"
   | "completed"
   | "cancelled"
-  | "processing";
+  | "sent"
+  | "accepted"
+  | "rejected"
+  | "expired"
+  | "converted";
 interface StatusBadgeProps {
   status: StatusBadgeVariant;
   className?: string;
@@ -86,6 +91,36 @@ const STATUS_CONFIG: Record<
     label: "Published",
     icon: Truck,
     className: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  },
+
+  sent: {
+    label: "Sent",
+    icon: Clock3,
+    className: "border-blue-200 bg-blue-50 text-blue-700",
+  },
+
+  accepted: {
+    label: "Accepted",
+    icon: CheckCircle2,
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+
+  rejected: {
+    label: "Rejected",
+    icon: XCircle,
+    className: "border-red-200 bg-red-50 text-red-700",
+  },
+
+  expired: {
+    label: "Expired",
+    icon: Clock3,
+    className: "border-orange-200 bg-orange-50 text-orange-700",
+  },
+
+  converted: {
+    label: "Converted",
+    icon: CheckCircle2,
+    className: "border-violet-200 bg-violet-50 text-violet-700",
   },
 };
 

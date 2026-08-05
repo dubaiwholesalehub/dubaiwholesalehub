@@ -61,6 +61,26 @@ function parseProductForm(formData: FormData) {
     featured: formData.get("featured") === "on",
     isNew: formData.get("isNew") === "on",
 
+    fulfilmentMethod: String(
+      formData.get("fulfilmentMethod") ??
+      "stock",
+    ),
+
+    procurementLeadTimeDays:
+      formData.get(
+        "procurementLeadTimeDays",
+      ) ?? 0,
+
+    allowBackorder:
+      formData.get("allowBackorder") ===
+      "on",
+
+    procurementNotes:
+      optionalValue(
+        formData,
+        "procurementNotes",
+      ),
+
     metaTitle: optionalValue(formData, "metaTitle"),
     metaDescription: optionalValue(
       formData,
@@ -100,6 +120,22 @@ function buildProductPayload(
     featured: data.featured,
     is_new: data.isNew,
 
+    fulfilment_method:
+      data.fulfilmentMethod,
+
+    procurement_lead_time_days:
+      data.fulfilmentMethod === "service"
+        ? 0
+        : data.procurementLeadTimeDays,
+
+    allow_backorder:
+      data.fulfilmentMethod === "service"
+        ? false
+        : data.allowBackorder,
+
+    procurement_notes:
+      data.procurementNotes || null,
+
     meta_title: data.metaTitle || null,
     meta_description: data.metaDescription || null,
   };
@@ -112,7 +148,7 @@ export async function createProduct(formData: FormData) {
     redirectWithMessage(
       "error",
       parsed.error.issues[0]?.message ??
-        "Please check the product information.",
+      "Please check the product information.",
     );
   }
 
@@ -162,7 +198,7 @@ export async function updateProduct(formData: FormData) {
     redirectWithMessage(
       "error",
       parsed.error.issues[0]?.message ??
-        "Please check the product information.",
+      "Please check the product information.",
     );
   }
 

@@ -1056,6 +1056,7 @@ export type Database = {
       }
       products: {
         Row: {
+          allow_backorder: boolean
           barcode: string | null
           brand_id: string | null
           carton_quantity: number | null
@@ -1064,6 +1065,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           featured: boolean | null
+          fulfilment_method: string
           height: number | null
           hs_code: string | null
           id: string
@@ -1076,6 +1078,8 @@ export type Database = {
           moq: number | null
           name: string
           packaging: string | null
+          procurement_lead_time_days: number
+          procurement_notes: string | null
           published_at: string | null
           short_description: string | null
           sku: string | null
@@ -1089,6 +1093,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          allow_backorder?: boolean
           barcode?: string | null
           brand_id?: string | null
           carton_quantity?: number | null
@@ -1097,6 +1102,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           featured?: boolean | null
+          fulfilment_method?: string
           height?: number | null
           hs_code?: string | null
           id?: string
@@ -1109,6 +1115,8 @@ export type Database = {
           moq?: number | null
           name: string
           packaging?: string | null
+          procurement_lead_time_days?: number
+          procurement_notes?: string | null
           published_at?: string | null
           short_description?: string | null
           sku?: string | null
@@ -1122,6 +1130,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          allow_backorder?: boolean
           barcode?: string | null
           brand_id?: string | null
           carton_quantity?: number | null
@@ -1130,6 +1139,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           featured?: boolean | null
+          fulfilment_method?: string
           height?: number | null
           hs_code?: string | null
           id?: string
@@ -1142,6 +1152,8 @@ export type Database = {
           moq?: number | null
           name?: string
           packaging?: string | null
+          procurement_lead_time_days?: number
+          procurement_notes?: string | null
           published_at?: string | null
           short_description?: string | null
           sku?: string | null
@@ -1830,6 +1842,569 @@ export type Database = {
           },
         ]
       }
+      sales_order_items: {
+        Row: {
+          allow_backorder: boolean
+          created_at: string
+          description: string | null
+          discount_amount: number
+          discount_percentage: number
+          expected_delivery_date: string | null
+          fulfilment_method: string
+          fulfilment_status: string
+          id: string
+          item_name: string
+          line_notes: string | null
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          procurement_lead_time_days: number
+          procurement_notes: string | null
+          procurement_required: boolean
+          product_id: string | null
+          quantity: number
+          quantity_allocated: number
+          quantity_cancelled: number
+          quantity_fulfilled: number
+          quantity_reserved: number
+          quotation_item_id: string | null
+          requested_delivery_date: string | null
+          sales_order_id: string
+          shortage_quantity: number
+          sku: string | null
+          tax_amount: number
+          tax_percentage: number
+          unit_id: string | null
+          unit_price: number
+          updated_at: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          allow_backorder?: boolean
+          created_at?: string
+          description?: string | null
+          discount_amount?: number
+          discount_percentage?: number
+          expected_delivery_date?: string | null
+          fulfilment_method?: string
+          fulfilment_status?: string
+          id?: string
+          item_name: string
+          line_notes?: string | null
+          line_number: number
+          line_subtotal?: number
+          line_total?: number
+          procurement_lead_time_days?: number
+          procurement_notes?: string | null
+          procurement_required?: boolean
+          product_id?: string | null
+          quantity?: number
+          quantity_allocated?: number
+          quantity_cancelled?: number
+          quantity_fulfilled?: number
+          quantity_reserved?: number
+          quotation_item_id?: string | null
+          requested_delivery_date?: string | null
+          sales_order_id: string
+          shortage_quantity?: number
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          allow_backorder?: boolean
+          created_at?: string
+          description?: string | null
+          discount_amount?: number
+          discount_percentage?: number
+          expected_delivery_date?: string | null
+          fulfilment_method?: string
+          fulfilment_status?: string
+          id?: string
+          item_name?: string
+          line_notes?: string | null
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          procurement_lead_time_days?: number
+          procurement_notes?: string | null
+          procurement_required?: boolean
+          product_id?: string | null
+          quantity?: number
+          quantity_allocated?: number
+          quantity_cancelled?: number
+          quantity_fulfilled?: number
+          quantity_reserved?: number
+          quotation_item_id?: string | null
+          requested_delivery_date?: string | null
+          sales_order_id?: string
+          shortage_quantity?: number
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_quotation_item_id_fkey"
+            columns: ["quotation_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_quotation_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_orders: {
+        Row: {
+          balance_due: number
+          billing_address_id: string | null
+          cancelled_at: string | null
+          closed_at: string | null
+          completed_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          customer_contact_id: string | null
+          customer_id: string
+          customer_notes: string | null
+          customer_reference: string | null
+          delivery_terms: string | null
+          discount_amount: number
+          exchange_rate: number
+          expected_delivery_date: string | null
+          external_reference: string | null
+          fulfilment_status: string
+          grand_total: number
+          id: string
+          internal_notes: string | null
+          order_date: string
+          order_number: string
+          paid_amount: number
+          payment_status: string
+          payment_terms: string | null
+          payment_terms_days: number
+          processing_at: string | null
+          quotation_id: string | null
+          requested_delivery_date: string | null
+          shipping_address_id: string | null
+          shipping_amount: number
+          source: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          balance_due?: number
+          billing_address_id?: string | null
+          cancelled_at?: string | null
+          closed_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_contact_id?: string | null
+          customer_id: string
+          customer_notes?: string | null
+          customer_reference?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          exchange_rate?: number
+          expected_delivery_date?: string | null
+          external_reference?: string | null
+          fulfilment_status?: string
+          grand_total?: number
+          id?: string
+          internal_notes?: string | null
+          order_date?: string
+          order_number: string
+          paid_amount?: number
+          payment_status?: string
+          payment_terms?: string | null
+          payment_terms_days?: number
+          processing_at?: string | null
+          quotation_id?: string | null
+          requested_delivery_date?: string | null
+          shipping_address_id?: string | null
+          shipping_amount?: number
+          source?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          balance_due?: number
+          billing_address_id?: string | null
+          cancelled_at?: string | null
+          closed_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_contact_id?: string | null
+          customer_id?: string
+          customer_notes?: string | null
+          customer_reference?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          exchange_rate?: number
+          expected_delivery_date?: string | null
+          external_reference?: string | null
+          fulfilment_status?: string
+          grand_total?: number
+          id?: string
+          internal_notes?: string | null
+          order_date?: string
+          order_number?: string
+          paid_amount?: number
+          payment_status?: string
+          payment_terms?: string | null
+          payment_terms_days?: number
+          processing_at?: string | null
+          quotation_id?: string | null
+          requested_delivery_date?: string | null
+          shipping_address_id?: string | null
+          shipping_amount?: number
+          source?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_billing_address_id_fkey"
+            columns: ["billing_address_id"]
+            isOneToOne: false
+            referencedRelation: "customer_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_contact_id_fkey"
+            columns: ["customer_contact_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_shipping_address_id_fkey"
+            columns: ["shipping_address_id"]
+            isOneToOne: false
+            referencedRelation: "customer_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_quotation_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_amount: number
+          discount_percentage: number
+          id: string
+          item_name: string
+          line_notes: string | null
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          product_id: string | null
+          quantity: number
+          requested_delivery_date: string | null
+          sales_quotation_id: string
+          sku: string | null
+          tax_amount: number
+          tax_percentage: number
+          unit_id: string | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_amount?: number
+          discount_percentage?: number
+          id?: string
+          item_name: string
+          line_notes?: string | null
+          line_number: number
+          line_subtotal?: number
+          line_total?: number
+          product_id?: string | null
+          quantity?: number
+          requested_delivery_date?: string | null
+          sales_quotation_id: string
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_amount?: number
+          discount_percentage?: number
+          id?: string
+          item_name?: string
+          line_notes?: string | null
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          product_id?: string | null
+          quantity?: number
+          requested_delivery_date?: string | null
+          sales_quotation_id?: string
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quotation_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotation_items_sales_quotation_id_fkey"
+            columns: ["sales_quotation_id"]
+            isOneToOne: false
+            referencedRelation: "sales_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotation_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_quotations: {
+        Row: {
+          accepted_at: string | null
+          billing_address_id: string | null
+          cancelled_at: string | null
+          converted_at: string | null
+          converted_sales_order_id: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          customer_contact_id: string | null
+          customer_id: string
+          customer_notes: string | null
+          customer_reference: string | null
+          delivery_terms: string | null
+          discount_amount: number
+          exchange_rate: number
+          expired_at: string | null
+          external_reference: string | null
+          grand_total: number
+          id: string
+          internal_notes: string | null
+          payment_terms: string | null
+          payment_terms_days: number
+          quotation_date: string
+          quotation_number: string
+          rejected_at: string | null
+          sent_at: string | null
+          shipping_address_id: string | null
+          shipping_amount: number
+          source: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          updated_at: string
+          updated_by: string | null
+          valid_until: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          billing_address_id?: string | null
+          cancelled_at?: string | null
+          converted_at?: string | null
+          converted_sales_order_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_contact_id?: string | null
+          customer_id: string
+          customer_notes?: string | null
+          customer_reference?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          exchange_rate?: number
+          expired_at?: string | null
+          external_reference?: string | null
+          grand_total?: number
+          id?: string
+          internal_notes?: string | null
+          payment_terms?: string | null
+          payment_terms_days?: number
+          quotation_date?: string
+          quotation_number: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          shipping_address_id?: string | null
+          shipping_amount?: number
+          source?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          billing_address_id?: string | null
+          cancelled_at?: string | null
+          converted_at?: string | null
+          converted_sales_order_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_contact_id?: string | null
+          customer_id?: string
+          customer_notes?: string | null
+          customer_reference?: string | null
+          delivery_terms?: string | null
+          discount_amount?: number
+          exchange_rate?: number
+          expired_at?: string | null
+          external_reference?: string | null
+          grand_total?: number
+          id?: string
+          internal_notes?: string | null
+          payment_terms?: string | null
+          payment_terms_days?: number
+          quotation_date?: string
+          quotation_number?: string
+          rejected_at?: string | null
+          sent_at?: string | null
+          shipping_address_id?: string | null
+          shipping_amount?: number
+          source?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+          valid_until?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_quotations_billing_address_id_fkey"
+            columns: ["billing_address_id"]
+            isOneToOne: false
+            referencedRelation: "customer_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_customer_contact_id_fkey"
+            columns: ["customer_contact_id"]
+            isOneToOne: false
+            referencedRelation: "customer_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_shipping_address_id_fkey"
+            columns: ["shipping_address_id"]
+            isOneToOne: false
+            referencedRelation: "customer_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -2370,6 +2945,10 @@ export type Database = {
       can_approve_rfqs: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }
+      cancel_sales_order_atomic: {
+        Args: { p_sales_order_id: string }
+        Returns: Json
+      }
       close_rfq: {
         Args: { target_rfq_id: string }
         Returns: {
@@ -2409,6 +2988,10 @@ export type Database = {
       complete_goods_receipt: {
         Args: { p_goods_receipt_id: string }
         Returns: string
+      }
+      confirm_sales_order_atomic: {
+        Args: { p_allow_negative_stock?: boolean; p_sales_order_id: string }
+        Returns: Json
       }
       create_draft_goods_receipt: {
         Args: { target_purchase_order_id: string; target_warehouse_id: string }
@@ -2500,6 +3083,8 @@ export type Database = {
       generate_inventory_transfer_number: { Args: never; Returns: string }
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
+      generate_sales_order_number: { Args: never; Returns: string }
+      generate_sales_quotation_number: { Args: never; Returns: string }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
       get_inventory_transaction_details: {
         Args: { p_transaction_id: string }

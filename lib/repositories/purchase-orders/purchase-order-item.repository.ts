@@ -30,6 +30,28 @@ function requireId(
   return id;
 }
 
+interface PurchaseOrderItemQueryRow {
+  id: string;
+  product_id: string | null;
+
+  ordered_quantity: number | null;
+  received_quantity: number | null;
+
+  unit_price: number | null;
+  discount_amount: number | null;
+  tax_amount: number | null;
+  line_total: number | null;
+
+  products: {
+    sku: string | null;
+    name: string;
+  } | null;
+
+  units: {
+    name: string;
+  } | null;
+}
+
 export async function getPurchaseOrderItems(
   purchaseOrderId: string,
 ): Promise<PurchaseOrderItem[]> {
@@ -70,7 +92,7 @@ export async function getPurchaseOrderItems(
     );
   }
 
-  return (data ?? []).map((item: any) => ({
+  return ((data ?? []) as PurchaseOrderItemQueryRow[]).map((item) => ({
     id: item.id,
 
     product_id: item.product_id,
@@ -93,7 +115,7 @@ export async function getPurchaseOrderItems(
     remaining_quantity:
       Math.max(
         Number(item.ordered_quantity ?? 0) -
-          Number(item.received_quantity ?? 0),
+        Number(item.received_quantity ?? 0),
         0,
       ),
 
