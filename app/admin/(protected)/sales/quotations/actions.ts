@@ -18,6 +18,9 @@ import {
     type SalesQuotationStatus,
 } from "@/lib/repositories/sales-quotation.repository";
 import {
+    convertQuotationToSalesOrder,
+} from "@/lib/repositories/sales-order.repository";
+import {
     salesQuotationSchema,
     salesQuotationItemSchema,
     type SalesQuotationItemValidatedValues,
@@ -599,4 +602,50 @@ export async function getQuotationProductPricingAction(
         quotation.customer_id,
         quotation.warehouse_id,
     );
+}
+
+/* =========================================================
+ * Convert to Sales Order
+ * ========================================================= */
+
+export async function convertQuotationToSalesOrderAction(
+  quotationId: string,
+): Promise<void> {
+  const id = quotationId.trim();
+
+  if (!id) {
+    throw new Error(
+      "Sales quotation ID is required.",
+    );
+  }
+
+  try {
+    const order =
+      await convertQuotationToSalesOrder(
+        id,
+      );
+
+    revalidatePath(
+      QUOTATION_LIST_URL,
+    );
+
+    revalidatePath(
+      `/admin/sales/quotations/${id}`,
+    );
+
+    revalidatePath(
+      "/admin/sales/orders",
+    );
+
+    redirect(
+      `/admin/sales/orders/${order.id}`,
+    );
+  } catch (error) {
+    throw new Error(
+      getErrorMessage(
+        error,
+        "Unable to convert quotation.",
+      ),
+    );
+  }
 }

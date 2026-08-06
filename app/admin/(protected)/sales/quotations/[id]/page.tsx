@@ -28,7 +28,8 @@ import {
 } from "@/lib/repositories/sales-quotation.repository";
 import { cn } from "@/lib/utils";
 import QuickSalesQuotationItemsForm from "@/components/admin/sales/quotations/items/QuickSalesQuotationItemsForm";
-
+import ConvertToSalesOrderButton from "@/components/admin/sales/quotations/ConvertToSalesOrderButton";
+import SalesQuotationWorkflowActions from "@/components/admin/sales/quotations/SalesQuotationWorkflowActions";
 interface SalesQuotationDetailsPageProps {
   params: Promise<{
     id: string;
@@ -79,6 +80,16 @@ export default async function SalesQuotationDetailsPage({
             Edit Quotation
           </Link>
         ) : null}
+        {quotation.status === "accepted" &&
+        !quotation.converted_sales_order_id ? (
+          <ConvertToSalesOrderButton quotationId={quotation.id} />
+        ) : null}
+
+        <SalesQuotationWorkflowActions
+          quotationId={quotation.id}
+          status={quotation.status}
+          hasItems={quotation.items.length > 0}
+        />
       </PageHeader>
 
       <section className="grid gap-6 xl:grid-cols-2">

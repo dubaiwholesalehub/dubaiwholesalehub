@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+    cancelSalesOrder,
+    confirmSalesOrder,
     createSalesOrder,
     updateSalesOrder,
 } from "@/lib/repositories/sales-order.repository";
@@ -136,7 +138,7 @@ export async function createSalesOrderAction(
     );
 
     redirect(
-        `/admin/sales/orders?created=${salesOrderId}`,
+        `/admin/sales/orders/${salesOrderId}`,
     );
 }
 
@@ -240,6 +242,84 @@ export async function updateSalesOrderAction(
             getErrorMessage(
                 error,
                 "Unable to update the sales order.",
+            ),
+        );
+    }
+
+    revalidatePath(
+        SALES_ORDER_LIST_URL,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${id}`,
+    );
+
+    redirect(
+        `/admin/sales/orders/${id}`,
+    );
+}
+
+/* =========================================================
+ * Confirm Sales Order
+ * ========================================================= */
+
+export async function confirmSalesOrderAction(
+    salesOrderId: string,
+): Promise<void> {
+    const id = salesOrderId.trim();
+
+    if (!id) {
+        throw new Error(
+            "Sales order ID is required.",
+        );
+    }
+
+    try {
+        await confirmSalesOrder(id);
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to confirm the sales order.",
+            ),
+        );
+    }
+
+    revalidatePath(
+        SALES_ORDER_LIST_URL,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${id}`,
+    );
+
+    redirect(
+        `/admin/sales/orders/${id}`,
+    );
+}
+
+/* =========================================================
+ * Cancel Sales Order
+ * ========================================================= */
+
+export async function cancelSalesOrderAction(
+    salesOrderId: string,
+): Promise<void> {
+    const id = salesOrderId.trim();
+
+    if (!id) {
+        throw new Error(
+            "Sales order ID is required.",
+        );
+    }
+
+    try {
+        await cancelSalesOrder(id);
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to cancel the sales order.",
             ),
         );
     }

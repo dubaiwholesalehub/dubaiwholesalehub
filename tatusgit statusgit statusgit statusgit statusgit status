@@ -1,0 +1,84 @@
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m45[m[36m:[m  [1;31mquantity_on_hand[m numeric(18, 4) not null default 0,
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m47[m[36m:[m  [1;31mquantity_reserved[m numeric(18, 4) not null default 0,
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m49[m[36m:[m  [1;31mquantity_available[m numeric(18, 4)
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m51[m[36m:[m      [1;31mquantity_on_hand[m - [1;31mquantity_reserved[m
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m68[m[36m:[m  constraint warehouse_stock_[1;31mquantity_on_hand[m_nonnegative
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m70[m[36m:[m      [1;31mquantity_on_hand[m >= 0
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m73[m[36m:[m  constraint warehouse_stock_[1;31mquantity_reserved[m_nonnegative
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m75[m[36m:[m      [1;31mquantity_reserved[m >= 0
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m80[m[36m:[m      [1;31mquantity_reserved[m <= [1;31mquantity_on_hand[m
+[35msupabase/migrations/037_create_inventory_foundation.sql[m[36m:[m[32m101[m[36m:[m    [1;31mquantity_available[m
+[35msupabase/migrations/038_post_inventory_transaction.sql[m[36m:[m[32m381[m[36m:[m      [1;31mquantity_on_hand[m,
+[35msupabase/migrations/038_post_inventory_transaction.sql[m[36m:[m[32m401[m[36m:[m        [1;31mquantity_on_hand[m,
+[35msupabase/migrations/038_post_inventory_transaction.sql[m[36m:[m[32m402[m[36m:[m        [1;31mquantity_reserved[m,
+[35msupabase/migrations/038_post_inventory_transaction.sql[m[36m:[m[32m451[m[36m:[m        [1;31mquantity_on_hand[m = v_new_quantity,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m11[m[36m:[m      coalesce(sum(ws.[1;31mquantity_on_hand[m), 0) as [1;31mquantity_on_hand[m,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m12[m[36m:[m      coalesce(sum(ws.[1;31mquantity_reserved[m), 0) as [1;31mquantity_reserved[m,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m13[m[36m:[m      coalesce(sum(ws.[1;31mquantity_available[m), 0) as [1;31mquantity_available[m,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m15[m[36m:[m        sum(ws.[1;31mquantity_on_hand[m * ws.average_unit_cost),
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m30[m[36m:[m        where [1;31mquantity_on_hand[m > 0
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m31[m[36m:[m          and [1;31mquantity_on_hand[m <= 10
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m35[m[36m:[m        where [1;31mquantity_on_hand[m <= 0
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m42[m[36m:[m      coalesce(sum([1;31mquantity_on_hand[m), 0) as total_stock_quantity,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m43[m[36m:[m      coalesce(sum([1;31mquantity_available[m), 0) as total_available_quantity,
+[35msupabase/migrations/039_create_inventory_dashboard_summary.sql[m[36m:[m[32m44[m[36m:[m      coalesce(sum([1;31mquantity_reserved[m), 0) as total_reserved_quantity,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m35[m[36m:[m    '[1;31mquantity_on_hand[m',
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m36[m[36m:[m    '[1;31mquantity_available[m',
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m68[m[36m:[m      ws.[1;31mquantity_on_hand[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m69[m[36m:[m      ws.[1;31mquantity_reserved[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m70[m[36m:[m      ws.[1;31mquantity_available[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m73[m[36m:[m      ws.[1;31mquantity_on_hand[m * ws.average_unit_cost as stock_value,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m76[m[36m:[m        when ws.[1;31mquantity_available[m <= 0 then 'out_of_stock'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m77[m[36m:[m        when ws.[1;31mquantity_available[m <= 10 then 'low_stock'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m118[m[36m:[m          and ws.[1;31mquantity_available[m <= 0
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m122[m[36m:[m          and ws.[1;31mquantity_available[m > 0
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m123[m[36m:[m          and ws.[1;31mquantity_available[m <= 10
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m127[m[36m:[m          and ws.[1;31mquantity_available[m > 10
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m154[m[36m:[m      ws.[1;31mquantity_on_hand[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m155[m[36m:[m      ws.[1;31mquantity_reserved[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m156[m[36m:[m      ws.[1;31mquantity_available[m,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m159[m[36m:[m      ws.[1;31mquantity_on_hand[m * ws.average_unit_cost as stock_value,
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m162[m[36m:[m        when ws.[1;31mquantity_available[m <= 0 then 'out_of_stock'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m163[m[36m:[m        when ws.[1;31mquantity_available[m <= 10 then 'low_stock'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m204[m[36m:[m          and ws.[1;31mquantity_available[m <= 0
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m208[m[36m:[m          and ws.[1;31mquantity_available[m > 0
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m209[m[36m:[m          and ws.[1;31mquantity_available[m <= 10
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m213[m[36m:[m          and ws.[1;31mquantity_available[m > 10
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m258[m[36m:[m        when p_sort_by = '[1;31mquantity_on_hand[m'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m260[m[36m:[m        then [1;31mquantity_on_hand[m
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m264[m[36m:[m        when p_sort_by = '[1;31mquantity_on_hand[m'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m266[m[36m:[m        then [1;31mquantity_on_hand[m
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m270[m[36m:[m        when p_sort_by = '[1;31mquantity_available[m'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m272[m[36m:[m        then [1;31mquantity_available[m
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m276[m[36m:[m        when p_sort_by = '[1;31mquantity_available[m'
+[35msupabase/migrations/040_create_warehouse_stock_page.sql[m[36m:[m[32m278[m[36m:[m        then [1;31mquantity_available[m
+[35msupabase/migrations/047_create_sales_orders.sql[m[36m:[m[32m336[m[36m:[m    [1;31mquantity_reserved[m numeric(18, 4)
+[35msupabase/migrations/047_create_sales_orders.sql[m[36m:[m[32m451[m[36m:[m        [1;31mquantity_reserved[m >= 0
+[35msupabase/migrations/047_create_sales_orders.sql[m[36m:[m[32m476[m[36m:[m        [1;31mquantity_reserved[m <= quantity
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m21[m[36m:[m  public.[1;31mconfirm_sales_order_atomic[m(
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m86[m[36m:[m    [1;31mquantity_reserved[m = 0,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m113[m[36m:[m        [1;31mquantity_reserved[m = 0,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m139[m[36m:[m        [1;31mquantity_reserved[m = 0,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m183[m[36m:[m      [1;31mquantity_on_hand[m,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m184[m[36m:[m      [1;31mquantity_reserved[m,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m215[m[36m:[m        v_stock.[1;31mquantity_available[m,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m216[m[36m:[m        v_stock.[1;31mquantity_on_hand[m -
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m217[m[36m:[m          v_stock.[1;31mquantity_reserved[m
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m254[m[36m:[m      [1;31mquantity_reserved[m =
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m255[m[36m:[m        [1;31mquantity_reserved[m +
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m258[m[36m:[m      [1;31mquantity_available[m =
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m259[m[36m:[m        [1;31mquantity_on_hand[m -
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m261[m[36m:[m          [1;31mquantity_reserved[m +
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m274[m[36m:[m      [1;31mquantity_reserved[m =
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m508[m[36m:[m      and v_item.[1;31mquantity_reserved[m > 0
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m522[m[36m:[m          [1;31mquantity_reserved[m =
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m524[m[36m:[m              [1;31mquantity_reserved[m -
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m525[m[36m:[m                v_item.[1;31mquantity_reserved[m,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m529[m[36m:[m          [1;31mquantity_available[m =
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m530[m[36m:[m            [1;31mquantity_on_hand[m -
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m532[m[36m:[m              [1;31mquantity_reserved[m -
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m533[m[36m:[m                v_item.[1;31mquantity_reserved[m,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m543[m[36m:[m          v_item.[1;31mquantity_reserved[m;
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m549[m[36m:[m      [1;31mquantity_reserved[m = 0,
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m604[m[36m:[m  public.[1;31mconfirm_sales_order_atomic[m(
+[35msupabase/migrations/048_sales_order_atomic_confirmation.sql[m[36m:[m[32m619[m[36m:[m  public.[1;31mconfirm_sales_order_atomic[m(

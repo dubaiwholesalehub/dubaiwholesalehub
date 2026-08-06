@@ -23,7 +23,11 @@ export type StatusBadgeVariant =
   | "accepted"
   | "rejected"
   | "expired"
-  | "converted";
+  | "converted"
+  | "confirmed"
+  | "fulfilled"
+  | "partially_fulfilled"
+  | "closed";
 interface StatusBadgeProps {
   status: StatusBadgeVariant;
   className?: string;
@@ -120,6 +124,30 @@ const STATUS_CONFIG: Record<
   converted: {
     label: "Converted",
     icon: CheckCircle2,
+    className: "border-violet-200 bg-violet-50 text-violet-700",
+  },
+
+  confirmed: {
+    label: "Confirmed",
+    icon: CheckCircle2,
+    className: "border-blue-200 bg-blue-50 text-blue-700",
+  },
+
+  fulfilled: {
+    label: "Fulfilled",
+    icon: CheckCircle2,
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+
+  closed: {
+    label: "Closed",
+    icon: CheckCircle2,
+    className: "border-slate-300 bg-slate-100 text-slate-700",
+  },
+
+  partially_fulfilled: {
+    label: "Partially Fulfilled",
+    icon: Package,
     className: "border-violet-200 bg-violet-50 text-violet-700",
   },
 };
