@@ -139,3 +139,69 @@ export async function updateGoodsReceiptHeader(
 
   return data as GoodsReceiptHeader;
 }
+export async function getOpenGoodsReceiptForPurchaseOrder(
+  purchaseOrderId: string,
+): Promise<GoodsReceiptHeaderDetail | null> {
+  const id =
+    purchaseOrderId.trim();
+
+  if (!id) {
+    return null;
+  }
+
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } = await supabase
+    .from("goods_receipts")
+    .select(`
+      *,
+      purchase_order:purchase_orders (
+        id,
+        po_number,
+        status
+      ),
+      supplier:suppliers (
+        id,
+        company_name
+      ),
+      warehouse:warehouses (
+        id,
+        code,
+        name
+      )
+    `)
+    .eq(
+      "purchase_order_id",
+      id,
+    )
+    .neq(
+      "status",
+      "completed",
+    )
+    .neq(
+      "status",
+      "cancelled",
+    )
+    .order(
+      "created_at",
+      {
+        ascending: false,
+      },
+    )
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Unable to load open Goods Receipt: ${error.message}`,
+    );
+  }
+
+  return data as
+    | GoodsReceiptHeaderDetail
+    | null;
+}

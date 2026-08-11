@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   Archive,
@@ -13,6 +13,7 @@ import {
   Phone,
   Plus,
   Search,
+  BrainCircuit,
 } from "lucide-react";
 
 import EmptyState from "@/components/admin/ui/EmptyState";
@@ -26,8 +27,7 @@ import {
   updateSupplier,
 } from "@/app/admin/(protected)/suppliers/actions";
 
-type SupplierRow =
-  Database["public"]["Tables"]["suppliers"]["Row"];
+type SupplierRow = Database["public"]["Tables"]["suppliers"]["Row"];
 
 type Supplier = SupplierRow & {
   country: {
@@ -54,8 +54,7 @@ export default function SupplierManager({
 }: SupplierManagerProps) {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] =
-    useState<Supplier | null>(null);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
   const filteredSuppliers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -132,21 +131,11 @@ export default function SupplierManager({
             <table className="w-full min-w-[1150px] text-left">
               <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th className="px-6 py-4 font-semibold">
-                    Supplier
-                  </th>
-                  <th className="px-6 py-4 font-semibold">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 font-semibold">
-                    Location
-                  </th>
-                  <th className="px-6 py-4 font-semibold">
-                    Communication
-                  </th>
-                  <th className="px-6 py-4 font-semibold">
-                    Status
-                  </th>
+                  <th className="px-6 py-4 font-semibold">Supplier</th>
+                  <th className="px-6 py-4 font-semibold">Contact</th>
+                  <th className="px-6 py-4 font-semibold">Location</th>
+                  <th className="px-6 py-4 font-semibold">Communication</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
                   <th className="px-6 py-4 text-right font-semibold">
                     Actions
                   </th>
@@ -185,8 +174,7 @@ export default function SupplierManager({
                           </div>
 
                           <p className="mt-1 text-sm text-slate-500">
-                            {supplier.contact_name ||
-                              "No contact person"}
+                            {supplier.contact_name || "No contact person"}
                           </p>
                         </div>
                       </div>
@@ -203,9 +191,7 @@ export default function SupplierManager({
                             {supplier.email}
                           </a>
                         ) : (
-                          <span className="text-slate-400">
-                            No email
-                          </span>
+                          <span className="text-slate-400">No email</span>
                         )}
 
                         {supplier.phone && (
@@ -244,25 +230,26 @@ export default function SupplierManager({
                           WhatsApp
                         </a>
                       ) : (
-                        <span className="text-slate-400">
-                          Not provided
-                        </span>
+                        <span className="text-slate-400">Not provided</span>
                       )}
                     </td>
 
                     <td className="px-6 py-4">
-                      <StatusBadge
-                        active={supplier.is_active ?? false}
-                      />
+                      <StatusBadge active={supplier.is_active ?? false} />
                     </td>
 
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/admin/purchasing/supplier-intelligence/${supplier.id}`}
+                          className="inline-flex items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-700 transition hover:border-orange-300 hover:bg-orange-100"
+                        >
+                          <BrainCircuit className="h-4 w-4" />
+                          Intelligence
+                        </Link>
                         <button
                           type="button"
-                          onClick={() =>
-                            setEditingSupplier(supplier)
-                          }
+                          onClick={() => setEditingSupplier(supplier)}
                           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
                         >
                           <Edit3 className="h-4 w-4" />
@@ -270,11 +257,7 @@ export default function SupplierManager({
                         </button>
 
                         <form action={toggleSupplierStatus}>
-                          <input
-                            type="hidden"
-                            name="id"
-                            value={supplier.id}
-                          />
+                          <input type="hidden" name="id" value={supplier.id} />
 
                           <input
                             type="hidden"
@@ -363,9 +346,7 @@ function SupplierForm({
 
   return (
     <form action={action} className="space-y-5">
-      {supplier && (
-        <input type="hidden" name="id" value={supplier.id} />
-      )}
+      {supplier && <input type="hidden" name="id" value={supplier.id} />}
 
       <div>
         <label

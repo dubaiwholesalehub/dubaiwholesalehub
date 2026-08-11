@@ -392,6 +392,71 @@ export default function ProductForm({
                 ))}
               </select>
             </div>
+
+            <div className="grid gap-5 sm:grid-cols-3">
+              <div>
+                <FieldLabel htmlFor={`product-min-stock-${suffix}`}>
+                  Minimum stock
+                </FieldLabel>
+
+                <input
+                  id={`product-min-stock-${suffix}`}
+                  name="minimumStockQuantity"
+                  type="number"
+                  min={0}
+                  step="0.001"
+                  defaultValue={product?.minimum_stock_quantity ?? 0}
+                  className={inputClassName}
+                />
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Reorder fallback triggers when projected stock falls to or
+                  below this level.
+                </p>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor={`product-reorder-qty-${suffix}`}>
+                  Reorder quantity
+                </FieldLabel>
+
+                <input
+                  id={`product-reorder-qty-${suffix}`}
+                  name="reorderQuantity"
+                  type="number"
+                  min={0}
+                  step="0.001"
+                  defaultValue={product?.reorder_quantity ?? 0}
+                  className={inputClassName}
+                />
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Fallback quantity to buy when there is insufficient sales
+                  history.
+                </p>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor={`product-safety-stock-days-${suffix}`}>
+                  Safety stock days
+                </FieldLabel>
+
+                <input
+                  id={`product-safety-stock-days-${suffix}`}
+                  name="safetyStockDays"
+                  type="number"
+                  min={0}
+                  step={1}
+                  defaultValue={product?.safety_stock_days ?? 7}
+                  className={inputClassName}
+                />
+
+                <p className="mt-1 text-xs text-slate-500">
+                  Extra demand coverage used by the sales-based reorder
+                  calculation.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">

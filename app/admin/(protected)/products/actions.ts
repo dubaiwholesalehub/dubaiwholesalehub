@@ -70,7 +70,20 @@ function parseProductForm(formData: FormData) {
       formData.get(
         "procurementLeadTimeDays",
       ) ?? 0,
+    minimumStockQuantity:
+      formData.get(
+        "minimumStockQuantity",
+      ) ?? 0,
 
+    reorderQuantity:
+      formData.get(
+        "reorderQuantity",
+      ) ?? 0,
+
+    safetyStockDays:
+      formData.get(
+        "safetyStockDays",
+      ) ?? 7,
     allowBackorder:
       formData.get("allowBackorder") ===
       "on",
@@ -127,7 +140,14 @@ function buildProductPayload(
       data.fulfilmentMethod === "service"
         ? 0
         : data.procurementLeadTimeDays,
+    minimum_stock_quantity:
+      data.minimumStockQuantity,
 
+    reorder_quantity:
+      data.reorderQuantity,
+
+    safety_stock_days:
+      data.safetyStockDays,
     allow_backorder:
       data.fulfilmentMethod === "service"
         ? false

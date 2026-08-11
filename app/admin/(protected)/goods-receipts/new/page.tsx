@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   getActiveWarehousesForGrn,
   getEligiblePurchaseOrdersForGrn,
+  getOpenGoodsReceiptForPurchaseOrder,
   getPurchaseOrderForGrn,
 } from "@/lib/repositories/goods-receipts";
 
@@ -72,9 +73,13 @@ export default async function NewGoodsReceiptPage({
     warehouses[0] ??
     null;
 
-  const selectedPurchaseOrder = selectedPurchaseOrderId
-    ? await getPurchaseOrderForGrn(selectedPurchaseOrderId)
-    : null;
+  const [selectedPurchaseOrder, openGoodsReceipt] = selectedPurchaseOrderId
+    ? await Promise.all([
+        getPurchaseOrderForGrn(selectedPurchaseOrderId),
+
+        getOpenGoodsReceiptForPurchaseOrder(selectedPurchaseOrderId),
+      ])
+    : [null, null];
 
   return (
     <div className="space-y-6">
@@ -414,7 +419,24 @@ export default async function NewGoodsReceiptPage({
                 Purchase Order lines.
               </p>
 
-              {defaultWarehouse ? (
+              {openGoodsReceipt ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    An open Goods Receipt already exists for this Purchase
+                    Order:{" "}
+                    <span className="font-semibold">
+                      {openGoodsReceipt.receipt_number}
+                    </span>
+                  </div>
+
+                  <Link
+                    href={`/admin/goods-receipts/${openGoodsReceipt.id}`}
+                    className="inline-flex h-11 items-center justify-center rounded-md bg-orange-600 px-5 text-sm font-semibold text-white transition hover:bg-orange-700"
+                  >
+                    Continue {openGoodsReceipt.receipt_number}
+                  </Link>
+                </div>
+              ) : defaultWarehouse ? (
                 <form
                   action={createDraftGoodsReceiptAction}
                   className="flex flex-col gap-3 sm:flex-row sm:items-end"

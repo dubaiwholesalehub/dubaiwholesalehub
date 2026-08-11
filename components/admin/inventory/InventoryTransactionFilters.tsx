@@ -65,6 +65,7 @@ export function InventoryTransactionFilters({
         >
           <option value="">All types</option>
           <option value="goods_receipt">Goods Receipt</option>
+          <option value="local_purchase">Local Purchase</option>
           <option value="sales_issue">Sales Issue</option>
           <option value="transfer_out">Transfer Out</option>
           <option value="transfer_in">Transfer In</option>
@@ -90,11 +91,7 @@ export function InventoryTransactionFilters({
           ))}
         </FilterSelect>
 
-        <FilterSelect
-          name="status"
-          label="Status"
-          defaultValue={values.status}
-        >
+        <FilterSelect name="status" label="Status" defaultValue={values.status}>
           <option value="">All statuses</option>
           <option value="draft">Draft</option>
           <option value="posted">Posted</option>
@@ -108,11 +105,7 @@ export function InventoryTransactionFilters({
           defaultValue={values.fromDate}
         />
 
-        <DateInput
-          name="toDate"
-          label="To Date"
-          defaultValue={values.toDate}
-        />
+        <DateInput name="toDate" label="To Date" defaultValue={values.toDate} />
 
         <FilterSelect
           name="pageSize"
@@ -184,11 +177,7 @@ interface DateInputProps {
   defaultValue?: string;
 }
 
-function DateInput({
-  name,
-  label,
-  defaultValue,
-}: DateInputProps) {
+function DateInput({ name, label, defaultValue }: DateInputProps) {
   return (
     <div>
       <label

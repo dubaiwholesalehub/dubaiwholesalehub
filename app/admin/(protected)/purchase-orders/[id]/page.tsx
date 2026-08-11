@@ -10,16 +10,21 @@ import {
 import { PurchaseOrderStatusBadge } from "@/components/admin/purchase-orders/purchase-order-status-badge";
 
 import {
+  PurchaseOrderApprovalButton,
+  PurchaseOrderApprovalIntelligence,
   PurchaseOrderAttachments,
   PurchaseOrderGeneralInformation,
   PurchaseOrderItems,
   PurchaseOrderNotes,
   PurchaseOrderQuantitySummary,
   PurchaseOrderReference,
+  PurchaseOrderSendButton,
   PurchaseOrderSummaryCards,
   PurchaseOrderWorkflow,
 } from "@/components/admin/purchase-orders/detail";
 
+import { getPurchaseOrderApprovalIntelligence } from "@/lib/purchasing/purchase-order-approval-intelligence.repository";
+import { getOpenGoodsReceiptForPurchaseOrder } from "@/lib/repositories/goods-receipts";
 interface PurchaseOrderDetailPageProps {
   params: Promise<{
     id: string;
@@ -31,10 +36,18 @@ export default async function PurchaseOrderDetailPage({
 }: PurchaseOrderDetailPageProps) {
   const { id } = await params;
 
-  const [purchaseOrder, summary, items] = await Promise.all([
+  const [
+    purchaseOrder,
+    summary,
+    items,
+    approvalIntelligence,
+    openGoodsReceipt,
+  ] = await Promise.all([
     getPurchaseOrderHeaderById(id),
     getPurchaseOrderDetailSummary(id),
     getPurchaseOrderItems(id),
+    getPurchaseOrderApprovalIntelligence(id),
+    getOpenGoodsReceiptForPurchaseOrder(id),
   ]);
 
   if (!purchaseOrder) {
@@ -72,14 +85,44 @@ export default async function PurchaseOrderDetailPage({
 
         <div className="flex flex-wrap items-center gap-3">
           {purchaseOrder.status === "draft" ? (
-            <Link
-              href={`/admin/purchase-orders/${purchaseOrder.id}/edit`}
-              className="inline-flex h-10 items-center justify-center rounded-md border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              Edit Purchase Order
-            </Link>
-          ) : null}
+            <>
+              <Link
+                href={`/admin/purchase-orders/${purchaseOrder.id}/edit`}
+                className="inline-flex h-10 items-center justify-center rounded-md border bg-background px-4 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Edit Purchase Order
+              </Link>
 
+              <PurchaseOrderApprovalButton
+                purchaseOrderId={purchaseOrder.id}
+                approvalDecision={approvalIntelligence.summary.decision}
+              />
+            </>
+          ) : null}
+          {purchaseOrder.status === "approved" ? (
+            <PurchaseOrderSendButton
+              purchaseOrderId={purchaseOrder.id}
+              supplierName={purchaseOrder.supplier.company_name}
+            />
+          ) : null}
+          {purchaseOrder.status === "sent" ||
+          purchaseOrder.status === "partially_received" ? (
+            openGoodsReceipt ? (
+              <Link
+                href={`/admin/goods-receipts/${openGoodsReceipt.id}`}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-orange-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+              >
+                Continue {openGoodsReceipt.receipt_number}
+              </Link>
+            ) : (
+              <Link
+                href={`/admin/goods-receipts/new?purchaseOrderId=${purchaseOrder.id}`}
+                className="inline-flex h-10 items-center justify-center rounded-md bg-orange-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+              >
+                Receive Goods
+              </Link>
+            )
+          ) : null}
           <PurchaseOrderStatusBadge status={purchaseOrder.status} />
         </div>
       </header>
@@ -123,6 +166,8 @@ export default async function PurchaseOrderDetailPage({
         items={items}
         currencyCode={purchaseOrder.currency_code}
       />
+
+      <PurchaseOrderApprovalIntelligence intelligence={approvalIntelligence} />
 
       <PurchaseOrderGeneralInformation purchaseOrder={purchaseOrder} />
 

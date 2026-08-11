@@ -57,77 +57,71 @@ export default function ProductTable({
       <table className="w-full min-w-[1250px] text-left">
         <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
           <tr>
-            <th className="px-6 py-4 font-semibold">
-              Product
-            </th>
-            <th className="px-6 py-4 font-semibold">
-              Classification
-            </th>
-            <th className="px-6 py-4 font-semibold">
-              Wholesale
-            </th>
-            <th className="px-6 py-4 font-semibold">
-              Status
-            </th>
-            <th className="px-6 py-4 font-semibold">
-              Updated
-            </th>
-            <th className="px-6 py-4 text-right font-semibold">
-              Actions
-            </th>
+            <th className="px-6 py-4 font-semibold">Product</th>
+            <th className="px-6 py-4 font-semibold">Classification</th>
+            <th className="px-6 py-4 font-semibold">Wholesale</th>
+            <th className="px-6 py-4 font-semibold">Status</th>
+            <th className="px-6 py-4 font-semibold">Updated</th>
+            <th className="px-6 py-4 text-right font-semibold">Actions</th>
           </tr>
         </thead>
 
         <tbody className="divide-y divide-slate-100">
           {products.map((product) => (
-            <tr
-              key={product.id}
-              className="transition hover:bg-slate-50"
-            >
+            <tr key={product.id} className="transition hover:bg-slate-50">
               <td className="px-6 py-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
                     {(() => {
-  const primaryImage =
-    product.product_images.find(
-      (image) => image.is_primary,
-    ) ??
-    [...product.product_images].sort(
-      (first, second) =>
-        (first.sort_order ?? 0) -
-        (second.sort_order ?? 0),
-    )[0];
+                      const primaryImage =
+                        product.product_images.find(
+                          (image) => image.is_primary,
+                        ) ??
+                        [...product.product_images].sort(
+                          (first, second) =>
+                            (first.sort_order ?? 0) - (second.sort_order ?? 0),
+                        )[0];
 
-  const imageUrl = getProductImageUrl(
-    primaryImage?.storage_path,
-  );
+                      const imageUrl = getProductImageUrl(
+                        primaryImage?.storage_path,
+                      );
 
-  return imageUrl ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={imageUrl}
-      alt={primaryImage?.alt_text || product.name}
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    <ImageIcon className="h-6 w-6 text-slate-400" />
-  );
-})()}
+                      return imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={imageUrl}
+                          alt={primaryImage?.alt_text || product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 text-slate-400" />
+                      );
+                    })()}
                   </div>
 
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
-  href={`/admin/products/${product.id}/suppliers`}
-  className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
->
-  <Building2 className="h-4 w-4" />
-  Suppliers
-</Link>
-                      
-                      <p className="max-w-sm font-semibold text-slate-900">
+                        href={`/admin/products/${product.id}/suppliers`}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
+                      >
+                        <Building2 className="h-4 w-4" />
+                        Suppliers
+                      </Link>
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-semibold text-slate-700 transition hover:border-amber-400 hover:bg-amber-50 hover:text-amber-800"
+                      >
+                        <PackageSearch className="h-4 w-4" />
+                        View
+                      </Link>
+
+                      <Link
+                        href={`/admin/products/${product.id}`}
+                        className="max-w-sm font-semibold text-slate-900 transition hover:text-amber-700 hover:underline"
+                      >
                         {product.name}
-                      </p>
+                      </Link>
 
                       {product.featured && (
                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
@@ -143,14 +137,10 @@ export default function ProductTable({
                     </div>
 
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                      <span>
-                        SKU: {product.sku || "Not set"}
-                      </span>
+                      <span>SKU: {product.sku || "Not set"}</span>
 
                       {product.model_number && (
-                        <span>
-                          Model: {product.model_number}
-                        </span>
+                        <span>Model: {product.model_number}</span>
                       )}
                     </div>
                   </div>
@@ -159,15 +149,11 @@ export default function ProductTable({
 
               <td className="px-6 py-4 text-sm text-slate-600">
                 <p className="font-medium text-slate-800">
-                  {product.category?.name ||
-                    "No category"}
+                  {product.category?.name || "No category"}
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  {[
-                    product.subcategory?.name,
-                    product.brand?.name,
-                  ]
+                  {[product.subcategory?.name, product.brand?.name]
                     .filter(Boolean)
                     .join(" · ") || "No additional classification"}
                 </p>
@@ -177,8 +163,7 @@ export default function ProductTable({
                 <p>
                   MOQ:{" "}
                   <span className="font-semibold text-slate-800">
-                    {product.moq ?? 1}{" "}
-                    {product.unit?.short_name ?? "PCS"}
+                    {product.moq ?? 1} {product.unit?.short_name ?? "PCS"}
                   </span>
                 </p>
 
@@ -190,9 +175,7 @@ export default function ProductTable({
               </td>
 
               <td className="px-6 py-4">
-                <ProductStatusBadge
-                  status={product.status ?? "draft"}
-                />
+                <ProductStatusBadge status={product.status ?? "draft"} />
               </td>
 
               <td className="px-6 py-4 text-sm text-slate-500">
@@ -222,24 +205,14 @@ export default function ProductTable({
 }
 
 function StatusAction({ product }: { product: Product }) {
-  const nextAction = getNextStatusAction(
-  product.status ?? "draft",
-);
+  const nextAction = getNextStatusAction(product.status ?? "draft");
   const Icon = nextAction.icon;
 
   return (
     <form action={changeProductStatus}>
-      <input
-        type="hidden"
-        name="id"
-        value={product.id}
-      />
+      <input type="hidden" name="id" value={product.id} />
 
-      <input
-        type="hidden"
-        name="status"
-        value={nextAction.status}
-      />
+      <input type="hidden" name="status" value={nextAction.status} />
 
       <button
         type="submit"
@@ -262,8 +235,7 @@ function getNextStatusAction(status: ProductStatus) {
         status: "pending_review" as ProductStatus,
         label: "Submit",
         icon: Send,
-        classes:
-          "border-amber-200 text-amber-700 hover:bg-amber-50",
+        classes: "border-amber-200 text-amber-700 hover:bg-amber-50",
       };
 
     case "pending_review":
@@ -271,8 +243,7 @@ function getNextStatusAction(status: ProductStatus) {
         status: "published" as ProductStatus,
         label: "Publish",
         icon: FileCheck2,
-        classes:
-          "border-green-200 text-green-700 hover:bg-green-50",
+        classes: "border-green-200 text-green-700 hover:bg-green-50",
       };
 
     case "published":
@@ -280,8 +251,7 @@ function getNextStatusAction(status: ProductStatus) {
         status: "archived" as ProductStatus,
         label: "Archive",
         icon: Archive,
-        classes:
-          "border-red-200 text-red-700 hover:bg-red-50",
+        classes: "border-red-200 text-red-700 hover:bg-red-50",
       };
 
     case "archived":
@@ -289,8 +259,7 @@ function getNextStatusAction(status: ProductStatus) {
         status: "draft" as ProductStatus,
         label: "Restore",
         icon: CheckCircle2,
-        classes:
-          "border-blue-200 text-blue-700 hover:bg-blue-50",
+        classes: "border-blue-200 text-blue-700 hover:bg-blue-50",
       };
 
     default:
@@ -298,8 +267,7 @@ function getNextStatusAction(status: ProductStatus) {
         status: "draft" as ProductStatus,
         label: "Reset",
         icon: Clock3,
-        classes:
-          "border-slate-200 text-slate-700 hover:bg-slate-50",
+        classes: "border-slate-200 text-slate-700 hover:bg-slate-50",
       };
   }
 }

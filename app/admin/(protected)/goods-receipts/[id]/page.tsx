@@ -7,6 +7,7 @@ import {
 } from "@/lib/repositories/goods-receipts";
 
 import CompleteGoodsReceiptButton from "@/components/admin/goods-receipts/complete-button";
+import GoodsReceiptItemEditor from "@/components/admin/goods-receipts/goods-receipt-item-editor";
 
 interface GoodsReceiptDetailPageProps {
   params: Promise<{
@@ -109,79 +110,82 @@ export default async function GoodsReceiptDetailPage({
           value={formatNumber(summary.receiving_quantity)}
         />
       </section>
+      {header.status !== "completed" && header.status !== "cancelled" ? (
+        <GoodsReceiptItemEditor goodsReceiptId={header.id} items={items} />
+      ) : (
+        <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
+          <div className="border-b border-neutral-200 px-5 py-4">
+            <h2 className="font-semibold text-neutral-950">Receipt Items</h2>
 
-      <section className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm">
-        <div className="border-b border-neutral-200 px-5 py-4">
-          <h2 className="font-semibold text-neutral-950">Receipt Items</h2>
+            <p className="mt-1 text-sm text-neutral-600">
+              {items.length} remaining Purchase Order line
+              {items.length === 1 ? "" : "s"} copied into this draft.
+            </p>
+          </div>
 
-          <p className="mt-1 text-sm text-neutral-600">
-            {items.length} remaining Purchase Order line
-            {items.length === 1 ? "" : "s"} copied into this draft.
-          </p>
-        </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-neutral-200">
+              <thead className="bg-neutral-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Line
+                  </th>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200">
-            <thead className="bg-neutral-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Line
-                </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Product
+                  </th>
 
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Product
-                </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Ordered
+                  </th>
 
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Ordered
-                </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Previously Received
+                  </th>
 
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Previously Received
-                </th>
-
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
-                  Receiving
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-neutral-100">
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-4 text-sm text-neutral-700">
-                    {item.line_number}
-                  </td>
-
-                  <td className="px-4 py-4 text-sm font-medium text-neutral-950">
-                    <div>
-                      <p className="font-medium text-neutral-950">
-                        {item.product.name}
-                      </p>
-
-                      <p className="mt-1 text-xs text-neutral-500">
-                        {item.product.sku}
-                      </p>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-4 text-right text-sm text-neutral-700">
-                    {formatNumber(item.ordered_quantity)}
-                  </td>
-
-                  <td className="px-4 py-4 text-right text-sm text-neutral-700">
-                    {formatNumber(item.previously_received_quantity)}
-                  </td>
-
-                  <td className="px-4 py-4 text-right text-sm font-semibold text-orange-700">
-                    {formatNumber(item.receiving_quantity)}
-                  </td>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-600">
+                    Receiving
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+
+              <tbody className="divide-y divide-neutral-100">
+                {items.map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-4 text-sm text-neutral-700">
+                      {item.line_number}
+                    </td>
+
+                    <td className="px-4 py-4 text-sm font-medium text-neutral-950">
+                      <div>
+                        <p className="font-medium text-neutral-950">
+                          {item.product.name}
+                        </p>
+
+                        <p className="mt-1 text-xs text-neutral-500">
+                          {item.product.sku}
+                        </p>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 text-right text-sm text-neutral-700">
+                      {formatNumber(item.ordered_quantity)}
+                    </td>
+
+                    <td className="px-4 py-4 text-right text-sm text-neutral-700">
+                      {formatNumber(item.previously_received_quantity)}
+                    </td>
+
+                    <td className="px-4 py-4 text-right text-sm font-semibold text-orange-700">
+                      {formatNumber(item.receiving_quantity)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

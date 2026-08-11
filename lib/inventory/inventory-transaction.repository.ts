@@ -74,6 +74,7 @@ function mapTransactionType(
 ): InventoryTransactionType {
   const validTypes: InventoryTransactionType[] = [
     "goods_receipt",
+    "local_purchase",
     "sales_issue",
     "transfer_out",
     "transfer_in",

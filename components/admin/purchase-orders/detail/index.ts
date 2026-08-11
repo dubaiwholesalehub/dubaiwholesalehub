@@ -8,3 +8,12 @@ export * from "./purchase-order-workflow";
 export * from "./purchase-order-notes";
 export * from "./purchase-order-reference";
 export * from "./purchase-order-attachments";
+export {
+    PurchaseOrderApprovalIntelligence,
+} from "./purchase-order-approval-intelligence";
+export {
+    PurchaseOrderApprovalButton,
+} from "./purchase-order-approval-button";
+export {
+  PurchaseOrderSendButton,
+} from "./purchase-order-send-button";

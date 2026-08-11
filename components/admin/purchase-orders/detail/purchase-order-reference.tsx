@@ -17,18 +17,12 @@ interface ReferenceRowProps {
   href?: string;
 }
 
-function ReferenceRow({
-  label,
-  value,
-  href,
-}: ReferenceRowProps) {
+function ReferenceRow({ label, value, href }: ReferenceRowProps) {
   const hasValue = Boolean(value?.trim());
 
   return (
     <div className="flex items-start justify-between gap-6 border-b py-3 first:pt-0 last:border-b-0 last:pb-0">
-      <span className="text-sm text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-sm text-muted-foreground">{label}</span>
 
       {hasValue && href ? (
         <Link
@@ -46,12 +40,18 @@ function ReferenceRow({
   );
 }
 
-function formatSource(
-  source: PurchaseOrderSource,
-): string {
-  return source === "rfq_award"
-    ? "RFQ Award"
-    : "Manual";
+function formatSource(source: PurchaseOrderSource): string {
+  switch (source) {
+    case "rfq_award":
+      return "RFQ Award";
+
+    case "reorder":
+      return "Reorder Intelligence";
+
+    case "manual":
+    default:
+      return "Manual";
+  }
 }
 
 export function PurchaseOrderReference({
@@ -59,12 +59,7 @@ export function PurchaseOrderReference({
 }: PurchaseOrderReferenceProps) {
   return (
     <DetailSection title="Reference Information">
-      <ReferenceRow
-        label="Source"
-        value={formatSource(
-          purchaseOrder.source,
-        )}
-      />
+      <ReferenceRow label="Source" value={formatSource(purchaseOrder.source)} />
 
       <ReferenceRow
         label="RFQ"
@@ -78,9 +73,7 @@ export function PurchaseOrderReference({
 
       <ReferenceRow
         label="Supplier Quotation"
-        value={
-          purchaseOrder.supplier_quotation_id
-        }
+        value={purchaseOrder.supplier_quotation_id}
         href={
           purchaseOrder.supplier_quotation_id
             ? `/admin/rfqs/${purchaseOrder.rfq_id}/quotations/${purchaseOrder.supplier_quotation_id}`
@@ -90,9 +83,7 @@ export function PurchaseOrderReference({
 
       <ReferenceRow
         label="Supplier"
-        value={
-          purchaseOrder.supplier.company_name
-        }
+        value={purchaseOrder.supplier.company_name}
       />
     </DetailSection>
   );

@@ -1,11 +1,6 @@
 import Link from "next/link";
 
-import {
-  CalendarDays,
-  PackageCheck,
-  Store,
-  Warehouse,
-} from "lucide-react";
+import { CalendarDays, PackageCheck, Store, Warehouse } from "lucide-react";
 
 import {
   Table,
@@ -36,9 +31,7 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function GoodsReceiptTable({
-  goodsReceipts,
-}: GoodsReceiptTableProps) {
+export function GoodsReceiptTable({ goodsReceipts }: GoodsReceiptTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border bg-white">
       <Table>
@@ -50,6 +43,7 @@ export function GoodsReceiptTable({
             <TableHead>Warehouse</TableHead>
             <TableHead>Received Date</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -109,6 +103,18 @@ export function GoodsReceiptTable({
 
               <TableCell>
                 <GoodsReceiptStatusBadge status={receipt.status} />
+              </TableCell>
+              <TableCell className="text-right">
+                <Link
+                  href={`/admin/goods-receipts/${receipt.id}`}
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-neutral-300 bg-white px-3 text-xs font-semibold text-neutral-800 transition hover:bg-neutral-50"
+                >
+                  {receipt.status === "completed"
+                    ? "View"
+                    : receipt.status === "cancelled"
+                      ? "View"
+                      : "Continue Receiving"}
+                </Link>
               </TableCell>
             </TableRow>
           ))}

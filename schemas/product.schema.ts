@@ -151,6 +151,33 @@ export const productSchema = z.object({
     )
     .default(0),
 
+  minimumStockQuantity: z.coerce
+    .number()
+    .min(
+      0,
+      "Minimum stock cannot be negative.",
+    )
+    .default(0),
+
+  reorderQuantity: z.coerce
+    .number()
+    .min(
+      0,
+      "Reorder quantity cannot be negative.",
+    )
+    .default(0),
+
+  safetyStockDays: z.coerce
+    .number()
+    .int(
+      "Safety stock days must be a whole number.",
+    )
+    .min(
+      0,
+      "Safety stock days cannot be negative.",
+    )
+    .default(7),
+
   allowBackorder: z.boolean().default(false),
 
   procurementNotes: z

@@ -14,6 +14,14 @@ import {
   Users,
   X,
   Warehouse,
+  Ruler,
+  ClipboardCheck,
+  ClipboardList,
+  ArrowLeftRight,
+  ShoppingCart,
+  PackageCheck,
+  TrendingUp,
+  Scale,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -51,9 +59,9 @@ const navigationGroups = [
         icon: Tags,
       },
       {
-        label: "Inventory",
-        href: "/admin/inventory",
-        icon: Warehouse,
+        label: "Units",
+        href: "/admin/units",
+        icon: Ruler,
       },
     ],
   },
@@ -69,6 +77,66 @@ const navigationGroups = [
         label: "Product Mapping",
         href: "/admin/product-suppliers",
         icon: Layers3,
+      },
+    ],
+  },
+  {
+    label: "Inventory",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/admin/inventory",
+        icon: Warehouse,
+      },
+      {
+        label: "Operations",
+        href: "/admin/inventory/operations",
+        icon: ClipboardCheck,
+      },
+      {
+        label: "Warehouse Stock",
+        href: "/admin/inventory/stock",
+        icon: Boxes,
+      },
+      {
+        label: "Transactions",
+        href: "/admin/inventory/transactions",
+        icon: ClipboardList,
+      },
+      {
+        label: "Transfers",
+        href: "/admin/inventory/transfers",
+        icon: ArrowLeftRight,
+      },
+    ],
+  },
+  {
+    label: "Purchasing",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/admin/purchasing",
+        icon: ShoppingCart,
+      },
+      {
+        label: "Reorder Intelligence",
+        href: "/admin/purchasing/reorder",
+        icon: TrendingUp,
+      },
+      {
+        label: "Supplier Comparison",
+        href: "/admin/purchasing/supplier-comparison",
+        icon: Scale,
+      },
+      {
+        label: "Purchase Orders",
+        href: "/admin/purchase-orders",
+        icon: ShoppingCart,
+      },
+      {
+        label: "Goods Receipts",
+        href: "/admin/goods-receipts",
+        icon: PackageCheck,
       },
     ],
   },
@@ -160,7 +228,7 @@ export default function AdminSidebar({
                 </p>
 
                 <div className="space-y-1">
-                  {group.items.map((item) => {
+                  {(group.items ?? []).map((item) => {
                     const Icon = item.icon;
                     const active = isActiveRoute(pathname, item.href);
 

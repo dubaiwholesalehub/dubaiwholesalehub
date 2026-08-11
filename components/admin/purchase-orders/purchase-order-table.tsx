@@ -14,10 +14,7 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-function formatMoney(
-  amount: number,
-  currencyCode: string,
-): string {
+function formatMoney(amount: number, currencyCode: string): string {
   try {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -30,12 +27,18 @@ function formatMoney(
   }
 }
 
-function formatSource(
-  source: PurchaseOrderListItem["source"],
-): string {
-  return source === "rfq_award"
-    ? "RFQ Award"
-    : "Manual";
+function formatSource(source: PurchaseOrderListItem["source"]): string {
+  switch (source) {
+    case "rfq_award":
+      return "RFQ Award";
+
+    case "reorder":
+      return "Reorder Intelligence";
+
+    case "manual":
+    default:
+      return "Manual";
+  }
 }
 
 export function PurchaseOrderTable({
@@ -44,13 +47,10 @@ export function PurchaseOrderTable({
   if (purchaseOrders.length === 0) {
     return (
       <div className="flex h-60 flex-col items-center justify-center gap-1 px-6 text-center">
-        <p className="text-sm font-medium">
-          No Purchase Orders found
-        </p>
+        <p className="text-sm font-medium">No Purchase Orders found</p>
 
         <p className="text-sm text-muted-foreground">
-          Purchase Orders created from awarded RFQs will
-          appear here.
+          Purchase Orders created from awarded RFQs will appear here.
         </p>
       </div>
     );
@@ -73,21 +73,13 @@ export function PurchaseOrderTable({
               Order Date
             </th>
 
-            <th className="px-4 py-3 text-left text-sm font-medium">
-              Source
-            </th>
+            <th className="px-4 py-3 text-left text-sm font-medium">Source</th>
 
-            <th className="px-4 py-3 text-left text-sm font-medium">
-              Status
-            </th>
+            <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
 
-            <th className="px-4 py-3 text-right text-sm font-medium">
-              Total
-            </th>
+            <th className="px-4 py-3 text-right text-sm font-medium">Total</th>
 
-            <th className="px-4 py-3 text-left text-sm font-medium">
-              Actions
-            </th>
+            <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
           </tr>
         </thead>
 
@@ -98,9 +90,7 @@ export function PurchaseOrderTable({
               className="border-b transition-colors last:border-b-0 hover:bg-muted/30"
             >
               <td className="whitespace-nowrap px-4 py-3">
-                <span className="font-medium">
-                  {purchaseOrder.po_number}
-                </span>
+                <span className="font-medium">{purchaseOrder.po_number}</span>
               </td>
 
               <td className="px-4 py-3">
@@ -118,9 +108,7 @@ export function PurchaseOrderTable({
               </td>
 
               <td className="whitespace-nowrap px-4 py-3">
-                <PurchaseOrderStatusBadge
-                  status={purchaseOrder.status}
-                />
+                <PurchaseOrderStatusBadge status={purchaseOrder.status} />
               </td>
 
               <td className="whitespace-nowrap px-4 py-3 text-right font-medium">
@@ -133,9 +121,7 @@ export function PurchaseOrderTable({
               <td className="whitespace-nowrap px-4 py-3">
                 <PurchaseOrderRowActions
                   purchaseOrderId={purchaseOrder.id}
-                  canEdit={
-                    purchaseOrder.status === "draft"
-                  }
+                  canEdit={purchaseOrder.status === "draft"}
                 />
               </td>
             </tr>

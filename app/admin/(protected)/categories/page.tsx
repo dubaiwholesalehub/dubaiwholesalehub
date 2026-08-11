@@ -3,8 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import CategoryManager from "@/components/admin/categories/CategoryManager";
 import PageHeader from "@/components/admin/ui/PageHeader";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import { getAdminCategories } from "@/lib/repositories/category.repository";
-
+import { getAdminCategoryHierarchy } from "@/lib/repositories/category.repository";
 interface CategoriesPageProps {
   searchParams: Promise<{
     success?: string;
@@ -18,7 +17,7 @@ export default async function CategoriesPage({
   await requireAdmin();
 
   const [categories, messages] = await Promise.all([
-    getAdminCategories(),
+    getAdminCategoryHierarchy(),
     searchParams,
   ]);
 
