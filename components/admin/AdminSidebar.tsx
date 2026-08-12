@@ -16,12 +16,14 @@ import {
   Warehouse,
   Ruler,
   ClipboardCheck,
-  ClipboardList,
   ArrowLeftRight,
   ShoppingCart,
   PackageCheck,
   TrendingUp,
   Scale,
+  FileText,
+  ClipboardList,
+  Truck,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -119,6 +121,11 @@ const navigationGroups = [
         icon: ShoppingCart,
       },
       {
+        label: "RFQs",
+        href: "/admin/rfqs",
+        icon: FileQuestion,
+      },
+      {
         label: "Reorder Intelligence",
         href: "/admin/purchasing/reorder",
         icon: TrendingUp,
@@ -144,14 +151,24 @@ const navigationGroups = [
     label: "Sales",
     items: [
       {
-        label: "RFQs",
-        href: "/admin/rfqs",
-        icon: FileQuestion,
-      },
-      {
         label: "Customers",
         href: "/admin/customers",
         icon: Users,
+      },
+      {
+        label: "Sales Quotations",
+        href: "/admin/sales/quotations",
+        icon: FileText,
+      },
+      {
+        label: "Sales Orders",
+        href: "/admin/sales/orders",
+        icon: ClipboardList,
+      },
+      {
+        label: "Deliveries",
+        href: "/admin/sales/deliveries",
+        icon: Truck,
       },
     ],
   },

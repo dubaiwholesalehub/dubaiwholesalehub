@@ -25,6 +25,7 @@ import {
 
 import { getPurchaseOrderApprovalIntelligence } from "@/lib/purchasing/purchase-order-approval-intelligence.repository";
 import { getOpenGoodsReceiptForPurchaseOrder } from "@/lib/repositories/goods-receipts";
+import { getProductLookupOptions } from "@/lib/repositories/product.repository";
 interface PurchaseOrderDetailPageProps {
   params: Promise<{
     id: string;
@@ -42,17 +43,20 @@ export default async function PurchaseOrderDetailPage({
     items,
     approvalIntelligence,
     openGoodsReceipt,
+    productOptions,
   ] = await Promise.all([
     getPurchaseOrderHeaderById(id),
     getPurchaseOrderDetailSummary(id),
     getPurchaseOrderItems(id),
     getPurchaseOrderApprovalIntelligence(id),
     getOpenGoodsReceiptForPurchaseOrder(id),
+    getProductLookupOptions(),
   ]);
 
   if (!purchaseOrder) {
     notFound();
   }
+  const hasUnmappedItems = items.some((item) => !item.product_id);
 
   return (
     <div className="space-y-6">
@@ -114,6 +118,10 @@ export default async function PurchaseOrderDetailPage({
               >
                 Continue {openGoodsReceipt.receipt_number}
               </Link>
+            ) : hasUnmappedItems ? (
+              <span className="inline-flex h-10 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-4 text-sm font-semibold text-amber-800">
+                Map Products Before Receiving
+              </span>
             ) : (
               <Link
                 href={`/admin/goods-receipts/new?purchaseOrderId=${purchaseOrder.id}`}
@@ -163,8 +171,10 @@ export default async function PurchaseOrderDetailPage({
         </div>
       </section>
       <PurchaseOrderItems
+        purchaseOrderId={purchaseOrder.id}
         items={items}
         currencyCode={purchaseOrder.currency_code}
+        productOptions={productOptions}
       />
 
       <PurchaseOrderApprovalIntelligence intelligence={approvalIntelligence} />

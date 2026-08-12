@@ -4106,8 +4106,12 @@ export async function planSalesOrderFulfilment(
     const stockItems =
         order.items.filter(
             (item) =>
-                item.fulfilment_method ===
-                "stock" &&
+                (
+                    item.fulfilment_method ===
+                    "stock" ||
+                    item.fulfilment_method ===
+                    "local_purchase"
+                ) &&
                 item.product_id &&
                 (
                     item.warehouse_id ??
@@ -4308,7 +4312,9 @@ export async function planSalesOrderFulfilment(
 
         if (
             item.fulfilment_method !==
-            "stock"
+            "stock" &&
+            item.fulfilment_method !==
+            "local_purchase"
         ) {
             planItems.push({
                 itemId:
@@ -4354,6 +4360,10 @@ export async function planSalesOrderFulfilment(
             !item.product_id ||
             !warehouseId
         ) {
+            const isLocalPurchase =
+                item.fulfilment_method ===
+                "local_purchase";
+
             planItems.push({
                 itemId:
                     item.id,
@@ -4385,10 +4395,12 @@ export async function planSalesOrderFulfilment(
                     quantity,
 
                 procurementRequired:
-                    false,
+                    isLocalPurchase,
 
                 fulfilmentStatus:
-                    "awaiting_stock",
+                    isLocalPurchase
+                        ? "awaiting_procurement"
+                        : "awaiting_stock",
             });
 
             continue;
@@ -4446,7 +4458,10 @@ export async function planSalesOrderFulfilment(
                 "partially_allocated";
         } else {
             fulfilmentStatus =
-                "awaiting_stock";
+                item.fulfilment_method ===
+                    "local_purchase"
+                    ? "awaiting_procurement"
+                    : "awaiting_stock";
         }
 
         planItems.push({

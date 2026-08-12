@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+import { SubmitQuotationButton } from "@/components/admin/rfqs/quotation/submit-quotation-button";
 
 export default async function SupplierQuotationDetailPage({
   params,
@@ -74,9 +75,15 @@ export default async function SupplierQuotationDetailPage({
           </p>
         </div>
 
-        <Link href={`/admin/rfqs/${id}`}>
-          <Button variant="outline">Back to RFQ</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {quotation.status === "draft" ? (
+            <SubmitQuotationButton rfqId={id} quotationId={quotation.id} />
+          ) : null}
+
+          <Link href={`/admin/rfqs/${id}`}>
+            <Button variant="outline">Back to RFQ</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

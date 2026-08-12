@@ -208,8 +208,8 @@ export interface DeliveryOrderListRow
   customer: DeliveryOrderCustomer | null;
   warehouse: DeliveryOrderWarehouse | null;
   sales_order:
-    | DeliveryOrderSalesOrderReference
-    | null;
+  | DeliveryOrderSalesOrderReference
+  | null;
 
   item_count: number;
   planned_quantity: number;
@@ -222,14 +222,14 @@ export interface DeliveryOrderDetails
   customer: DeliveryOrderCustomer | null;
 
   shipping_address:
-    | DeliveryOrderShippingAddress
-    | null;
+  | DeliveryOrderShippingAddress
+  | null;
 
   warehouse: DeliveryOrderWarehouse | null;
 
   sales_order:
-    | DeliveryOrderSalesOrderReference
-    | null;
+  | DeliveryOrderSalesOrderReference
+  | null;
 
   items: DeliveryOrderItem[];
 }
@@ -244,12 +244,12 @@ export interface GetDeliveryOrdersInput {
   status?: DeliveryOrderStatus | "all";
 
   priority?:
-    | DeliveryOrderPriority
-    | "all";
+  | DeliveryOrderPriority
+  | "all";
 
   deliveryMethod?:
-    | DeliveryMethod
-    | "all";
+  | DeliveryMethod
+  | "all";
 
   customerId?: string;
   warehouseId?: string;
@@ -350,72 +350,72 @@ export interface DispatchDeliveryOrderResult {
 interface DeliveryOrderListDatabaseRow
   extends DeliveryOrderRow {
   customer:
-    | DeliveryOrderCustomer
-    | DeliveryOrderCustomer[]
-    | null;
+  | DeliveryOrderCustomer
+  | DeliveryOrderCustomer[]
+  | null;
 
   warehouse:
-    | DeliveryOrderWarehouse
-    | DeliveryOrderWarehouse[]
-    | null;
+  | DeliveryOrderWarehouse
+  | DeliveryOrderWarehouse[]
+  | null;
 
   sales_order:
-    | DeliveryOrderSalesOrderReference
-    | DeliveryOrderSalesOrderReference[]
-    | null;
+  | DeliveryOrderSalesOrderReference
+  | DeliveryOrderSalesOrderReference[]
+  | null;
 
   delivery_order_items:
-    | Array<{
-        delivery_quantity: number;
-        dispatched_quantity: number;
-        delivered_quantity: number;
-      }>
-    | null;
+  | Array<{
+    delivery_quantity: number;
+    dispatched_quantity: number;
+    delivered_quantity: number;
+  }>
+  | null;
 }
 
 interface DeliveryOrderItemDatabaseRow
   extends DeliveryOrderItemRow {
   product:
-    | DeliveryOrderProduct
-    | DeliveryOrderProduct[]
-    | null;
+  | DeliveryOrderProduct
+  | DeliveryOrderProduct[]
+  | null;
 
   unit:
-    | DeliveryOrderUnit
-    | DeliveryOrderUnit[]
-    | null;
+  | DeliveryOrderUnit
+  | DeliveryOrderUnit[]
+  | null;
 
   warehouse:
-    | DeliveryOrderWarehouse
-    | DeliveryOrderWarehouse[]
-    | null;
+  | DeliveryOrderWarehouse
+  | DeliveryOrderWarehouse[]
+  | null;
 }
 
 interface DeliveryOrderDetailsDatabaseRow
   extends DeliveryOrderRow {
   customer:
-    | DeliveryOrderCustomer
-    | DeliveryOrderCustomer[]
-    | null;
+  | DeliveryOrderCustomer
+  | DeliveryOrderCustomer[]
+  | null;
 
   shipping_address:
-    | DeliveryOrderShippingAddress
-    | DeliveryOrderShippingAddress[]
-    | null;
+  | DeliveryOrderShippingAddress
+  | DeliveryOrderShippingAddress[]
+  | null;
 
   warehouse:
-    | DeliveryOrderWarehouse
-    | DeliveryOrderWarehouse[]
-    | null;
+  | DeliveryOrderWarehouse
+  | DeliveryOrderWarehouse[]
+  | null;
 
   sales_order:
-    | DeliveryOrderSalesOrderReference
-    | DeliveryOrderSalesOrderReference[]
-    | null;
+  | DeliveryOrderSalesOrderReference
+  | DeliveryOrderSalesOrderReference[]
+  | null;
 
   delivery_order_items:
-    | DeliveryOrderItemDatabaseRow[]
-    | null;
+  | DeliveryOrderItemDatabaseRow[]
+  | null;
 }
 
 /* =========================================================
@@ -549,18 +549,18 @@ function parseDispatchResult(
     fulfilmentStatus:
       String(
         result.fulfilmentStatus ??
-          "",
+        "",
       ),
 
     inventoryTransactionId:
       typeof result.inventoryTransactionId ===
-      "string"
+        "string"
         ? result.inventoryTransactionId
         : null,
 
     inventoryTransactionNumber:
       typeof result.inventoryTransactionNumber ===
-      "string"
+        "string"
         ? result.inventoryTransactionNumber
         : null,
 
@@ -572,7 +572,7 @@ function parseDispatchResult(
     dispatchedQuantity:
       Number(
         result.dispatchedQuantity ??
-          0,
+        0,
       ),
 
     alreadyDispatched:
@@ -624,15 +624,15 @@ function mapDeliveryOrderRow(
 
     status:
       row.status as
-        DeliveryOrderStatus,
+      DeliveryOrderStatus,
 
     priority:
       row.priority as
-        DeliveryOrderPriority,
+      DeliveryOrderPriority,
 
     delivery_method:
       row.delivery_method as
-        DeliveryMethod,
+      DeliveryMethod,
 
     external_reference:
       row.external_reference,
@@ -995,7 +995,7 @@ export async function getDeliveryOrderPage(
 
   const rows =
     (data ?? []) as
-      DeliveryOrderListDatabaseRow[];
+    DeliveryOrderListDatabaseRow[];
 
   const mapped =
     rows.map((row) => {
@@ -1071,9 +1071,9 @@ export async function getDeliveryOrderPage(
       totalCount === 0
         ? 1
         : Math.ceil(
-            totalCount /
-              pageSize,
-          ),
+          totalCount /
+          pageSize,
+        ),
   };
 }
 
@@ -1424,7 +1424,7 @@ export async function getDeliveryOrderById(
 
   const row =
     data as
-      DeliveryOrderDetailsDatabaseRow;
+    DeliveryOrderDetailsDatabaseRow;
 
   return {
     ...mapDeliveryOrderRow(row),
@@ -1467,58 +1467,58 @@ export interface UpdateDeliveryOrderInput {
   delivery_date?: string;
 
   requested_delivery_date?:
-    | string
-    | null;
+  | string
+  | null;
 
   expected_delivery_date?:
-    | string
-    | null;
+  | string
+  | null;
 
   priority?:
-    DeliveryOrderPriority;
+  DeliveryOrderPriority;
 
   delivery_method?:
-    DeliveryMethod;
+  DeliveryMethod;
 
   external_reference?:
-    | string
-    | null;
+  | string
+  | null;
 
   customer_reference?:
-    | string
-    | null;
+  | string
+  | null;
 
   tracking_number?:
-    | string
-    | null;
+  | string
+  | null;
 
   carrier_name?:
-    | string
-    | null;
+  | string
+  | null;
 
   vehicle_number?:
-    | string
-    | null;
+  | string
+  | null;
 
   driver_name?:
-    | string
-    | null;
+  | string
+  | null;
 
   driver_phone?:
-    | string
-    | null;
+  | string
+  | null;
 
   packing_notes?:
-    | string
-    | null;
+  | string
+  | null;
 
   delivery_notes?:
-    | string
-    | null;
+  | string
+  | null;
 
   internal_notes?:
-    | string
-    | null;
+  | string
+  | null;
 }
 
 function normalizeNullableText(
@@ -1694,28 +1694,28 @@ export interface UpdateDeliveryOrderItemInput {
   packed_quantity?: number;
 
   batch_number?:
-    | string
-    | null;
+  | string
+  | null;
 
   lot_number?:
-    | string
-    | null;
+  | string
+  | null;
 
   serial_number?:
-    | string
-    | null;
+  | string
+  | null;
 
   manufacturing_date?:
-    | string
-    | null;
+  | string
+  | null;
 
   expiry_date?:
-    | string
-    | null;
+  | string
+  | null;
 
   line_notes?:
-    | string
-    | null;
+  | string
+  | null;
 }
 
 export async function updateDeliveryOrderItem(
@@ -1822,7 +1822,7 @@ export async function updateDeliveryOrderItem(
       ) ||
       input.picked_quantity < 0 ||
       input.picked_quantity >
-        deliveryQuantity
+      deliveryQuantity
     ) {
       throw new Error(
         "Picked quantity must be between zero and the delivery quantity.",
@@ -1848,7 +1848,7 @@ export async function updateDeliveryOrderItem(
       ) ||
       input.packed_quantity < 0 ||
       input.packed_quantity >
-        pickedQuantity
+      pickedQuantity
     ) {
       throw new Error(
         "Packed quantity must be between zero and the picked quantity.",
@@ -1894,7 +1894,7 @@ export async function updateDeliveryOrderItem(
     input.manufacturing_date &&
     input.expiry_date &&
     input.expiry_date <
-      input.manufacturing_date
+    input.manufacturing_date
   ) {
     throw new Error(
       "Expiry date cannot be earlier than the manufacturing date.",
@@ -1950,7 +1950,7 @@ export async function updateDeliveryOrderItem(
 
   return mapDeliveryOrderItem(
     data as
-      DeliveryOrderItemDatabaseRow,
+    DeliveryOrderItemDatabaseRow,
   );
 }
 
@@ -1974,30 +1974,30 @@ interface DeliverableSalesOrderDatabaseRow {
   fulfilment_status: string;
 
   customer:
-    | {
-        display_name: string;
-      }
-    | Array<{
-        display_name: string;
-      }>
-    | null;
+  | {
+    display_name: string;
+  }
+  | Array<{
+    display_name: string;
+  }>
+  | null;
 
   warehouse:
-    | {
-        name: string;
-      }
-    | Array<{
-        name: string;
-      }>
-    | null;
+  | {
+    name: string;
+  }
+  | Array<{
+    name: string;
+  }>
+  | null;
 
   sales_order_items:
-    | Array<{
-        fulfilment_method: string;
-        quantity_reserved: number;
-        quantity_fulfilled: number;
-      }>
-    | null;
+  | Array<{
+    fulfilment_method: string;
+    quantity_reserved: number;
+    quantity_fulfilled: number;
+  }>
+  | null;
 }
 
 export async function getDeliverableSalesOrders():
@@ -2064,7 +2064,7 @@ export async function getDeliverableSalesOrders():
 
   const rows =
     (data ?? []) as
-      DeliverableSalesOrderDatabaseRow[];
+    DeliverableSalesOrderDatabaseRow[];
 
   return rows.flatMap((row) => {
     if (!row.warehouse_id) {
@@ -2078,8 +2078,12 @@ export async function getDeliverableSalesOrders():
     const deliverableItems =
       items.filter(
         (item) =>
-          item.fulfilment_method ===
-            "stock" &&
+          (
+            item.fulfilment_method ===
+            "stock" ||
+            item.fulfilment_method ===
+            "local_purchase"
+          ) &&
           Number(
             item.quantity_reserved,
           ) > 0,
