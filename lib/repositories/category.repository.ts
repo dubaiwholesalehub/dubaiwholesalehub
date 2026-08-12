@@ -246,3 +246,242 @@ export async function getAdminCategoryHierarchy():
     },
   );
 }
+
+/* =========================================================
+ * Public Category Catalog
+ * ========================================================= */
+
+export async function getPublicCategories() {
+  const supabase =
+    await createClient();
+
+  const {
+    data: categories,
+    error: categoriesError,
+  } = await supabase
+    .from("categories")
+    .select(`
+      id,
+      name,
+      slug,
+      description,
+      icon,
+      image_url,
+      seo_title,
+      seo_description,
+      sort_order,
+      is_featured
+    `)
+    .eq("is_active", true)
+    .order("sort_order", {
+      ascending: true,
+    })
+    .order("name", {
+      ascending: true,
+    });
+
+  if (categoriesError) {
+    throw new Error(
+      `Unable to load public categories: ${categoriesError.message}`,
+    );
+  }
+
+  const {
+    data: products,
+    error: productsError,
+  } = await supabase
+    .from("products")
+    .select(`
+      id,
+      category_id
+    `)
+    .eq("status", "published");
+
+  if (productsError) {
+    throw new Error(
+      `Unable to load category product counts: ${productsError.message}`,
+    );
+  }
+
+  const productCounts =
+    new Map<string, number>();
+
+  for (
+    const product of
+    products ?? []
+  ) {
+    if (!product.category_id) {
+      continue;
+    }
+
+    productCounts.set(
+      product.category_id,
+      (
+        productCounts.get(
+          product.category_id,
+        ) ?? 0
+      ) + 1,
+    );
+  }
+
+  return (
+    categories ?? []
+  ).map((category) => ({
+    ...category,
+
+    product_count:
+      productCounts.get(
+        category.id,
+      ) ?? 0,
+  }));
+}
+
+export async function getPublicCategoryBySlug(
+  slug: string,
+) {
+  const cleanedSlug =
+    slug.trim();
+
+  if (!cleanedSlug) {
+    return null;
+  }
+
+  const supabase =
+    await createClient();
+
+  const {
+    data: category,
+    error: categoryError,
+  } = await supabase
+    .from("categories")
+    .select(`
+      id,
+      name,
+      slug,
+      description,
+      icon,
+      image_url,
+      seo_title,
+      seo_description
+    `)
+    .eq("slug", cleanedSlug)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (categoryError) {
+    throw new Error(
+      `Unable to load category: ${categoryError.message}`,
+    );
+  }
+
+  if (!category) {
+    return null;
+  }
+
+  const [
+    subcategoriesResult,
+    productsResult,
+  ] = await Promise.all([
+    supabase
+      .from("subcategories")
+      .select(`
+        id,
+        name,
+        slug,
+        description,
+        image_url,
+        sort_order
+      `)
+      .eq(
+        "category_id",
+        category.id,
+      )
+      .eq("is_active", true)
+      .order("sort_order", {
+        ascending: true,
+      })
+      .order("name", {
+        ascending: true,
+      }),
+
+    supabase
+      .from("products")
+      .select(`
+        id,
+        name,
+        slug,
+        sku,
+        moq,
+        lead_time,
+        packaging,
+        short_description,
+        featured,
+        is_new,
+
+        category:categories (
+          id,
+          name,
+          slug
+        ),
+
+        brand:brands (
+          id,
+          name,
+          slug
+        ),
+
+        country:countries (
+          id,
+          name,
+          iso2
+        ),
+
+        unit:units (
+          id,
+          name,
+          short_name
+        ),
+
+        product_images (
+          id,
+          storage_path,
+          alt_text,
+          sort_order,
+          is_primary
+        )
+      `)
+      .eq(
+        "category_id",
+        category.id,
+      )
+      .eq(
+        "status",
+        "published",
+      )
+      .order("created_at", {
+        ascending: false,
+      }),
+  ]);
+
+  const firstError =
+    subcategoriesResult.error ??
+    productsResult.error;
+
+  if (firstError) {
+    throw new Error(
+      `Unable to load category catalog: ${firstError.message}`,
+    );
+  }
+
+  return {
+    category,
+
+    subcategories:
+      subcategoriesResult.data ??
+      [],
+
+    products:
+      productsResult.data ??
+      [],
+  };
+}

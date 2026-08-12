@@ -16,9 +16,40 @@ const fontHeading = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Meridian — Premium Corporate Solutions",
+  metadataBase: new URL("https://dubaiwholesalehub.com"),
+
+  title: {
+    default: "Dubai Wholesale Hub | Wholesale, Export & Sourcing",
+    template: "%s | Dubai Wholesale Hub",
+  },
+
   description:
-    "A modern, premium corporate platform delivering trusted advisory and strategic solutions.",
+    "Dubai Wholesale Hub connects international buyers with wholesale products, sourcing solutions and export services from Dubai, UAE.",
+
+  alternates: {
+    canonical: "/",
+  },
+
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://dubaiwholesalehub.com",
+    siteName: "Dubai Wholesale Hub",
+    title: "Dubai Wholesale Hub | Wholesale, Export & Sourcing",
+    description:
+      "Wholesale products, sourcing and export services from Dubai for international buyers.",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Dubai Wholesale Hub",
+    description: "Wholesale products, sourcing and export services from Dubai.",
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

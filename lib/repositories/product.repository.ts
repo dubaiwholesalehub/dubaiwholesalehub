@@ -299,3 +299,163 @@ export async function getProductLookupOptions(): Promise<
     sku: product.sku,
   }));
 }
+
+/* =========================================================
+ * Public Product Catalog
+ * ========================================================= */
+
+export async function getPublishedProducts() {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      id,
+      name,
+      slug,
+      sku,
+      moq,
+      lead_time,
+      packaging,
+      short_description,
+      featured,
+      is_new,
+
+      category:categories (
+        id,
+        name,
+        slug
+      ),
+
+      brand:brands (
+        id,
+        name,
+        slug
+      ),
+
+      country:countries (
+        id,
+        name,
+        iso2
+      ),
+
+      unit:units (
+        id,
+        name,
+        short_name
+      ),
+
+      product_images (
+        id,
+        storage_path,
+        alt_text,
+        sort_order,
+        is_primary
+      )
+    `)
+    .eq("status", "published")
+    .order("created_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    throw new Error(
+      `Unable to load published products: ${error.message}`,
+    );
+  }
+
+  return data ?? [];
+}
+
+export async function getPublishedProductBySlug(
+  slug: string,
+) {
+  const cleanedSlug = slug.trim();
+
+  if (!cleanedSlug) {
+    return null;
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      id,
+      name,
+      slug,
+      sku,
+      barcode,
+      model_number,
+
+      short_description,
+      description,
+
+      moq,
+      carton_quantity,
+      lead_time,
+      packaging,
+      warranty,
+      hs_code,
+
+      weight,
+      length,
+      width,
+      height,
+
+      featured,
+      is_new,
+
+      meta_title,
+      meta_description,
+
+      category:categories (
+        id,
+        name,
+        slug
+      ),
+
+      subcategory:subcategories (
+        id,
+        name,
+        slug
+      ),
+
+      brand:brands (
+        id,
+        name,
+        slug
+      ),
+
+      country:countries (
+        id,
+        name,
+        iso2
+      ),
+
+      unit:units (
+        id,
+        name,
+        short_name
+      ),
+
+      product_images (
+        id,
+        storage_path,
+        alt_text,
+        sort_order,
+        is_primary
+      )
+    `)
+    .eq("slug", cleanedSlug)
+    .eq("status", "published")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Unable to load product: ${error.message}`,
+    );
+  }
+
+  return data;
+}
