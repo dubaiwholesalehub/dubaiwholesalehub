@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import ProductFilters, {
   type ProductStatusFilter,
@@ -13,10 +14,7 @@ import type {
 } from "@/components/admin/products/product-types";
 import SlideOver from "@/components/admin/ui/SlideOver";
 
-import {
-  createProduct,
-  updateProduct,
-} from "@/app/admin/(protected)/products/actions";
+import { updateProduct } from "@/app/admin/(protected)/products/actions";
 
 interface ProductManagerProps {
   products: Product[];
@@ -27,13 +25,11 @@ export default function ProductManager({
   products,
   options,
 }: ProductManagerProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
-  const [status, setStatus] =
-    useState<ProductStatusFilter>("all");
+  const [status, setStatus] = useState<ProductStatusFilter>("all");
   const [categoryId, setCategoryId] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingProduct, setEditingProduct] =
-    useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -49,22 +45,13 @@ export default function ProductManager({
           product.model_number ?? "",
           product.category?.name ?? "",
           product.brand?.name ?? "",
-        ].some((value) =>
-          value.toLowerCase().includes(term),
-        );
+        ].some((value) => value.toLowerCase().includes(term));
 
-      const matchesStatus =
-        status === "all" || product.status === status;
+      const matchesStatus = status === "all" || product.status === status;
 
-      const matchesCategory =
-        !categoryId ||
-        product.category_id === categoryId;
+      const matchesCategory = !categoryId || product.category_id === categoryId;
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesCategory
-      );
+      return matchesSearch && matchesStatus && matchesCategory;
     });
   }, [categoryId, products, search, status]);
 
@@ -88,28 +75,15 @@ export default function ProductManager({
           onStatusChange={setStatus}
           onCategoryChange={setCategoryId}
           onClear={clearFilters}
-          onCreate={() => setCreateOpen(true)}
+          onCreate={() => router.push("/admin/products/new")}
         />
 
         <ProductTable
           products={filteredProducts}
           onEdit={setEditingProduct}
-          onCreate={() => setCreateOpen(true)}
+          onCreate={() => router.push("/admin/products/new")}
         />
       </section>
-
-      <SlideOver
-        open={createOpen}
-        title="Create product"
-        description="Add a wholesale product to your catalog."
-        onClose={() => setCreateOpen(false)}
-      >
-        <ProductForm
-          action={createProduct}
-          options={options}
-          submitLabel="Create product"
-        />
-      </SlideOver>
 
       <SlideOver
         open={Boolean(editingProduct)}
