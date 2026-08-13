@@ -23,6 +23,7 @@ import { getPublicProductBySlug } from "@/lib/services/product.service";
 import { getProductImageUrl } from "@/lib/supabase/storage";
 
 import { getWhatsAppUrl } from "@/lib/config/site";
+import ProductImageGallery from "@/components/catalog/ProductImageGallery";
 
 interface ProductPageProps {
   params: Promise<{
@@ -68,9 +69,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
       (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
 
-  const primaryImage = images[0] ?? null;
+  const galleryImages = images.flatMap((image) => {
+    const url = getProductImageUrl(image.storage_path);
 
-  const primaryImageUrl = getProductImageUrl(primaryImage?.storage_path);
+    if (!url) {
+      return [];
+    }
+
+    return [
+      {
+        id: image.id,
+        url,
+        alt: image.alt_text ?? product.name,
+      },
+    ];
+  });
 
   const whatsappUrl = getWhatsAppUrl(
     `Hello Dubai Wholesale Hub, I am interested in ${product.name}${
@@ -110,51 +123,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <Container>
             <div className="grid gap-10 lg:grid-cols-2">
               <div>
-                <div className="relative flex min-h-[480px] items-center justify-center overflow-hidden rounded-3xl border border-slate-200 bg-white">
-                  {primaryImageUrl ? (
-                    <Image
-                      src={primaryImageUrl}
-                      alt={primaryImage?.alt_text ?? product.name}
-                      fill
-                      priority
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                      className="object-contain p-6"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-slate-400">
-                      <ImageIcon className="h-16 w-16" />
-
-                      <p className="mt-4">Product image coming soon</p>
-                    </div>
-                  )}
-                </div>
-
-                {images.length > 1 && (
-                  <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-5">
-                    {images.map((image) => {
-                      const imageUrl = getProductImageUrl(image.storage_path);
-
-                      if (!imageUrl) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={image.id}
-                          className="relative aspect-square overflow-hidden rounded-xl border bg-white"
-                        >
-                          <Image
-                            src={imageUrl}
-                            alt={image.alt_text ?? product.name}
-                            fill
-                            sizes="140px"
-                            className="object-contain p-2"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <ProductImageGallery
+                  images={galleryImages}
+                  productName={product.name}
+                />
               </div>
 
               <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-9">
