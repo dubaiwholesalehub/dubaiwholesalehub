@@ -426,10 +426,10 @@ export async function getProductSupplierSummary(
 
   const comparablePrices = comparisonCurrency
     ? pricedMappings.filter(
-        (mapping) =>
-          mapping.currency_code ===
-          comparisonCurrency,
-      )
+      (mapping) =>
+        mapping.currency_code ===
+        comparisonCurrency,
+    )
     : [];
 
   const lowestMapping = comparablePrices.reduce<
@@ -511,31 +511,31 @@ export async function getProductSupplierSummary(
 
     lowestCost: lowestMapping
       ? {
-          amount: lowestMapping.cost_price,
-          currencyCode:
-            lowestMapping.currency_code,
-          supplierName:
-            supplierName(lowestMapping),
-          mappingId: lowestMapping.id,
-        }
+        amount: lowestMapping.cost_price,
+        currencyCode:
+          lowestMapping.currency_code,
+        supplierName:
+          supplierName(lowestMapping),
+        mappingId: lowestMapping.id,
+      }
       : null,
 
     fastestSupplier: fastestMapping
       ? {
-          leadTimeDays:
-            fastestMapping.lead_time_days,
-          supplierName:
-            supplierName(fastestMapping),
-          mappingId: fastestMapping.id,
-        }
+        leadTimeDays:
+          fastestMapping.lead_time_days,
+        supplierName:
+          supplierName(fastestMapping),
+        mappingId: fastestMapping.id,
+      }
       : null,
 
     preferredSupplier: preferredMapping
       ? {
-          supplierName:
-            supplierName(preferredMapping),
-          mappingId: preferredMapping.id,
-        }
+        supplierName:
+          supplierName(preferredMapping),
+        mappingId: preferredMapping.id,
+      }
       : null,
 
     newestPriceUpdate:
@@ -556,3 +556,151 @@ export type ProductSupplierOption = Awaited<
   ReturnType<typeof getProductSupplierOptions>
 >[number];
 
+/* =========================================================
+ * Quick Sale Supplier Purchase Intelligence
+ * ========================================================= */
+
+export type ProductQuickPurchaseInfo = {
+  productId: string;
+
+  supplierId: string | null;
+  supplierName: string | null;
+
+  isPreferred: boolean;
+
+  costPrice: number | null;
+  lastPurchasePrice: number | null;
+
+  suggestedPurchasePrice: number | null;
+
+  currencyCode: string;
+
+  lastPriceUpdate: string | null;
+};
+
+export async function getQuickSalePurchaseInfo():
+  Promise<ProductQuickPurchaseInfo[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("product_suppliers")
+    .select(`
+      id,
+      product_id,
+      supplier_id,
+      cost_price,
+      currency_code,
+      last_purchase_price,
+      last_price_update,
+      is_preferred,
+      is_active,
+      supplier:suppliers (
+        id,
+        company_name
+      )
+    `)
+    .eq("is_active", true)
+    .order("is_preferred", {
+      ascending: false,
+    })
+    .order("last_price_update", {
+      ascending: false,
+      nullsFirst: false,
+    });
+
+  if (error) {
+    throw new Error(
+      `Unable to load quick-sale purchase prices: ${error.message}`,
+    );
+  }
+
+  /*
+   * Choose ONE supplier reference per product:
+   *
+   * 1. Preferred active supplier.
+   * 2. Otherwise most recently price-updated active supplier.
+   *
+   * Query ordering above already places preferred mappings first.
+   */
+  const selected =
+    new Map<
+      string,
+      ProductQuickPurchaseInfo
+    >();
+
+  for (const row of data ?? []) {
+    if (
+      selected.has(
+        row.product_id,
+      )
+    ) {
+      continue;
+    }
+
+    const supplier =
+      Array.isArray(
+        row.supplier,
+      )
+        ? row.supplier[0] ?? null
+        : row.supplier;
+
+    const costPrice =
+      row.cost_price === null
+        ? null
+        : Number(
+          row.cost_price,
+        );
+
+    const lastPurchasePrice =
+      row.last_purchase_price ===
+        null
+        ? null
+        : Number(
+          row.last_purchase_price,
+        );
+
+    selected.set(
+      row.product_id,
+      {
+        productId:
+          row.product_id,
+
+        supplierId:
+          row.supplier_id,
+
+        supplierName:
+          supplier?.company_name ??
+          null,
+
+        isPreferred:
+          Boolean(
+            row.is_preferred,
+          ),
+
+        costPrice,
+
+        lastPurchasePrice,
+
+        /*
+         * Last actual purchase wins.
+         * Current supplier cost is the fallback.
+         */
+        suggestedPurchasePrice:
+          lastPurchasePrice ??
+          costPrice,
+
+        currencyCode:
+          row.currency_code ??
+          "AED",
+
+        lastPriceUpdate:
+          row.last_price_update ??
+          null,
+      },
+    );
+  }
+
+  return Array.from(
+    selected.values(),
+  );
+}

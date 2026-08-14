@@ -24,6 +24,7 @@ import {
   FileText,
   ClipboardList,
   Truck,
+  Zap,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -150,6 +151,11 @@ const navigationGroups = [
   {
     label: "Sales",
     items: [
+      {
+        label: "Quick Sale",
+        href: "/admin/sales/quick-sale",
+        icon: Zap,
+      },
       {
         label: "Customers",
         href: "/admin/customers",
