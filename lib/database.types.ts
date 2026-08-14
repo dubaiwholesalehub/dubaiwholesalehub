@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       brands: {
@@ -293,6 +268,155 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_receipt_allocations: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          receipt_id: string
+          sales_order_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          receipt_id: string
+          sales_order_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          receipt_id?: string
+          sales_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_receipt_allocations_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_receipts: {
+        Row: {
+          allocated_amount: number
+          amount: number
+          bank_name: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cheque_date: string | null
+          cheque_number: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          customer_id: string
+          exchange_rate: number
+          id: string
+          notes: string | null
+          payment_method: string
+          posted_at: string | null
+          posted_by: string | null
+          receipt_date: string
+          receipt_number: string
+          reference_number: string | null
+          status: string
+          unallocated_amount: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number
+          amount: number
+          bank_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_id: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          receipt_date?: string
+          receipt_number: string
+          reference_number?: string | null
+          status?: string
+          unallocated_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          amount?: number
+          bank_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_id?: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          receipt_date?: string
+          receipt_number?: string
+          reference_number?: string | null
+          status?: string
+          unallocated_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_receipts_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3232,6 +3356,10 @@ export type Database = {
       can_approve_rfqs: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }
+      cancel_customer_receipt: {
+        Args: { p_reason: string; p_receipt_id: string }
+        Returns: string
+      }
       cancel_delivery_order: {
         Args: { p_delivery_order_id: string }
         Returns: string
@@ -3454,6 +3582,7 @@ export type Database = {
         Returns: Json
       }
       generate_customer_number: { Args: never; Returns: string }
+      generate_customer_receipt_number: { Args: never; Returns: string }
       generate_delivery_order_number: { Args: never; Returns: string }
       generate_inventory_transfer_number: { Args: never; Returns: string }
       generate_purchase_order_number: { Args: never; Returns: string }
@@ -3501,6 +3630,23 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       mark_delivery_delivered: {
         Args: { p_delivery_order_id: string }
+        Returns: string
+      }
+      post_customer_receipt: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_customer_id: string
+          p_exchange_rate: number
+          p_notes: string
+          p_payment_method: string
+          p_receipt_date: string
+          p_reference_number: string
+        }
         Returns: string
       }
       post_local_purchase_inventory: {
@@ -3719,6 +3865,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      sync_customer_receipt_totals: {
+        Args: { p_receipt_id: string }
+        Returns: undefined
+      }
+      sync_sales_order_paid_amount: {
+        Args: { p_sales_order_id: string }
+        Returns: undefined
+      }
       synchronize_sales_order_fulfilment: {
         Args: { p_sales_order_id: string }
         Returns: string
@@ -3896,9 +4050,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],

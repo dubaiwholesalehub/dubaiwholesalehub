@@ -24,7 +24,9 @@ import { completeQuickSale } from "@/app/admin/(protected)/sales/quick-sale/acti
 
 type TaxTreatment = "local_5" | "export_verified" | "export_pending" | "review";
 
-type PaymentMethod = "cash" | "bank" | "credit" | "partial";
+type PaymentStatus = "paid" | "partial" | "credit";
+
+type PaymentMethod = "cash" | "bank" | "card" | "cheque" | "other";
 
 type DeliveryMode = "now" | "later";
 
@@ -83,9 +85,19 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [cargoReference, setCargoReference] = useState("");
 
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>("paid");
+
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   const [amountReceived, setAmountReceived] = useState(0);
+
+  const [paymentReference, setPaymentReference] = useState("");
+
+  const [bankName, setBankName] = useState("");
+
+  const [chequeNumber, setChequeNumber] = useState("");
+
+  const [chequeDate, setChequeDate] = useState("");
 
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("now");
 
@@ -110,7 +122,14 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const grandTotal = subtotal + vatAmount;
 
-  const outstanding = Math.max(grandTotal - amountReceived, 0);
+  const effectiveAmountReceived =
+    paymentStatus === "paid"
+      ? grandTotal
+      : paymentStatus === "credit"
+        ? 0
+        : amountReceived;
+
+  const outstanding = Math.max(grandTotal - effectiveAmountReceived, 0);
 
   function updateItem(id: string, changes: Partial<QuickSaleItem>) {
     setItems((current) =>
@@ -205,7 +224,41 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
       return;
     }
+    if (
+      paymentStatus === "paid" &&
+      Math.abs(amountReceived - grandTotal) > 0.01
+    ) {
+      toast.error("Paid Now must equal the invoice grand total.");
 
+      return;
+    }
+
+    if (
+      paymentStatus === "partial" &&
+      (amountReceived <= 0 || amountReceived >= grandTotal)
+    ) {
+      toast.error(
+        "Partial payment must be greater than zero and less than the invoice total.",
+      );
+
+      return;
+    }
+
+    if (paymentStatus === "credit" && amountReceived !== 0) {
+      toast.error("Credit sale cannot have an amount received.");
+
+      return;
+    }
+
+    if (
+      paymentMethod === "cheque" &&
+      paymentStatus !== "credit" &&
+      !chequeNumber.trim()
+    ) {
+      toast.error("Please enter the cheque number.");
+
+      return;
+    }
     startPosting(async () => {
       const result = await completeQuickSale({
         customerId,
@@ -220,9 +273,19 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
         cargoReference: cargoReference || undefined,
 
+        paymentStatus,
+
         paymentMethod,
 
-        amountReceived,
+        amountReceived: effectiveAmountReceived,
+
+        paymentReference: paymentReference || undefined,
+
+        bankName: bankName || undefined,
+
+        chequeNumber: chequeNumber || undefined,
+
+        chequeDate: chequeDate || undefined,
 
         deliveryMode,
 
@@ -688,37 +751,128 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               description="Record how much the customer paid now."
             />
 
-            <div className="mt-6 grid gap-4 md:grid-cols-2">
-              <Field label="Payment Type">
-                <select
-                  value={paymentMethod}
-                  onChange={(event) =>
-                    setPaymentMethod(event.target.value as PaymentMethod)
-                  }
-                  className={inputClass}
-                >
-                  <option value="cash">Cash</option>
-
-                  <option value="bank">Bank</option>
-
-                  <option value="credit">Credit</option>
-
-                  <option value="partial">Partial Payment</option>
-                </select>
-              </Field>
-
-              <Field label="Amount Received">
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={amountReceived}
-                  onChange={(event) =>
-                    setAmountReceived(Number(event.target.value) || 0)
-                  }
-                  className={inputClass}
+            <div className="mt-6 space-y-5">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <TaxCard
+                  active={paymentStatus === "paid"}
+                  title="Paid Now"
+                  subtitle="Customer pays the full invoice now"
+                  onClick={() => {
+                    setPaymentStatus("paid");
+                    setAmountReceived(grandTotal);
+                  }}
                 />
-              </Field>
+
+                <TaxCard
+                  active={paymentStatus === "partial"}
+                  title="Partial Payment"
+                  subtitle="Customer pays part of the invoice"
+                  onClick={() => {
+                    setPaymentStatus("partial");
+
+                    if (amountReceived >= grandTotal) {
+                      setAmountReceived(0);
+                    }
+                  }}
+                />
+
+                <TaxCard
+                  active={paymentStatus === "credit"}
+                  title="Credit"
+                  subtitle="Nothing received now"
+                  onClick={() => {
+                    setPaymentStatus("credit");
+                    setAmountReceived(0);
+                  }}
+                />
+              </div>
+
+              {paymentStatus !== "credit" ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field label="Payment Method">
+                    <select
+                      value={paymentMethod}
+                      onChange={(event) =>
+                        setPaymentMethod(event.target.value as PaymentMethod)
+                      }
+                      className={inputClass}
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank Transfer</option>
+                      <option value="card">Card</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </Field>
+
+                  <Field label="Amount Received">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={amountReceived}
+                      onChange={(event) =>
+                        setAmountReceived(Number(event.target.value) || 0)
+                      }
+                      disabled={paymentStatus === "paid"}
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  <Field label="Payment Reference">
+                    <input
+                      value={paymentReference}
+                      onChange={(event) =>
+                        setPaymentReference(event.target.value)
+                      }
+                      placeholder="Transfer / POS / receipt reference"
+                      className={inputClass}
+                    />
+                  </Field>
+
+                  {paymentMethod === "bank" ? (
+                    <Field label="Bank Name">
+                      <input
+                        value={bankName}
+                        onChange={(event) => setBankName(event.target.value)}
+                        placeholder="Bank name"
+                        className={inputClass}
+                      />
+                    </Field>
+                  ) : null}
+
+                  {paymentMethod === "cheque" ? (
+                    <>
+                      <Field label="Cheque Number">
+                        <input
+                          value={chequeNumber}
+                          onChange={(event) =>
+                            setChequeNumber(event.target.value)
+                          }
+                          placeholder="Cheque number"
+                          className={inputClass}
+                        />
+                      </Field>
+
+                      <Field label="Cheque Date">
+                        <input
+                          type="date"
+                          value={chequeDate}
+                          onChange={(event) =>
+                            setChequeDate(event.target.value)
+                          }
+                          className={inputClass}
+                        />
+                      </Field>
+                    </>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  Credit sale — no customer receipt will be created now. The
+                  full invoice amount will remain outstanding.
+                </div>
+              )}
             </div>
           </section>
 
@@ -763,14 +917,14 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               <SummaryRow label="Grand Total" value={grandTotal} strong />
             </div>
 
-            <SummaryRow label="Received" value={amountReceived} />
+            <SummaryRow label="Received" value={effectiveAmountReceived} />
 
             <SummaryRow label="Outstanding" value={outstanding} strong />
           </div>
 
           <div className="mt-6 rounded-xl bg-slate-900 p-4 text-xs leading-5 text-slate-300">
-            Phase 1 is entry and calculation only. No database records will be
-            posted from this screen yet.
+            Completing this sale will create the Sales Order, process inventory
+            and delivery, and record any customer payment as a posted receipt.
           </div>
 
           <button

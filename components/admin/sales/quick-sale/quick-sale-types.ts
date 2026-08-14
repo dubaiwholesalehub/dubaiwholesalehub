@@ -74,11 +74,17 @@ export type QuickSaleTaxTreatment =
     | "export_pending"
     | "review";
 
+export type QuickSalePaymentStatus =
+    | "paid"
+    | "partial"
+    | "credit";
+
 export type QuickSalePaymentMethod =
     | "cash"
     | "bank"
-    | "credit"
-    | "partial";
+    | "card"
+    | "cheque"
+    | "other";
 
 export type QuickSaleDeliveryMode =
     | "now"
@@ -109,8 +115,19 @@ export type CompleteQuickSaleInput = {
     cargoCompany?: string;
     cargoReference?: string;
 
+    paymentStatus:
+    QuickSalePaymentStatus;
+
     paymentMethod:
     QuickSalePaymentMethod;
+
+    paymentReference?: string;
+
+    bankName?: string;
+
+    chequeNumber?: string;
+
+    chequeDate?: string;
 
     amountReceived: number;
 
@@ -131,6 +148,10 @@ export type CompleteQuickSaleResult =
         | string
         | null;
 
+        receiptId:
+        | string
+        | null;
+        
         message: string;
     }
     | {

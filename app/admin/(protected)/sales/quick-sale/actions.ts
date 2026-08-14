@@ -29,6 +29,10 @@ import type {
   CompleteQuickSaleResult,
 } from "@/components/admin/sales/quick-sale/quick-sale-types";
 
+import {
+  postCustomerReceipt,
+} from "@/lib/repositories/customer-receipt.repository";
+
 function cleanText(
   value:
     | string
@@ -83,9 +87,9 @@ export async function completeQuickSale(
 
     if (
       input.taxTreatment ===
-        "export_verified" ||
+      "export_verified" ||
       input.taxTreatment ===
-        "export_pending"
+      "export_pending"
     ) {
       if (
         !input.destinationCountryId
@@ -127,7 +131,48 @@ export async function completeQuickSale(
           "Every item must have a valid selling price.",
         );
       }
+      if (
+        !Number.isFinite(
+          input.amountReceived,
+        ) ||
+        input.amountReceived < 0
+      ) {
+        throw new Error(
+          "Amount received cannot be negative.",
+        );
+      }
 
+      if (
+        input.paymentStatus ===
+        "credit" &&
+        input.amountReceived !== 0
+      ) {
+        throw new Error(
+          "Credit sales cannot contain an amount received.",
+        );
+      }
+
+      if (
+        input.paymentStatus !==
+        "credit" &&
+        input.amountReceived <= 0
+      ) {
+        throw new Error(
+          "Paid and partial sales require an amount received.",
+        );
+      }
+
+      if (
+        input.paymentMethod ===
+        "cheque" &&
+        input.paymentStatus !==
+        "credit" &&
+        !input.chequeNumber?.trim()
+      ) {
+        throw new Error(
+          "Cheque number is required for cheque payments.",
+        );
+      }
       if (
         item.fulfilment ===
         "local_purchase"
@@ -162,8 +207,8 @@ export async function completeQuickSale(
         string,
         {
           supplierId:
-            | string
-            | undefined;
+          | string
+          | undefined;
 
           items: Array<{
             productId: string;
@@ -250,7 +295,7 @@ export async function completeQuickSale(
             group.supplierId,
 
           paymentMethod:
-            input.paymentMethod,
+            "quick_sale",
 
           internalNotes:
             "Posted automatically from Quick Sale.",
@@ -270,13 +315,13 @@ export async function completeQuickSale(
 
     const taxLabel =
       input.taxTreatment ===
-      "local_5"
+        "local_5"
         ? "UAE Local Sale - 5% VAT"
         : input.taxTreatment ===
-            "export_verified"
+          "export_verified"
           ? "Export - Evidence Verified - 0% VAT"
           : input.taxTreatment ===
-              "export_pending"
+            "export_pending"
             ? "Export - Evidence Pending"
             : "Tax Treatment - Review Required";
 
@@ -322,16 +367,11 @@ export async function completeQuickSale(
           "internal",
 
         payment_terms:
-          input.paymentMethod ===
-          "credit"
+          input.paymentStatus === "credit"
             ? "Credit Sale"
-            : input.paymentMethod ===
-                "partial"
+            : input.paymentStatus === "partial"
               ? "Partial Payment"
-              : input.paymentMethod ===
-                  "bank"
-                ? "Bank Payment"
-                : "Cash Payment",
+              : "Paid in Full",
 
         internal_notes:
           [
@@ -419,7 +459,7 @@ export async function completeQuickSale(
 
     const taxPercentage =
       input.taxTreatment ===
-      "local_5"
+        "local_5"
         ? 5
         : 0;
 
@@ -479,7 +519,7 @@ export async function completeQuickSale(
 
             line_notes:
               item.fulfilment ===
-              "local_purchase"
+                "local_purchase"
                 ? `Quick Sale local purchase. Purchase cost: AED ${(item.purchaseCost ?? 0).toFixed(2)}`
                 : "Quick Sale stock item.",
           };
@@ -551,6 +591,113 @@ export async function completeQuickSale(
       );
     }
 
+    /*
+ * ---------------------------------------------------------
+ * Step 9
+ * Customer Receipt
+ *
+ * Credit sales create no receipt.
+ * Paid and partial sales create a posted receipt allocated
+ * entirely to this Sales Order.
+ * ---------------------------------------------------------
+ */
+
+    let receiptId:
+      | string
+      | null = null;
+
+    if (
+      input.paymentStatus !==
+      "credit"
+    ) {
+      const invoiceTotal =
+        Number(
+          confirmed.order
+            .grand_total,
+        );
+
+      if (
+        input.amountReceived >
+        invoiceTotal
+      ) {
+        throw new Error(
+          "Amount received cannot exceed the sales order total.",
+        );
+      }
+
+      if (
+        input.paymentStatus ===
+        "paid" &&
+        Math.abs(
+          input.amountReceived -
+          invoiceTotal,
+        ) > 0.01
+      ) {
+        throw new Error(
+          "Paid Now amount must equal the sales order total.",
+        );
+      }
+
+      if (
+        input.paymentStatus ===
+        "partial" &&
+        input.amountReceived >=
+        invoiceTotal
+      ) {
+        throw new Error(
+          "Partial payment must be less than the sales order total.",
+        );
+      }
+
+      receiptId =
+        await postCustomerReceipt({
+          customerId:
+            input.customerId,
+
+          receiptDate:
+            input.saleDate,
+
+          paymentMethod:
+            input.paymentMethod,
+
+          currencyCode:
+            confirmed.order
+              .currency_code,
+
+          exchangeRate:
+            confirmed.order
+              .exchange_rate,
+
+          amount:
+            input.amountReceived,
+
+          referenceNumber:
+            input.paymentReference,
+
+          bankName:
+            input.bankName,
+
+          chequeNumber:
+            input.chequeNumber,
+
+          chequeDate:
+            input.chequeDate,
+
+          notes:
+            `Quick Sale payment for ${confirmed.order.order_number}`,
+
+          allocations: [
+            {
+              salesOrderId:
+                salesOrder.id,
+
+              amount:
+                input.amountReceived,
+            },
+          ],
+        });
+    }
+
     revalidatePath(
       "/admin/sales/quick-sale",
     );
@@ -588,11 +735,16 @@ export async function completeQuickSale(
       deliveryOrderId:
         delivery.id,
 
+      receiptId,
+
       message:
-        input.deliveryMode ===
-        "now"
-          ? "Quick Sale completed and delivered successfully."
-          : "Quick Sale created successfully. Delivery remains pending.",
+        input.paymentStatus ===
+          "credit"
+          ? "Quick Sale completed successfully. Full amount remains outstanding."
+          : input.paymentStatus ===
+            "partial"
+            ? "Quick Sale completed successfully with partial payment recorded."
+            : "Quick Sale completed successfully and customer payment recorded.",
     };
   } catch (error) {
     return {
