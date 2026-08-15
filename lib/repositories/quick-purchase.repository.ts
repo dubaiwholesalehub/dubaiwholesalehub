@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   postLocalPurchaseInventory,
 } from "@/lib/inventory/inventory-operation.repository";
+import {
+  getSupplierAvailableAdvance,
+  postSupplierPayment,
+} from "@/lib/repositories/supplier-payment.repository";
 
 export type QuickPurchaseTaxTreatment =
   | "standard_vat"
@@ -50,13 +54,13 @@ export type CreateQuickPurchaseInput = {
   exchangeRate?: number;
 
   taxTreatment:
-    QuickPurchaseTaxTreatment;
+  QuickPurchaseTaxTreatment;
 
   paymentStatus:
-    QuickPurchasePaymentStatus;
+  QuickPurchasePaymentStatus;
 
   paymentMethod?:
-    QuickPurchasePaymentMethod;
+  QuickPurchasePaymentMethod;
 
   paidAmount: number;
 
@@ -65,7 +69,7 @@ export type CreateQuickPurchaseInput = {
   notes?: string;
 
   items:
-    QuickPurchaseItemInput[];
+  QuickPurchaseItemInput[];
 };
 
 export type CreateQuickPurchaseResult = {
@@ -82,6 +86,10 @@ export type CreateQuickPurchaseResult = {
   paidAmount: number;
   balanceDue: number;
   paymentStatus: string;
+  supplierAdvanceApplied: number;
+  paidNow: number;
+  supplierPaymentId: string | null;
+
 };
 
 function cleanText(
@@ -98,7 +106,7 @@ function roundMoney(
 ) {
   return Math.round(
     (value + Number.EPSILON) *
-      100,
+    100,
   ) / 100;
 }
 
@@ -213,16 +221,16 @@ export async function createQuickPurchase(
         const lineSubtotal =
           roundMoney(
             item.quantity *
-              item.unitCost,
+            item.unitCost,
           );
 
         const taxAmount =
           roundMoney(
             lineSubtotal *
-              (
-                item.taxPercentage /
-                100
-              ),
+            (
+              item.taxPercentage /
+              100
+            ),
           );
 
         return {
@@ -234,7 +242,7 @@ export async function createQuickPurchase(
           lineTotal:
             roundMoney(
               lineSubtotal +
-                taxAmount,
+              taxAmount,
             ),
         };
       },
@@ -269,7 +277,39 @@ export async function createQuickPurchase(
   const grandTotal =
     roundMoney(
       subtotal +
-        taxAmount,
+      taxAmount,
+    );
+
+  /*
+* ---------------------------------------------------------
+* Existing Supplier Advance
+* ---------------------------------------------------------
+*/
+
+  const availableSupplierAdvance =
+    input.supplierId
+      ? await getSupplierAvailableAdvance(
+        input.supplierId,
+        input.currencyCode ??
+        "AED",
+      )
+      : 0;
+
+  const expectedAdvanceApplied =
+    roundMoney(
+      Math.min(
+        availableSupplierAdvance,
+        grandTotal,
+      ),
+    );
+
+  const amountAfterAdvance =
+    roundMoney(
+      Math.max(
+        grandTotal -
+        expectedAdvanceApplied,
+        0,
+      ),
     );
 
   let recoverableTaxAmount =
@@ -307,33 +347,38 @@ export async function createQuickPurchase(
     }
   }
 
+  /*
+ * ---------------------------------------------------------
+ * New Cash/Bank Payment
+ *
+ * Supplier advance is separate from the amount paid now.
+ * ---------------------------------------------------------
+ */
+
+  let actualPaidNow = 0;
+
   if (
     input.paymentStatus ===
     "credit"
   ) {
-    if (
-      input.paidAmount !== 0
-    ) {
-      throw new Error(
-        "Credit purchases cannot contain a paid amount.",
-      );
-    }
+    actualPaidNow = 0;
   }
 
   if (
     input.paymentStatus ===
     "paid"
   ) {
-    if (
-      Math.abs(
-        input.paidAmount -
-          grandTotal,
-      ) > 0.01
-    ) {
-      throw new Error(
-        "Paid purchase amount must equal the purchase total.",
-      );
-    }
+    /*
+     * Paid Now means:
+     *
+     * supplier advance
+     * +
+     * current payment
+     * =
+     * purchase total
+     */
+    actualPaidNow =
+      amountAfterAdvance;
   }
 
   if (
@@ -341,20 +386,42 @@ export async function createQuickPurchase(
     "partial"
   ) {
     if (
-      input.paidAmount <= 0 ||
-      input.paidAmount >=
-        grandTotal
+      !Number.isFinite(
+        input.paidAmount,
+      ) ||
+      input.paidAmount <= 0
     ) {
       throw new Error(
-        "Partial payment must be greater than zero and less than the purchase total.",
+        "Partial payment must be greater than zero.",
       );
     }
+
+    if (
+      input.paidAmount >=
+      amountAfterAdvance
+    ) {
+      throw new Error(
+        "Partial payment must be less than the remaining amount after supplier advance.",
+      );
+    }
+
+    actualPaidNow =
+      roundMoney(
+        input.paidAmount,
+      );
   }
 
-  const balanceDue =
+
+  /*
+   * Initial balance before supplier advance is physically
+   * allocated. applySupplierAdvanceToQuickPurchase() will
+   * synchronize the final balance afterward.
+   */
+
+  const initialBalanceDue =
     roundMoney(
       grandTotal -
-        input.paidAmount,
+      actualPaidNow,
     );
 
   /*
@@ -388,7 +455,7 @@ export async function createQuickPurchase(
             "credit"
             ? "credit"
             : input.paymentMethod ??
-              "other",
+            "other",
 
         internalNotes:
           [
@@ -399,7 +466,7 @@ export async function createQuickPurchase(
               : null,
 
             input.notes?.trim() ||
-              null,
+            null,
           ]
             .filter(Boolean)
             .join("\n"),
@@ -488,7 +555,7 @@ export async function createQuickPurchase(
 
       tax_invoice_verified_at:
         input.taxTreatment ===
-        "standard_vat"
+          "standard_vat"
           ? new Date().toISOString()
           : null,
 
@@ -508,27 +575,43 @@ export async function createQuickPurchase(
       grand_total:
         grandTotal,
 
+      /*
+ * Registered suppliers:
+ *
+ * Payments are posted through supplier_payments after the
+ * Quick Purchase exists.
+ *
+ * Unregistered/local-shop purchases cannot use the supplier
+ * ledger, so their direct payment remains an opening payment
+ * amount for now.
+ */
+
       paid_amount:
-        input.paidAmount,
+        input.supplierId
+          ? 0
+          : actualPaidNow,
 
       balance_due:
-        balanceDue,
+        input.supplierId
+          ? grandTotal
+          : initialBalanceDue,
 
       payment_status:
-        input.paymentStatus ===
-        "credit"
+        input.supplierId
           ? "unpaid"
-          : input.paymentStatus ===
-              "partial"
-            ? "partially_paid"
-            : "paid",
+          : actualPaidNow <= 0
+            ? "unpaid"
+            : actualPaidNow <
+              grandTotal
+              ? "partially_paid"
+              : "paid",
 
       payment_method:
         input.paymentStatus ===
-        "credit"
+          "credit"
           ? null
           : input.paymentMethod ??
-            null,
+          null,
 
       payment_reference:
         cleanText(
@@ -608,6 +691,115 @@ export async function createQuickPurchase(
     );
   }
 
+  /*
+  * ---------------------------------------------------------
+  * Automatically apply any existing supplier advance.
+  *
+  * This creates real supplier_payment_allocations rather than
+  * simply reducing the purchase balance.
+  * ---------------------------------------------------------
+  */
+
+  let supplierAdvanceApplied =
+    0;
+
+  if (
+    input.supplierId
+  ) {
+    supplierAdvanceApplied =
+      await applySupplierAdvanceToQuickPurchase(
+        purchase.id,
+      );
+  }
+
+  /*
+ * ---------------------------------------------------------
+ * Create Supplier Payment for money actually paid now.
+ *
+ * Existing supplier advance has already been applied above.
+ *
+ * Any NEW cash / bank / card / cheque / other payment must
+ * become a real supplier_payments record with an allocation
+ * against this Quick Purchase.
+ * ---------------------------------------------------------
+ */
+
+  let supplierPaymentId:
+    | string
+    | null = null;
+
+  if (
+    input.supplierId &&
+    actualPaidNow > 0
+  ) {
+    supplierPaymentId =
+      await postSupplierPayment({
+        supplierId:
+          input.supplierId,
+
+        paymentDate:
+          input.purchaseDate,
+
+        paymentMethod:
+          input.paymentMethod ??
+          "other",
+
+        currencyCode:
+          input.currencyCode ??
+          "AED",
+
+        exchangeRate:
+          input.exchangeRate ??
+          1,
+
+        amount:
+          actualPaidNow,
+
+        referenceNumber:
+          input.paymentReference,
+
+        notes:
+          `Payment posted automatically from Quick Purchase ${purchase.purchase_number}`,
+
+        allocations: [
+          {
+            quickPurchaseId:
+              purchase.id,
+
+            amount:
+              actualPaidNow,
+          },
+        ],
+      });
+  }
+
+  const {
+    data: finalPurchase,
+    error: finalPurchaseError,
+  } =
+    await supabase
+      .from(
+        "quick_purchases",
+      )
+      .select(`
+      paid_amount,
+      balance_due,
+      payment_status
+    `)
+      .eq(
+        "id",
+        purchase.id,
+      )
+      .single();
+
+  if (
+    finalPurchaseError
+  ) {
+    throw new Error(
+      `Quick Purchase posted but final payment balance could not be loaded: ${finalPurchaseError.message}`,
+    );
+  }
+
   return {
     id:
       purchase.id,
@@ -623,18 +815,64 @@ export async function createQuickPurchase(
     pendingTaxAmount,
     grandTotal,
 
-    paidAmount:
-      input.paidAmount,
+    supplierAdvanceApplied,
 
-    balanceDue,
+    paidNow:
+      actualPaidNow,
+
+    supplierPaymentId,
+
+    paidAmount:
+      Number(
+        finalPurchase.paid_amount,
+      ),
+
+    balanceDue:
+      Number(
+        finalPurchase.balance_due,
+      ),
 
     paymentStatus:
-      input.paymentStatus ===
-      "credit"
-        ? "unpaid"
-        : input.paymentStatus ===
-            "partial"
-          ? "partially_paid"
-          : "paid",
+      finalPurchase.payment_status,
   };
+}
+
+/* =========================================================
+ * Auto Apply Supplier Advance
+ * ========================================================= */
+
+export async function applySupplierAdvanceToQuickPurchase(
+  quickPurchaseId: string,
+): Promise<number> {
+  const supabase =
+    await createClient();
+
+  const {
+    data,
+    error,
+  } =
+    await supabase.rpc(
+      "apply_supplier_advance_to_quick_purchase",
+      {
+        p_quick_purchase_id:
+          quickPurchaseId,
+      },
+    );
+
+  if (error) {
+    throw new Error(
+      `Unable to apply supplier advance: ${error.message}`,
+    );
+  }
+
+  const amount =
+    Number(
+      data ?? 0,
+    );
+
+  return Number.isFinite(
+    amount,
+  )
+    ? amount
+    : 0;
 }

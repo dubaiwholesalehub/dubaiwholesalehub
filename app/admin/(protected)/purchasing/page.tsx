@@ -15,16 +15,20 @@ import { getPurchasingDashboard } from "@/lib/purchasing/purchasing-dashboard.re
 
 import { getPurchasingOperations } from "@/lib/purchasing/purchasing-operations.repository";
 import { getSupplierAnalytics } from "@/lib/purchasing/supplier-analytics.repository";
+import PayablesDashboardSection from "@/components/admin/purchasing/PayablesDashboardSection";
+
+import { getPayablesDashboard } from "@/lib/purchasing/payables-dashboard.repository";
 
 /* =========================================================
  * Purchasing Dashboard
  * ========================================================= */
 
 export default async function PurchasingDashboardPage() {
-  const [summary, operations, supplierAnalytics] = await Promise.all([
+  const [summary, operations, supplierAnalytics, payables] = await Promise.all([
     getPurchasingDashboard(),
     getPurchasingOperations(),
     getSupplierAnalytics(),
+    getPayablesDashboard(),
   ]);
 
   return (
@@ -159,7 +163,11 @@ export default async function PurchasingDashboardPage() {
           />
         </div>
       </section>
+      {/* ===================================================
+       * Supplier Payables / Financial Overview
+       * =================================================== */}
 
+      <PayablesDashboardSection payables={payables} />
       <section className="space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-neutral-950">

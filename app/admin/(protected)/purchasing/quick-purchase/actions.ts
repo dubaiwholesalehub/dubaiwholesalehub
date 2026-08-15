@@ -13,21 +13,40 @@ import {
   type CreateQuickPurchaseInput,
 } from "@/lib/repositories/quick-purchase.repository";
 
+import {
+  getSupplierAvailableAdvance,
+} from "@/lib/repositories/supplier-payment.repository";
+
 export type CompleteQuickPurchaseResult =
   | {
-      success: true;
+    success: true;
 
-      purchaseId: string;
-      purchaseNumber: string;
+    purchaseId: string;
+    purchaseNumber: string;
 
-      inventoryTransactionId: string;
+    inventoryTransactionId: string;
 
-      message: string;
-    }
+    message: string;
+  }
   | {
-      success: false;
-      message: string;
-    };
+    success: false;
+    message: string;
+  };
+
+export async function loadSupplierAvailableAdvance(
+  supplierId: string,
+): Promise<number> {
+  await requireAdmin();
+
+  if (!supplierId) {
+    return 0;
+  }
+
+  return getSupplierAvailableAdvance(
+    supplierId,
+    "AED",
+  );
+}
 
 export async function completeQuickPurchase(
   input: CreateQuickPurchaseInput,
@@ -74,10 +93,10 @@ export async function completeQuickPurchase(
 
       message:
         result.paymentStatus ===
-        "paid"
+          "paid"
           ? "Quick Purchase posted successfully and marked paid."
           : result.paymentStatus ===
-              "partially_paid"
+            "partially_paid"
             ? "Quick Purchase posted successfully with partial payment."
             : "Quick Purchase posted successfully as credit purchase.",
     };

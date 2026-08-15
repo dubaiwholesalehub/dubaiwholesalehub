@@ -27,6 +27,8 @@ import {
   Zap,
   ReceiptText,
   ShoppingBag,
+  BookOpenText,
+  HandCoins,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -127,6 +129,16 @@ const navigationGroups = [
         label: "Quick Purchase",
         href: "/admin/purchasing/quick-purchase",
         icon: ShoppingBag,
+      },
+      {
+        label: "Supplier Payments",
+        href: "/admin/purchasing/supplier-payments",
+        icon: HandCoins,
+      },
+      {
+        label: "Supplier Statement",
+        href: "/admin/purchasing/supplier-statement",
+        icon: BookOpenText,
       },
       {
         label: "RFQs",

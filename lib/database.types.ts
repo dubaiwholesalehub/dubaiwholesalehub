@@ -2054,6 +2054,7 @@ export type Database = {
           notes: string | null
           paid_amount: number
           payment_method: string | null
+          payment_opening_amount: number
           payment_reference: string | null
           payment_status: string
           pending_tax_amount: number
@@ -2091,6 +2092,7 @@ export type Database = {
           notes?: string | null
           paid_amount?: number
           payment_method?: string | null
+          payment_opening_amount?: number
           payment_reference?: string | null
           payment_status?: string
           pending_tax_amount?: number
@@ -2128,6 +2130,7 @@ export type Database = {
           notes?: string | null
           paid_amount?: number
           payment_method?: string | null
+          payment_opening_amount?: number
           payment_reference?: string | null
           payment_status?: string
           pending_tax_amount?: number
@@ -3093,6 +3096,134 @@ export type Database = {
           },
         ]
       }
+      supplier_payment_allocations: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          quick_purchase_id: string
+          supplier_payment_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          quick_purchase_id: string
+          supplier_payment_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          quick_purchase_id?: string
+          supplier_payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_allocations_supplier_payment_id_fkey"
+            columns: ["supplier_payment_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_payments: {
+        Row: {
+          allocated_amount: number
+          amount: number
+          bank_name: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          cheque_date: string | null
+          cheque_number: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          exchange_rate: number
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          payment_number: string
+          posted_at: string | null
+          posted_by: string | null
+          reference_number: string | null
+          status: string
+          supplier_id: string
+          unallocated_amount: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_amount?: number
+          amount: number
+          bank_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+          supplier_id: string
+          unallocated_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_amount?: number
+          amount?: number
+          bank_name?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          cheque_date?: string | null
+          cheque_number?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          payment_number?: string
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+          supplier_id?: string
+          unallocated_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_quotation_items: {
         Row: {
           available_quantity: number | null
@@ -3537,6 +3668,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_supplier_advance_to_quick_purchase: {
+        Args: { p_quick_purchase_id: string }
+        Returns: number
+      }
       archive_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
@@ -3591,6 +3726,10 @@ export type Database = {
       cancel_sales_order_atomic: {
         Args: { p_sales_order_id: string }
         Returns: Json
+      }
+      cancel_supplier_payment: {
+        Args: { p_reason: string; p_supplier_payment_id: string }
+        Returns: string
       }
       close_rfq: {
         Args: { target_rfq_id: string }
@@ -3813,6 +3952,7 @@ export type Database = {
       generate_rfq_number: { Args: never; Returns: string }
       generate_sales_order_number: { Args: never; Returns: string }
       generate_sales_quotation_number: { Args: never; Returns: string }
+      generate_supplier_payment_number: { Args: never; Returns: string }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
       get_inventory_product_health: {
         Args: { p_limit?: number }
@@ -3895,6 +4035,23 @@ export type Database = {
           p_transaction_date: string
           p_transaction_type: string
           p_warehouse_id: string
+        }
+        Returns: string
+      }
+      post_supplier_payment: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_exchange_rate: number
+          p_notes: string
+          p_payment_date: string
+          p_payment_method: string
+          p_reference_number: string
+          p_supplier_id: string
         }
         Returns: string
       }
@@ -4093,8 +4250,16 @@ export type Database = {
         Args: { p_receipt_id: string }
         Returns: undefined
       }
+      sync_quick_purchase_paid_amount: {
+        Args: { p_quick_purchase_id: string }
+        Returns: undefined
+      }
       sync_sales_order_paid_amount: {
         Args: { p_sales_order_id: string }
+        Returns: undefined
+      }
+      sync_supplier_payment_totals: {
+        Args: { p_supplier_payment_id: string }
         Returns: undefined
       }
       synchronize_sales_order_fulfilment: {
