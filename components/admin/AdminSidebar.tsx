@@ -29,6 +29,7 @@ import {
   ShoppingBag,
   BookOpenText,
   HandCoins,
+  BarChart3,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -170,6 +171,11 @@ const navigationGroups = [
   {
     label: "Sales",
     items: [
+      {
+        label: "Dashboard",
+        href: "/admin/sales",
+        icon: BarChart3,
+      },
       {
         label: "Quick Sale",
         href: "/admin/sales/quick-sale",
