@@ -25,6 +25,8 @@ import {
   ClipboardList,
   Truck,
   Zap,
+  ReceiptText,
+  ShoppingBag,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -122,6 +124,11 @@ const navigationGroups = [
         icon: ShoppingCart,
       },
       {
+        label: "Quick Purchase",
+        href: "/admin/purchasing/quick-purchase",
+        icon: ShoppingBag,
+      },
+      {
         label: "RFQs",
         href: "/admin/rfqs",
         icon: FileQuestion,
@@ -155,6 +162,11 @@ const navigationGroups = [
         label: "Quick Sale",
         href: "/admin/sales/quick-sale",
         icon: Zap,
+      },
+      {
+        label: "Customer Receipts",
+        href: "/admin/sales/receipts",
+        icon: ReceiptText,
       },
       {
         label: "Customers",

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       brands: {
@@ -1946,6 +1971,205 @@ export type Database = {
             columns: ["supplier_quotation_id"]
             isOneToOne: true
             referencedRelation: "supplier_quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quick_purchase_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          notes: string | null
+          product_id: string
+          quantity: number
+          quick_purchase_id: string
+          tax_amount: number
+          tax_percentage: number
+          unit_cost: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          notes?: string | null
+          product_id: string
+          quantity: number
+          quick_purchase_id: string
+          tax_amount?: number
+          tax_percentage?: number
+          unit_cost: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          quick_purchase_id?: string
+          tax_amount?: number
+          tax_percentage?: number
+          unit_cost?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quick_purchases: {
+        Row: {
+          balance_due: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          discount_amount: number
+          exchange_rate: number
+          grand_total: number
+          id: string
+          inventory_transaction_id: string | null
+          notes: string | null
+          paid_amount: number
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          pending_tax_amount: number
+          posted_at: string | null
+          purchase_date: string
+          purchase_number: string
+          recoverable_tax_amount: number
+          status: string
+          store_name: string | null
+          subtotal: number
+          supplier_id: string | null
+          supplier_invoice_date: string | null
+          supplier_invoice_number: string | null
+          supplier_trn: string | null
+          tax_amount: number
+          tax_invoice_verified: boolean
+          tax_invoice_verified_at: string | null
+          tax_treatment: string
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          balance_due?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          discount_amount?: number
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_transaction_id?: string | null
+          notes?: string | null
+          paid_amount?: number
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          pending_tax_amount?: number
+          posted_at?: string | null
+          purchase_date?: string
+          purchase_number: string
+          recoverable_tax_amount?: number
+          status?: string
+          store_name?: string | null
+          subtotal?: number
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_invoice_number?: string | null
+          supplier_trn?: string | null
+          tax_amount?: number
+          tax_invoice_verified?: boolean
+          tax_invoice_verified_at?: string | null
+          tax_treatment?: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          balance_due?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          discount_amount?: number
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_transaction_id?: string | null
+          notes?: string | null
+          paid_amount?: number
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          pending_tax_amount?: number
+          posted_at?: string | null
+          purchase_date?: string
+          purchase_number?: string
+          recoverable_tax_amount?: number
+          status?: string
+          store_name?: string | null
+          subtotal?: number
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_invoice_number?: string | null
+          supplier_trn?: string | null
+          tax_amount?: number
+          tax_invoice_verified?: boolean
+          tax_invoice_verified_at?: string | null
+          tax_treatment?: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_purchases_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -4050,6 +4274,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],
