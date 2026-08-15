@@ -181,6 +181,11 @@ const navigationGroups = [
         icon: ReceiptText,
       },
       {
+        label: "Customer Statement",
+        href: "/admin/sales/customer-statement",
+        icon: BookOpenText,
+      },
+      {
         label: "Customers",
         href: "/admin/customers",
         icon: Users,
