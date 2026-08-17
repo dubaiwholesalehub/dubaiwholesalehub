@@ -19,8 +19,10 @@ import type { QuickSaleOptions } from "./quick-sale-types";
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-import { completeQuickSale } from "@/app/admin/(protected)/sales/quick-sale/actions";
+import {
+  completeQuickSale,
+  loadCustomerAvailableAdvance,
+} from "@/app/admin/(protected)/sales/quick-sale/actions";
 
 type TaxTreatment = "local_5" | "export_verified" | "export_pending" | "review";
 
@@ -75,6 +77,10 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [customerId, setCustomerId] = useState("");
 
+  const [customerAdvance, setCustomerAdvance] = useState(0);
+
+  const [isLoadingAdvance, startLoadingAdvance] = useTransition();
+
   const [warehouseId, setWarehouseId] = useState(defaultWarehouse);
 
   const [taxTreatment, setTaxTreatment] = useState<TaxTreatment>("local_5");
@@ -122,14 +128,44 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const grandTotal = subtotal + vatAmount;
 
+  /*
+   * Customer advance that can actually be consumed by
+   * this sale.
+   *
+   * If the customer has AED 500 advance but this sale is
+   * only AED 100, only AED 100 is applicable.
+   */
+  const advanceToApply = Math.min(customerAdvance, grandTotal);
+
+  /*
+   * Amount still payable after existing customer advance.
+   */
+  const remainingAfterAdvance = Math.max(grandTotal - advanceToApply, 0);
+
+  /*
+   * New money received NOW.
+   *
+   * Existing customer advance must never be counted as a
+   * new receipt.
+   */
   const effectiveAmountReceived =
     paymentStatus === "paid"
-      ? grandTotal
+      ? remainingAfterAdvance
       : paymentStatus === "credit"
         ? 0
         : amountReceived;
 
-  const outstanding = Math.max(grandTotal - effectiveAmountReceived, 0);
+  /*
+   * Total amount settled against the sale:
+   *
+   * old customer advance + new payment.
+   */
+  const totalSettled = Math.min(
+    advanceToApply + effectiveAmountReceived,
+    grandTotal,
+  );
+
+  const outstanding = Math.max(grandTotal - totalSettled, 0);
 
   function updateItem(id: string, changes: Partial<QuickSaleItem>) {
     setItems((current) =>
@@ -224,22 +260,31 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
       return;
     }
+
     if (
       paymentStatus === "paid" &&
-      Math.abs(amountReceived - grandTotal) > 0.01
+      Math.abs(effectiveAmountReceived - remainingAfterAdvance) > 0.01
     ) {
-      toast.error("Paid Now must equal the invoice grand total.");
+      toast.error(
+        "Paid Now must equal the remaining balance after customer advance.",
+      );
 
       return;
     }
 
     if (
       paymentStatus === "partial" &&
-      (amountReceived <= 0 || amountReceived >= grandTotal)
+      (amountReceived <= 0 || amountReceived >= remainingAfterAdvance)
     ) {
       toast.error(
-        "Partial payment must be greater than zero and less than the invoice total.",
+        "Partial payment must be greater than zero and less than the remaining balance after customer advance.",
       );
+
+      return;
+    }
+
+    if (paymentStatus === "partial" && remainingAfterAdvance <= 0) {
+      toast.error("This sale is already fully covered by customer advance.");
 
       return;
     }
@@ -331,7 +376,39 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           <Field label="Customer">
             <select
               value={customerId}
-              onChange={(event) => setCustomerId(event.target.value)}
+              onChange={(event) => {
+                const nextCustomerId = event.target.value;
+
+                setCustomerId(nextCustomerId);
+
+                setCustomerAdvance(0);
+
+                /*
+                 * Reset manually entered payment whenever customer
+                 * changes. This prevents payment from the previous
+                 * customer remaining in the form.
+                 */
+                setAmountReceived(0);
+
+                if (!nextCustomerId) {
+                  return;
+                }
+
+                startLoadingAdvance(async () => {
+                  try {
+                    const available =
+                      await loadCustomerAvailableAdvance(nextCustomerId);
+
+                    setCustomerAdvance(Number(available ?? 0));
+                  } catch (error) {
+                    console.error(error);
+
+                    setCustomerAdvance(0);
+
+                    toast.error("Unable to load customer advance.");
+                  }
+                });
+              }}
               className={inputClass}
             >
               <option value="">Select customer</option>
@@ -756,21 +833,22 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 <TaxCard
                   active={paymentStatus === "paid"}
                   title="Paid Now"
-                  subtitle="Customer pays the full invoice now"
+                  subtitle="Pay the remaining balance after advance"
                   onClick={() => {
                     setPaymentStatus("paid");
-                    setAmountReceived(grandTotal);
+
+                    setAmountReceived(remainingAfterAdvance);
                   }}
                 />
 
                 <TaxCard
                   active={paymentStatus === "partial"}
                   title="Partial Payment"
-                  subtitle="Customer pays part of the invoice"
+                  subtitle="Pay part of the remaining balance"
                   onClick={() => {
                     setPaymentStatus("partial");
 
-                    if (amountReceived >= grandTotal) {
+                    if (amountReceived >= remainingAfterAdvance) {
                       setAmountReceived(0);
                     }
                   }}
@@ -779,7 +857,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 <TaxCard
                   active={paymentStatus === "credit"}
                   title="Credit"
-                  subtitle="Nothing received now"
+                  subtitle="No new payment received now"
                   onClick={() => {
                     setPaymentStatus("credit");
                     setAmountReceived(0);
@@ -805,12 +883,16 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     </select>
                   </Field>
 
-                  <Field label="Amount Received">
+                  <Field label="Pay Now">
                     <input
                       type="number"
                       min={0}
                       step="0.01"
-                      value={amountReceived}
+                      value={
+                        paymentStatus === "paid"
+                          ? remainingAfterAdvance
+                          : amountReceived
+                      }
                       onChange={(event) =>
                         setAmountReceived(Number(event.target.value) || 0)
                       }
@@ -917,7 +999,28 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               <SummaryRow label="Grand Total" value={grandTotal} strong />
             </div>
 
-            <SummaryRow label="Received" value={effectiveAmountReceived} />
+            {isLoadingAdvance ? (
+              <div className="flex items-center justify-between text-slate-400">
+                <span>Customer Advance</span>
+
+                <span>Loading...</span>
+              </div>
+            ) : null}
+
+            {!isLoadingAdvance && customerAdvance > 0 ? (
+              <>
+                <SummaryRow
+                  label="Available Customer Advance"
+                  value={customerAdvance}
+                />
+
+                <SummaryRow label="Advance Applied" value={advanceToApply} />
+              </>
+            ) : null}
+
+            <SummaryRow label="Pay Now" value={effectiveAmountReceived} />
+
+            <SummaryRow label="Total Settled" value={totalSettled} />
 
             <SummaryRow label="Outstanding" value={outstanding} strong />
           </div>
@@ -929,13 +1032,16 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
           <button
             type="button"
-            disabled={isPosting}
+            disabled={isPosting || isLoadingAdvance}
             onClick={handleCompleteSale}
             className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Zap className="h-5 w-5" />
-
-            {isPosting ? "Completing Sale..." : "Complete Sale"}
+            {isLoadingAdvance
+              ? "Loading Customer Advance..."
+              : isPosting
+                ? "Completing Sale..."
+                : "Complete Sale"}{" "}
           </button>
         </aside>
       </div>

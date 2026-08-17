@@ -1053,3 +1053,116 @@ export async function cancelCustomerReceipt(
 
     return data;
 }
+
+/* =========================================================
+ * Auto Apply Customer Advance
+ * ========================================================= */
+
+export async function applyCustomerAdvanceToSalesOrder(
+    salesOrderId: string,
+): Promise<number> {
+    if (!salesOrderId) {
+        throw new Error(
+            "Sales Order ID is required.",
+        );
+    }
+
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "apply_customer_advance_to_sales_order",
+            {
+                p_sales_order_id:
+                    salesOrderId,
+            },
+        );
+
+    if (error) {
+        throw new Error(
+            `Unable to apply customer advance: ${error.message}`,
+        );
+    }
+
+    const amount =
+        Number(
+            data ?? 0,
+        );
+
+    return Number.isFinite(
+        amount,
+    )
+        ? amount
+        : 0;
+}
+
+/* =========================================================
+ * Customer Available Advance
+ * ========================================================= */
+
+export async function getCustomerAvailableAdvance(
+    customerId: string,
+    currencyCode = "AED",
+): Promise<number> {
+    if (!customerId) {
+        return 0;
+    }
+
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "customer_receipts",
+            )
+            .select(
+                "unallocated_amount",
+            )
+            .eq(
+                "customer_id",
+                customerId,
+            )
+            .eq(
+                "status",
+                "posted",
+            )
+            .eq(
+                "currency_code",
+                currencyCode.toUpperCase(),
+            )
+            .gt(
+                "unallocated_amount",
+                0,
+            );
+
+
+    if (error) {
+        throw new Error(
+            `Unable to load customer advance: ${error.message}`,
+        );
+    }
+
+
+    return (
+        data ?? []
+    ).reduce(
+        (
+            total,
+            receipt,
+        ) =>
+            total +
+            Number(
+                receipt.unallocated_amount ??
+                0,
+            ),
+        0,
+    );
+}

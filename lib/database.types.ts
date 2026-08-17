@@ -3668,6 +3668,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_customer_advance_to_sales_order: {
+        Args: { p_sales_order_id: string }
+        Returns: number
+      }
       apply_supplier_advance_to_quick_purchase: {
         Args: { p_quick_purchase_id: string }
         Returns: number

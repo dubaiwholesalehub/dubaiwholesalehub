@@ -30,6 +30,7 @@ import type {
 } from "@/components/admin/sales/quick-sale/quick-sale-types";
 
 import {
+  getCustomerAvailableAdvance,
   postCustomerReceipt,
 } from "@/lib/repositories/customer-receipt.repository";
 
@@ -42,6 +43,21 @@ function cleanText(
     value?.trim();
 
   return cleaned || null;
+}
+
+export async function loadCustomerAvailableAdvance(
+  customerId: string,
+): Promise<number> {
+  await requireAdmin();
+
+  if (!customerId) {
+    return 0;
+  }
+
+  return getCustomerAvailableAdvance(
+    customerId,
+    "AED",
+  );
 }
 
 export async function completeQuickSale(
@@ -592,63 +608,137 @@ export async function completeQuickSale(
     }
 
     /*
- * ---------------------------------------------------------
- * Step 9
- * Customer Receipt
- *
- * Credit sales create no receipt.
- * Paid and partial sales create a posted receipt allocated
- * entirely to this Sales Order.
- * ---------------------------------------------------------
- */
+    * ---------------------------------------------------------
+    * Step 9
+    * Customer Receipt
+    *
+    * Customer advance has already been applied inside
+    * confirmSalesOrder().
+    *
+    * Therefore:
+    *
+    * confirmed.order.balance_due
+    * =
+    * amount still outstanding AFTER existing customer advance.
+    *
+    * Only genuinely new money received now creates a new
+    * Customer Receipt.
+    * ---------------------------------------------------------
+    */
 
     let receiptId:
       | string
       | null = null;
 
+
+    /*
+     * Amount remaining after customer advance.
+     */
+
+    const remainingAfterAdvance =
+      Number(
+        confirmed.order
+          .balance_due,
+      );
+
+
     if (
-      input.paymentStatus !==
-      "credit"
+      !Number.isFinite(
+        remainingAfterAdvance,
+      ) ||
+      remainingAfterAdvance < 0
     ) {
-      const invoiceTotal =
-        Number(
-          confirmed.order
-            .grand_total,
-        );
+      throw new Error(
+        "Unable to determine the Sales Order balance after customer advance.",
+      );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Validate payment selected on Quick Sale
+     * ---------------------------------------------------------
+     */
+
+    if (
+      input.paymentStatus ===
+      "paid"
+    ) {
+      /*
+       * Paid means the NEW payment must settle whatever remains
+       * after customer advance.
+       *
+       * If advance paid the entire order, the required new
+       * payment is zero.
+       */
 
       if (
-        input.amountReceived >
-        invoiceTotal
-      ) {
-        throw new Error(
-          "Amount received cannot exceed the sales order total.",
-        );
-      }
-
-      if (
-        input.paymentStatus ===
-        "paid" &&
         Math.abs(
           input.amountReceived -
-          invoiceTotal,
+          remainingAfterAdvance,
         ) > 0.01
       ) {
         throw new Error(
-          "Paid Now amount must equal the sales order total.",
+          `Paid Now amount must equal the remaining balance after customer advance: AED ${remainingAfterAdvance.toFixed(2)}.`,
         );
       }
+    }
 
+
+    if (
+      input.paymentStatus ===
+      "partial"
+    ) {
       if (
-        input.paymentStatus ===
-        "partial" &&
-        input.amountReceived >=
-        invoiceTotal
+        !Number.isFinite(
+          input.amountReceived,
+        ) ||
+        input.amountReceived <= 0
       ) {
         throw new Error(
-          "Partial payment must be less than the sales order total.",
+          "Partial payment must be greater than zero.",
         );
       }
 
+
+      if (
+        input.amountReceived >=
+        remainingAfterAdvance
+      ) {
+        throw new Error(
+          "Partial payment must be less than the remaining balance after customer advance.",
+        );
+      }
+    }
+
+
+    if (
+      input.paymentStatus ===
+      "credit" &&
+      input.amountReceived >
+      0
+    ) {
+      throw new Error(
+        "Credit Sale cannot include a new payment.",
+      );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Create receipt ONLY for new money received now.
+     *
+     * Existing advance is already represented by its original
+     * Customer Receipt and allocation.
+     * ---------------------------------------------------------
+     */
+
+    if (
+      input.paymentStatus !==
+      "credit" &&
+      input.amountReceived >
+      0
+    ) {
       receiptId =
         await postCustomerReceipt({
           customerId:

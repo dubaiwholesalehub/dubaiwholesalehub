@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import {
     getSalesQuotationById,
 } from "@/lib/repositories/sales-quotation.repository";
+import {
+    applyCustomerAdvanceToSalesOrder,
+} from "@/lib/repositories/customer-receipt.repository";
 
 /* =========================================================
  * Database Types
@@ -4773,6 +4776,7 @@ export async function confirmSalesOrder(
 ): Promise<{
     order: SalesOrderDetails;
     result: ConfirmSalesOrderResult;
+    customerAdvanceApplied: number;
 }> {
     const id = requireId(
         salesOrderId,
@@ -4825,6 +4829,33 @@ export async function confirmSalesOrder(
             data,
         );
 
+    /*
+     * ---------------------------------------------------------
+     * Automatically Apply Existing Customer Advance
+     *
+     * Once the Sales Order is confirmed, any posted,
+     * unallocated Customer Receipt belonging to the same
+     * customer/currency can be consumed against this order.
+     *
+     * The allocation itself is recorded in
+     * customer_receipt_allocations, so this remains a proper
+     * accounting transaction rather than simply changing the
+     * Sales Order balance.
+     * ---------------------------------------------------------
+     */
+
+    const customerAdvanceApplied =
+        await applyCustomerAdvanceToSalesOrder(
+            id,
+        );
+
+    /*
+     * Reload AFTER advance allocation.
+     *
+     * This is important because paid_amount, balance_due and
+     * payment_status may have changed.
+     */
+
     const confirmedOrder =
         await getSalesOrderById(id);
 
@@ -4837,6 +4868,7 @@ export async function confirmSalesOrder(
     return {
         order: confirmedOrder,
         result,
+        customerAdvanceApplied,
     };
 }
 
