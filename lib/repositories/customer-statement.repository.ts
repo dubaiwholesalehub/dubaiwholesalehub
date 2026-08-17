@@ -787,3 +787,198 @@ export async function getCustomerStatement(
         entries,
     };
 }
+
+/* =========================================================
+ * Customer Financial Positions
+ *
+ * Lightweight bulk financial summary used by Customer
+ * master list.
+ * ========================================================= */
+
+export interface CustomerFinancialPosition {
+    customerId: string;
+    receivable: number;
+    advance: number;
+    netPosition: number;
+}
+
+export async function getCustomerFinancialPositions(
+    customerIds: string[],
+): Promise<
+    Record<
+        string,
+        CustomerFinancialPosition
+    >
+> {
+    if (customerIds.length === 0) {
+        return {};
+    }
+
+    const supabase =
+        await createClient();
+
+    /*
+     * -------------------------------------------------------
+     * Outstanding Sales Orders
+     * -------------------------------------------------------
+     */
+
+    const {
+        data: orders,
+        error: ordersError,
+    } = await supabase
+        .from("sales_orders")
+        .select(`
+      customer_id,
+      balance_due,
+      status
+    `)
+        .in(
+            "customer_id",
+            customerIds,
+        )
+        .gt(
+            "balance_due",
+            0,
+        );
+
+    if (ordersError) {
+        throw new Error(
+            `Unable to load customer receivables: ${ordersError.message}`,
+        );
+    }
+
+    /*
+     * -------------------------------------------------------
+     * Available Customer Advances
+     * -------------------------------------------------------
+     */
+
+    const {
+        data: receipts,
+        error: receiptsError,
+    } = await supabase
+        .from(
+            "customer_receipts",
+        )
+        .select(`
+      customer_id,
+      unallocated_amount,
+      status
+    `)
+        .in(
+            "customer_id",
+            customerIds,
+        )
+        .eq(
+            "status",
+            "posted",
+        )
+        .gt(
+            "unallocated_amount",
+            0,
+        );
+
+    if (receiptsError) {
+        throw new Error(
+            `Unable to load customer advances: ${receiptsError.message}`,
+        );
+    }
+
+    /*
+     * Start every requested customer at zero.
+     */
+
+    const positions: Record<
+        string,
+        CustomerFinancialPosition
+    > = {};
+
+    for (const customerId of customerIds) {
+        positions[customerId] = {
+            customerId,
+            receivable: 0,
+            advance: 0,
+            netPosition: 0,
+        };
+    }
+
+    /*
+     * Sum outstanding receivables.
+     */
+
+    for (const order of orders ?? []) {
+        if (
+            !order.customer_id ||
+            !positions[
+            order.customer_id
+            ]
+        ) {
+            continue;
+        }
+
+        positions[
+            order.customer_id
+        ].receivable +=
+            Number(
+                order.balance_due ??
+                0,
+            );
+    }
+
+    /*
+     * Sum unallocated customer advances.
+     */
+
+    for (const receipt of receipts ?? []) {
+        if (
+            !receipt.customer_id ||
+            !positions[
+            receipt.customer_id
+            ]
+        ) {
+            continue;
+        }
+
+        positions[
+            receipt.customer_id
+        ].advance +=
+            Number(
+                receipt.unallocated_amount ??
+                0,
+            );
+    }
+
+    /*
+     * Calculate net position.
+     *
+     * Positive = customer owes us.
+     * Negative = we hold customer advance.
+     */
+
+    for (const position of Object.values(
+        positions,
+    )) {
+        position.receivable =
+            Math.round(
+                position.receivable *
+                100,
+            ) / 100;
+
+        position.advance =
+            Math.round(
+                position.advance *
+                100,
+            ) / 100;
+
+        position.netPosition =
+            Math.round(
+                (
+                    position.receivable -
+                    position.advance
+                ) * 100,
+            ) / 100;
+    }
+
+    return positions;
+}

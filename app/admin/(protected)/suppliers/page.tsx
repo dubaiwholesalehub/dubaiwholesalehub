@@ -7,6 +7,7 @@ import {
   getAdminSuppliers,
   getSupplierCountryOptions,
 } from "@/lib/repositories/supplier.repository";
+import { getSupplierFinancialPositions } from "@/lib/repositories/supplier-statement.repository";
 
 interface SuppliersPageProps {
   searchParams: Promise<{
@@ -25,6 +26,10 @@ export default async function SuppliersPage({
     getSupplierCountryOptions(),
     searchParams,
   ]);
+
+  const financialPositions = await getSupplierFinancialPositions(
+    suppliers.map((supplier) => supplier.id),
+  );
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -56,6 +61,7 @@ export default async function SuppliersPage({
       <SupplierManager
         suppliers={suppliers}
         countries={countries}
+        financialPositions={financialPositions}
       />
     </div>
   );

@@ -803,3 +803,193 @@ export async function getSupplierStatement(
         entries,
     };
 }
+/* =========================================================
+ * Supplier Financial Positions
+ *
+ * Lightweight bulk financial summary used by Supplier
+ * master list.
+ * ========================================================= */
+
+export interface SupplierFinancialPosition {
+    supplierId: string;
+    payable: number;
+    advance: number;
+    netPosition: number;
+}
+
+export async function getSupplierFinancialPositions(
+    supplierIds: string[],
+): Promise<
+    Record<
+        string,
+        SupplierFinancialPosition
+    >
+> {
+    if (supplierIds.length === 0) {
+        return {};
+    }
+
+    const supabase =
+        await createClient();
+
+    /*
+     * -------------------------------------------------------
+     * Outstanding Quick Purchases
+     * -------------------------------------------------------
+     */
+
+    const {
+        data: purchases,
+        error: purchasesError,
+    } = await supabase
+        .from("quick_purchases")
+        .select(`
+      supplier_id,
+      balance_due,
+      status
+    `)
+        .in(
+            "supplier_id",
+            supplierIds,
+        )
+        .eq(
+            "status",
+            "posted",
+        )
+        .gt(
+            "balance_due",
+            0,
+        );
+
+    if (purchasesError) {
+        throw new Error(
+            `Unable to load supplier payables: ${purchasesError.message}`,
+        );
+    }
+
+    /*
+     * -------------------------------------------------------
+     * Available Supplier Advances
+     * -------------------------------------------------------
+     */
+
+    const {
+        data: payments,
+        error: paymentsError,
+    } = await supabase
+        .from(
+            "supplier_payments",
+        )
+        .select(`
+      supplier_id,
+      unallocated_amount,
+      status
+    `)
+        .in(
+            "supplier_id",
+            supplierIds,
+        )
+        .eq(
+            "status",
+            "posted",
+        )
+        .gt(
+            "unallocated_amount",
+            0,
+        );
+
+    if (paymentsError) {
+        throw new Error(
+            `Unable to load supplier advances: ${paymentsError.message}`,
+        );
+    }
+
+    const positions: Record<
+        string,
+        SupplierFinancialPosition
+    > = {};
+
+    for (const supplierId of supplierIds) {
+        positions[supplierId] = {
+            supplierId,
+            payable: 0,
+            advance: 0,
+            netPosition: 0,
+        };
+    }
+
+    /*
+     * Outstanding purchases.
+     */
+
+    for (const purchase of purchases ?? []) {
+        if (
+            !purchase.supplier_id ||
+            !positions[
+            purchase.supplier_id
+            ]
+        ) {
+            continue;
+        }
+
+        positions[
+            purchase.supplier_id
+        ].payable +=
+            Number(
+                purchase.balance_due ??
+                0,
+            );
+    }
+
+    /*
+     * Unallocated supplier payments = available advance.
+     */
+
+    for (const payment of payments ?? []) {
+        if (
+            !payment.supplier_id ||
+            !positions[
+            payment.supplier_id
+            ]
+        ) {
+            continue;
+        }
+
+        positions[
+            payment.supplier_id
+        ].advance +=
+            Number(
+                payment.unallocated_amount ??
+                0,
+            );
+    }
+
+    /*
+     * Positive = we owe supplier.
+     * Negative = supplier advance remains with supplier.
+     */
+
+    for (const position of Object.values(
+        positions,
+    )) {
+        position.payable =
+            Math.round(
+                position.payable * 100,
+            ) / 100;
+
+        position.advance =
+            Math.round(
+                position.advance * 100,
+            ) / 100;
+
+        position.netPosition =
+            Math.round(
+                (
+                    position.payable -
+                    position.advance
+                ) * 100,
+            ) / 100;
+    }
+
+    return positions;
+}

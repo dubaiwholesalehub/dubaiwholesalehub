@@ -26,6 +26,7 @@ import {
   toggleSupplierStatus,
   updateSupplier,
 } from "@/app/admin/(protected)/suppliers/actions";
+import type { SupplierFinancialPosition } from "@/lib/repositories/supplier-statement.repository";
 
 type SupplierRow = Database["public"]["Tables"]["suppliers"]["Row"];
 
@@ -42,15 +43,23 @@ type CountryOption = {
   name: string;
   iso2: string | null;
 };
+const supplierMoneyFormatter = new Intl.NumberFormat("en-AE", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 interface SupplierManagerProps {
   suppliers: Supplier[];
+
   countries: CountryOption[];
+
+  financialPositions: Record<string, SupplierFinancialPosition>;
 }
 
 export default function SupplierManager({
   suppliers,
   countries,
+  financialPositions,
 }: SupplierManagerProps) {
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -134,7 +143,17 @@ export default function SupplierManager({
                   <th className="px-6 py-4 font-semibold">Supplier</th>
                   <th className="px-6 py-4 font-semibold">Contact</th>
                   <th className="px-6 py-4 font-semibold">Location</th>
-                  <th className="px-6 py-4 font-semibold">Communication</th>
+                  <th className="px-6 py-4 text-right font-semibold">
+                    Payable
+                  </th>
+
+                  <th className="px-6 py-4 text-right font-semibold">
+                    Advance
+                  </th>
+
+                  <th className="px-6 py-4 text-right font-semibold">
+                    Net Position
+                  </th>
                   <th className="px-6 py-4 font-semibold">Status</th>
                   <th className="px-6 py-4 text-right font-semibold">
                     Actions
@@ -218,20 +237,27 @@ export default function SupplierManager({
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 text-sm">
-                      {supplier.whatsapp ? (
-                        <a
-                          href={`https://wa.me/${supplier.whatsapp.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 font-semibold text-green-700 transition hover:bg-green-100"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                        </a>
-                      ) : (
-                        <span className="text-slate-400">Not provided</span>
-                      )}
+                    <td className="px-6 py-4 text-right">
+                      <SupplierFinancialAmount
+                        value={financialPositions[supplier.id]?.payable ?? 0}
+                        type="payable"
+                      />
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <SupplierFinancialAmount
+                        value={financialPositions[supplier.id]?.advance ?? 0}
+                        type="advance"
+                      />
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <SupplierNetPosition
+                        supplierId={supplier.id}
+                        value={
+                          financialPositions[supplier.id]?.netPosition ?? 0
+                        }
+                      />
                     </td>
 
                     <td className="px-6 py-4">
@@ -329,6 +355,67 @@ export default function SupplierManager({
   );
 }
 
+function SupplierFinancialAmount({
+  value,
+  type,
+}: {
+  value: number;
+
+  type: "payable" | "advance";
+}) {
+  if (Math.abs(value) < 0.005) {
+    return <span className="text-sm text-slate-400">—</span>;
+  }
+
+  return (
+    <span
+      className={[
+        "whitespace-nowrap text-sm font-semibold",
+        type === "payable" ? "text-amber-700" : "text-violet-700",
+      ].join(" ")}
+    >
+      AED {supplierMoneyFormatter.format(value)}
+    </span>
+  );
+}
+
+function SupplierNetPosition({
+  supplierId,
+  value,
+}: {
+  supplierId: string;
+  value: number;
+}) {
+  const absoluteValue = Math.abs(value);
+
+  if (absoluteValue < 0.005) {
+    return (
+      <Link
+        href={`/admin/purchasing/supplier-statement?supplierId=${supplierId}`}
+        className="inline-flex whitespace-nowrap rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
+      >
+        Settled
+      </Link>
+    );
+  }
+
+  const isPayable = value > 0;
+
+  return (
+    <Link
+      href={`/admin/purchasing/supplier-statement?supplierId=${supplierId}`}
+      className={[
+        "inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold transition",
+        isPayable
+          ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+          : "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100",
+      ].join(" ")}
+    >
+      AED {supplierMoneyFormatter.format(absoluteValue)}{" "}
+      {isPayable ? "Payable" : "Advance"}
+    </Link>
+  );
+}
 interface SupplierFormProps {
   supplier?: Supplier;
   countries: CountryOption[];

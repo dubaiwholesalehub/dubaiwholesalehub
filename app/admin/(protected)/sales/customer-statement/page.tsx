@@ -206,25 +206,59 @@ export default async function CustomerStatementPage({
             />
           </div>
 
-          {/* Current position */}
+          {/* ===================================================
+           * Current Account Position
+           * =================================================== */}
 
-          <section className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border bg-card p-5">
-              <p className="text-sm text-muted-foreground">
-                Current Customer Receivable
-              </p>
+          <section className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-blue-700">
+                  Customer Account Position
+                </p>
 
-              <p className="mt-2 text-2xl font-semibold">
-                AED {money(statement.summary.closingReceivable)}
-              </p>
-            </div>
+                <h2 className="mt-1 text-lg font-semibold text-slate-950">
+                  {statement.customer.displayName}
+                </h2>
 
-            <div className="rounded-xl border bg-card p-5">
-              <p className="text-sm text-muted-foreground">Customer Advance</p>
+                <p className="mt-1 text-sm text-slate-600">
+                  Current receivable, available customer advance and net account
+                  position.
+                </p>
+              </div>
 
-              <p className="mt-2 text-2xl font-semibold">
-                AED {money(statement.summary.customerAdvance)}
-              </p>
+              <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[650px]">
+                <AccountPositionCard
+                  label="Receivable"
+                  value={statement.summary.closingReceivable}
+                  tone="receivable"
+                />
+
+                <AccountPositionCard
+                  label="Customer Advance"
+                  value={statement.summary.customerAdvance}
+                  tone="advance"
+                />
+
+                <AccountPositionCard
+                  label="Net Position"
+                  value={Math.abs(statement.summary.closingBalance)}
+                  tone={
+                    statement.summary.closingBalance > 0
+                      ? "receivable"
+                      : statement.summary.closingBalance < 0
+                        ? "advance"
+                        : "settled"
+                  }
+                  suffix={
+                    statement.summary.closingBalance > 0
+                      ? "Receivable"
+                      : statement.summary.closingBalance < 0
+                        ? "Advance"
+                        : "Settled"
+                  }
+                />
+              </div>
             </div>
           </section>
 
@@ -241,8 +275,8 @@ export default async function CustomerStatementPage({
 
                 <p className="mt-1 text-sm text-muted-foreground">
                   Sales increase receivables and receipts reduce them. Running
-                  Balance is the customer&apos;s total account balance after each
-                  transaction.
+                  Balance is the customer&apos;s total account balance after
+                  each transaction.
                 </p>
               </div>
 
@@ -406,6 +440,44 @@ function SummaryCard({
           <Icon className="size-5" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function AccountPositionCard({
+  label,
+  value,
+  tone,
+  suffix,
+}: {
+  label: string;
+
+  value: number;
+
+  tone: "receivable" | "advance" | "settled";
+
+  suffix?: string;
+}) {
+  const toneClass =
+    tone === "receivable"
+      ? "border-amber-200 bg-amber-50 text-amber-900"
+      : tone === "advance"
+        ? "border-violet-200 bg-violet-50 text-violet-900"
+        : "border-emerald-200 bg-emerald-50 text-emerald-900";
+
+  return (
+    <div className={["rounded-xl border p-4", toneClass].join(" ")}>
+      <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
+        {label}
+      </p>
+
+      <p className="mt-2 text-xl font-bold">AED {money(value)}</p>
+
+      {suffix ? (
+        <p className="mt-1 text-xs font-semibold uppercase tracking-wide opacity-70">
+          {suffix}
+        </p>
+      ) : null}
     </div>
   );
 }

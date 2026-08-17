@@ -1,7 +1,4 @@
-import {
-  Plus,
-  Users,
-} from "lucide-react";
+import { Plus, Users } from "lucide-react";
 
 import CustomerFilters from "@/components/admin/customers/CustomerFilters";
 import CustomerPagination from "@/components/admin/customers/CustomerPagination";
@@ -15,22 +12,15 @@ import {
   type CustomerStatus,
   type CustomerType,
 } from "@/lib/repositories/customer.repository";
-
+import { getCustomerFinancialPositions } from "@/lib/repositories/customer-statement.repository";
 interface CustomersPageProps {
-  searchParams: Promise<
-    Record<
-      string,
-      string | string[] | undefined
-    >
-  >;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function getStringParam(
   value: string | string[] | undefined,
 ): string | undefined {
-  return typeof value === "string"
-    ? value
-    : undefined;
+  return typeof value === "string" ? value : undefined;
 }
 
 function getPositiveInteger(
@@ -39,25 +29,13 @@ function getPositiveInteger(
 ): number {
   const parsed = Number(value);
 
-  return Number.isInteger(parsed) &&
-    parsed > 0
-    ? parsed
-    : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function normalizeStatus(
-  value: string | undefined,
-): CustomerStatus | "all" {
-  const statuses:
-    readonly CustomerStatus[] = [
-      "active",
-      "inactive",
-      "blocked",
-    ];
+function normalizeStatus(value: string | undefined): CustomerStatus | "all" {
+  const statuses: readonly CustomerStatus[] = ["active", "inactive", "blocked"];
 
-  return statuses.includes(
-    value as CustomerStatus,
-  )
+  return statuses.includes(value as CustomerStatus)
     ? (value as CustomerStatus)
     : "all";
 }
@@ -65,33 +43,22 @@ function normalizeStatus(
 function normalizeCustomerType(
   value: string | undefined,
 ): CustomerType | "all" {
-  const types:
-    readonly CustomerType[] = [
-      "business",
-      "individual",
-    ];
+  const types: readonly CustomerType[] = ["business", "individual"];
 
-  return types.includes(
-    value as CustomerType,
-  )
+  return types.includes(value as CustomerType)
     ? (value as CustomerType)
     : "all";
 }
 
-function normalizeSource(
-  value: string | undefined,
-): CustomerSource | "all" {
-  const sources:
-    readonly CustomerSource[] = [
-      "internal",
-      "hmshoponline",
-      "dubaiwholesalehub",
-      "import",
-    ];
+function normalizeSource(value: string | undefined): CustomerSource | "all" {
+  const sources: readonly CustomerSource[] = [
+    "internal",
+    "hmshoponline",
+    "dubaiwholesalehub",
+    "import",
+  ];
 
-  return sources.includes(
-    value as CustomerSource,
-  )
+  return sources.includes(value as CustomerSource)
     ? (value as CustomerSource)
     : "all";
 }
@@ -101,51 +68,39 @@ export default async function CustomersPage({
 }: CustomersPageProps) {
   const params = await searchParams;
 
-  const search =
-    getStringParam(params.search)?.trim() ??
-    "";
+  const search = getStringParam(params.search)?.trim() ?? "";
 
-  const status = normalizeStatus(
-    getStringParam(params.status),
+  const status = normalizeStatus(getStringParam(params.status));
+
+  const customerType = normalizeCustomerType(
+    getStringParam(params.customerType),
   );
 
-  const customerType =
-    normalizeCustomerType(
-      getStringParam(
-        params.customerType,
-      ),
-    );
+  const source = normalizeSource(getStringParam(params.source));
 
-  const source = normalizeSource(
-    getStringParam(params.source),
-  );
-
-  const page = getPositiveInteger(
-    getStringParam(params.page),
-    1,
-  );
+  const page = getPositiveInteger(getStringParam(params.page), 1);
 
   const pageSize = Math.min(
-    getPositiveInteger(
-      getStringParam(params.pageSize),
-      25,
-    ),
+    getPositiveInteger(getStringParam(params.pageSize), 25),
     100,
   );
 
-  const [result, summary] =
-    await Promise.all([
-      getCustomerPage({
-        search: search || undefined,
-        status,
-        customerType,
-        source,
-        page,
-        pageSize,
-      }),
+  const [result, summary] = await Promise.all([
+    getCustomerPage({
+      search: search || undefined,
+      status,
+      customerType,
+      source,
+      page,
+      pageSize,
+    }),
 
-      getCustomerSummary(),
-    ]);
+    getCustomerSummary(),
+  ]);
+
+  const financialPositions = await getCustomerFinancialPositions(
+    result.data.map((customer) => customer.id),
+  );
 
   return (
     <div className="space-y-6">
@@ -160,9 +115,7 @@ export default async function CustomersPage({
         }}
       />
 
-      <CustomerSummaryCards
-        summary={summary}
-      />
+      <CustomerSummaryCards summary={summary} />
 
       <CustomerFilters
         values={{
@@ -184,6 +137,7 @@ export default async function CustomersPage({
 
         <CustomerTable
           customers={result.data}
+          financialPositions={financialPositions}
         />
 
         <CustomerPagination
@@ -192,13 +146,11 @@ export default async function CustomersPage({
           totalCount={result.count}
           pageSize={result.pageSize}
           searchParams={{
-            search:
-              search || undefined,
+            search: search || undefined,
             status,
             customerType,
             source,
-            pageSize:
-              String(pageSize),
+            pageSize: String(pageSize),
           }}
         />
       </section>
