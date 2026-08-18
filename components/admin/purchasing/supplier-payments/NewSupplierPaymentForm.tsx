@@ -1,25 +1,12 @@
 "use client";
 
-import {
-  useMemo,
-  useState,
-  useTransition,
-} from "react";
+import { useMemo, useState, useTransition } from "react";
 
-import {
-  Calculator,
-  HandCoins,
-  Loader2,
-  RotateCcw,
-} from "lucide-react";
+import { Calculator, HandCoins, Loader2, RotateCcw } from "lucide-react";
 
-import {
-  useRouter,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import {
-  toast,
-} from "sonner";
+import { toast } from "sonner";
 
 import {
   createSupplierPayment,
@@ -32,471 +19,282 @@ import type {
   SupplierPaymentSupplierOption,
 } from "@/lib/repositories/supplier-payment.repository";
 
-type AllocationMode =
-  | "auto"
-  | "manual";
+type AllocationMode = "auto" | "manual";
 
+type FinancialAccountOption = {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  currencyCode: string;
+  currentBalance: number;
+};
 interface NewSupplierPaymentFormProps {
-  suppliers:
-    SupplierPaymentSupplierOption[];
+  suppliers: SupplierPaymentSupplierOption[];
+
+  financialAccounts: FinancialAccountOption[];
 }
 
-function money(
-  value: number,
-) {
-  return new Intl.NumberFormat(
-    "en-AE",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    },
-  ).format(value);
+function money(value: number) {
+  return new Intl.NumberFormat("en-AE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 export default function NewSupplierPaymentForm({
   suppliers,
+  financialAccounts,
 }: NewSupplierPaymentFormProps) {
-  const router =
-    useRouter();
+  const router = useRouter();
 
-  const [
-    isLoadingPurchases,
-    startLoadingPurchases,
-  ] =
-    useTransition();
+  const [isLoadingPurchases, startLoadingPurchases] = useTransition();
 
-  const [
-    isPosting,
-    startPosting,
-  ] =
-    useTransition();
+  const [isPosting, startPosting] = useTransition();
 
-  const [
-    supplierId,
-    setSupplierId,
-  ] =
-    useState("");
+  const [supplierId, setSupplierId] = useState("");
 
-  const [
-    paymentDate,
-    setPaymentDate,
-  ] =
-    useState(
-      new Date()
-        .toISOString()
-        .slice(0, 10),
-    );
+  const [paymentDate, setPaymentDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
 
-  const [
-    paymentMethod,
-    setPaymentMethod,
-  ] =
-    useState<SupplierPaymentMethod>(
-      "cash",
-    );
+  const [paymentMethod, setPaymentMethod] =
+    useState<SupplierPaymentMethod>("cash");
 
-  const [
-    amount,
-    setAmount,
-  ] =
-    useState(0);
+  const [financialAccountId, setFinancialAccountId] = useState("");
 
-  const [
-    referenceNumber,
-    setReferenceNumber,
-  ] =
-    useState("");
+  const [amount, setAmount] = useState(0);
 
-  const [
-    bankName,
-    setBankName,
-  ] =
-    useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
 
-  const [
-    chequeNumber,
-    setChequeNumber,
-  ] =
-    useState("");
+  const [bankName, setBankName] = useState("");
 
-  const [
-    chequeDate,
-    setChequeDate,
-  ] =
-    useState("");
+  const [chequeNumber, setChequeNumber] = useState("");
 
-  const [
-    notes,
-    setNotes,
-  ] =
-    useState("");
+  const [chequeDate, setChequeDate] = useState("");
 
-  const [
-    allocationMode,
-    setAllocationMode,
-  ] =
-    useState<AllocationMode>(
-      "auto",
-    );
+  const [notes, setNotes] = useState("");
 
-  const [
-    purchases,
-    setPurchases,
-  ] =
-    useState<
-      SupplierOutstandingPurchase[]
-    >([]);
+  const [allocationMode, setAllocationMode] = useState<AllocationMode>("auto");
 
-  const [
-    manualAllocations,
-    setManualAllocations,
-  ] =
-    useState<
-      Record<string, number>
-    >({});
+  const [purchases, setPurchases] = useState<SupplierOutstandingPurchase[]>([]);
 
+  const [manualAllocations, setManualAllocations] = useState<
+    Record<string, number>
+  >({});
 
   /* =====================================================
    * Totals
    * ===================================================== */
 
-  const totalOutstanding =
-    useMemo(
-      () =>
-        purchases.reduce(
-          (
-            total,
-            purchase,
-          ) =>
-            total +
-            purchase.balanceDue,
-          0,
-        ),
-      [purchases],
-    );
-
+  const totalOutstanding = useMemo(
+    () => purchases.reduce((total, purchase) => total + purchase.balanceDue, 0),
+    [purchases],
+  );
 
   /* =====================================================
    * Auto Allocation
    * ===================================================== */
-
-  const automaticAllocations =
-    useMemo(
-      () => {
-        let remaining =
-          Math.max(
-            amount,
-            0,
-          );
-
-        const result:
-          Record<
-            string,
-            number
-          > = {};
-
-        for (
-          const purchase of
-          purchases
-        ) {
-          if (
-            remaining <= 0
-          ) {
-            break;
-          }
-
-          const allocation =
-            Math.min(
-              purchase.balanceDue,
-              remaining,
-            );
-
-          if (
-            allocation > 0
-          ) {
-            result[
-              purchase.id
-            ] =
-              allocation;
-
-            remaining -=
-              allocation;
-          }
+  const compatibleFinancialAccounts = useMemo(
+    () =>
+      financialAccounts.filter((account) => {
+        if (account.currencyCode !== "AED") {
+          return false;
         }
 
-        return result;
-      },
-      [
-        amount,
-        purchases,
-      ],
-    );
+        if (paymentMethod === "cash") {
+          return account.accountType === "cash";
+        }
 
+        if (paymentMethod === "bank" || paymentMethod === "cheque") {
+          return account.accountType === "bank";
+        }
+
+        if (paymentMethod === "card") {
+          return ["card", "payment_gateway", "clearing"].includes(
+            account.accountType,
+          );
+        }
+
+        return true;
+      }),
+    [financialAccounts, paymentMethod],
+  );
+  const automaticAllocations = useMemo(() => {
+    let remaining = Math.max(amount, 0);
+
+    const result: Record<string, number> = {};
+
+    for (const purchase of purchases) {
+      if (remaining <= 0) {
+        break;
+      }
+
+      const allocation = Math.min(purchase.balanceDue, remaining);
+
+      if (allocation > 0) {
+        result[purchase.id] = allocation;
+
+        remaining -= allocation;
+      }
+    }
+
+    return result;
+  }, [amount, purchases]);
 
   const activeAllocations =
-    allocationMode ===
-    "auto"
-      ? automaticAllocations
-      : manualAllocations;
+    allocationMode === "auto" ? automaticAllocations : manualAllocations;
 
+  const allocatedAmount = Object.values(activeAllocations).reduce(
+    (total, value) => total + Number(value || 0),
+    0,
+  );
 
-  const allocatedAmount =
-    Object.values(
-      activeAllocations,
-    ).reduce(
-      (
-        total,
-        value,
-      ) =>
-        total +
-        Number(
-          value || 0,
-        ),
-      0,
-    );
-
-
-  const unallocatedAmount =
-    Math.max(
-      amount -
-        allocatedAmount,
-      0,
-    );
-
+  const unallocatedAmount = Math.max(amount - allocatedAmount, 0);
 
   /* =====================================================
    * Supplier Change
    * ===================================================== */
 
-  function handleSupplierChange(
-    nextSupplierId: string,
-  ) {
-    setSupplierId(
-      nextSupplierId,
-    );
+  function handleSupplierChange(nextSupplierId: string) {
+    setSupplierId(nextSupplierId);
 
     setPurchases([]);
 
-    setManualAllocations(
-      {},
-    );
+    setManualAllocations({});
 
-    if (
-      !nextSupplierId
-    ) {
+    if (!nextSupplierId) {
       return;
     }
 
-    startLoadingPurchases(
-      async () => {
-        try {
-          const result =
-            await loadSupplierOutstandingPurchases(
-              nextSupplierId,
-            );
+    startLoadingPurchases(async () => {
+      try {
+        const result = await loadSupplierOutstandingPurchases(nextSupplierId);
 
-          setPurchases(
-            result,
-          );
-        } catch (error) {
-          toast.error(
-            error instanceof Error
-              ? error.message
-              : "Unable to load outstanding purchases.",
-          );
-        }
-      },
-    );
+        setPurchases(result);
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to load outstanding purchases.",
+        );
+      }
+    });
   }
-
 
   /* =====================================================
    * Manual Allocation
    * ===================================================== */
 
   function updateManualAllocation(
-    purchase:
-      SupplierOutstandingPurchase,
+    purchase: SupplierOutstandingPurchase,
 
     value: number,
   ) {
-    const next =
-      Math.max(
-        Math.min(
-          value,
-          purchase.balanceDue,
-        ),
-        0,
-      );
+    const next = Math.max(Math.min(value, purchase.balanceDue), 0);
 
-    setManualAllocations(
-      (current) => ({
-        ...current,
+    setManualAllocations((current) => ({
+      ...current,
 
-        [purchase.id]:
-          next,
-      }),
-    );
+      [purchase.id]: next,
+    }));
   }
-
 
   function clearAllocations() {
-    setManualAllocations(
-      {},
-    );
+    setManualAllocations({});
   }
-
 
   /* =====================================================
    * Submit
    * ===================================================== */
 
   function handleSubmit() {
-    if (
-      !supplierId
-    ) {
-      toast.error(
-        "Please select a supplier.",
-      );
+    if (!supplierId) {
+      toast.error("Please select a supplier.");
 
       return;
     }
 
-    if (
-      amount <= 0
-    ) {
-      toast.error(
-        "Payment amount must be greater than zero.",
-      );
+    if (amount <= 0) {
+      toast.error("Payment amount must be greater than zero.");
 
       return;
     }
 
-    if (
-      allocatedAmount >
-      amount + 0.01
-    ) {
-      toast.error(
-        "Allocated amount cannot exceed the payment amount.",
-      );
+    if (!financialAccountId) {
+      toast.error("Please select a financial account.");
 
       return;
     }
 
-    if (
-      paymentMethod ===
-        "cheque" &&
-      !chequeNumber.trim()
-    ) {
-      toast.error(
-        "Please enter the cheque number.",
-      );
+    if (allocatedAmount > amount + 0.01) {
+      toast.error("Allocated amount cannot exceed the payment amount.");
 
       return;
     }
 
-    const allocations =
-      Object.entries(
-        activeAllocations,
-      )
-        .filter(
-          (
-            [, value],
-          ) =>
-            value >
-            0,
-        )
-        .map(
-          (
-            [
-              quickPurchaseId,
-              allocationAmount,
-            ],
-          ) => ({
-            quickPurchaseId,
+    if (paymentMethod === "cheque" && !chequeNumber.trim()) {
+      toast.error("Please enter the cheque number.");
 
-            amount:
-              Number(
-                allocationAmount.toFixed(
-                  2,
-                ),
-              ),
-          }),
-        );
+      return;
+    }
 
-    startPosting(
-      async () => {
-        const result =
-          await createSupplierPayment(
-            {
-              supplierId,
+    const allocations = Object.entries(activeAllocations)
+      .filter(([, value]) => value > 0)
+      .map(([quickPurchaseId, allocationAmount]) => ({
+        quickPurchaseId,
 
-              paymentDate,
+        amount: Number(allocationAmount.toFixed(2)),
+      }));
 
-              paymentMethod,
+    startPosting(async () => {
+      const result = await createSupplierPayment({
+        supplierId,
 
-              amount,
+        paymentDate,
 
-              referenceNumber:
-                referenceNumber ||
-                undefined,
+        paymentMethod,
 
-              bankName:
-                bankName ||
-                undefined,
+        financialAccountId,
 
-              chequeNumber:
-                chequeNumber ||
-                undefined,
+        amount,
 
-              chequeDate:
-                chequeDate ||
-                undefined,
+        referenceNumber: referenceNumber || undefined,
 
-              notes:
-                notes ||
-                undefined,
+        bankName: bankName || undefined,
 
-              allocations,
-            },
-          );
+        chequeNumber: chequeNumber || undefined,
 
-        if (
-          !result.success
-        ) {
-          toast.error(
-            result.message,
-          );
+        chequeDate: chequeDate || undefined,
 
-          return;
-        }
+        notes: notes || undefined,
 
-        toast.success(
-          result.message,
-        );
+        allocations,
+      });
 
-        router.push(
-          "/admin/purchasing/supplier-payments",
-        );
+      if (!result.success) {
+        toast.error(result.message);
 
-        router.refresh();
-      },
-    );
+        return;
+      }
+
+      toast.success(result.message);
+
+      router.push("/admin/purchasing/supplier-payments");
+
+      router.refresh();
+    });
   }
-
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
       <div className="space-y-6">
-
         <section className="rounded-xl border bg-card p-6">
           <div className="flex items-center gap-3">
             <HandCoins className="size-5" />
 
             <div>
-              <h2 className="font-semibold">
-                Payment Details
-              </h2>
+              <h2 className="font-semibold">Payment Details</h2>
 
               <p className="text-sm text-muted-foreground">
                 Enter supplier and payment information.
@@ -505,225 +303,128 @@ export default function NewSupplierPaymentForm({
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <Field
-              label="Supplier"
-              required
-            >
+            <Field label="Supplier" required>
               <select
-                value={
-                  supplierId
-                }
-                onChange={(
-                  event,
-                ) =>
-                  handleSupplierChange(
-                    event.target.value,
-                  )
-                }
-                className={
-                  inputClass
-                }
+                value={supplierId}
+                onChange={(event) => handleSupplierChange(event.target.value)}
+                className={inputClass}
               >
-                <option value="">
-                  Select supplier
-                </option>
+                <option value="">Select supplier</option>
 
-                {suppliers.map(
-                  (
-                    supplier,
-                  ) => (
-                    <option
-                      key={
-                        supplier.id
-                      }
-                      value={
-                        supplier.id
-                      }
-                    >
-                      {
-                        supplier.companyName
-                      }
+                {suppliers.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.companyName}
 
-                      {supplier.city
-                        ? ` — ${supplier.city}`
-                        : ""}
-                    </option>
-                  ),
-                )}
+                    {supplier.city ? ` — ${supplier.city}` : ""}
+                  </option>
+                ))}
               </select>
             </Field>
 
-            <Field
-              label="Payment Date"
-              required
-            >
+            <Field label="Payment Date" required>
               <input
                 type="date"
-                value={
-                  paymentDate
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setPaymentDate(
-                    event.target.value,
-                  )
-                }
-                className={
-                  inputClass
-                }
+                value={paymentDate}
+                onChange={(event) => setPaymentDate(event.target.value)}
+                className={inputClass}
               />
             </Field>
 
-            <Field
-              label="Payment Amount"
-              required
-            >
+            <Field label="Payment Amount" required>
               <input
                 type="number"
                 min={0}
                 step="0.01"
-                value={
-                  amount
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setAmount(
-                    Number(
-                      event.target.value,
-                    ) ||
-                      0,
-                  )
-                }
-                className={
-                  inputClass
-                }
+                value={amount}
+                onChange={(event) => setAmount(Number(event.target.value) || 0)}
+                className={inputClass}
               />
             </Field>
 
-            <Field
-              label="Payment Method"
-              required
-            >
+            <Field label="Payment Method" required>
               <select
-                value={
-                  paymentMethod
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setPaymentMethod(
-                    event.target.value as
-                      SupplierPaymentMethod,
-                  )
-                }
-                className={
-                  inputClass
-                }
+                value={paymentMethod}
+                onChange={(event) => {
+                  setPaymentMethod(event.target.value as SupplierPaymentMethod);
+
+                  setFinancialAccountId("");
+                }}
+                className={inputClass}
               >
-                <option value="cash">
-                  Cash
-                </option>
+                <option value="cash">Cash</option>
 
-                <option value="bank">
-                  Bank Transfer
-                </option>
+                <option value="bank">Bank Transfer</option>
 
-                <option value="card">
-                  Card
-                </option>
+                <option value="card">Card</option>
 
-                <option value="cheque">
-                  Cheque
-                </option>
+                <option value="cheque">Cheque</option>
 
-                <option value="other">
-                  Other
-                </option>
+                <option value="other">Other</option>
               </select>
+            </Field>
+
+            <Field label="Financial Account" required>
+              <select
+                value={financialAccountId}
+                onChange={(event) => setFinancialAccountId(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select account</option>
+
+                {compatibleFinancialAccounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.accountName}
+                    {" — "}
+                    {account.accountCode}
+                    {" — "}
+                    {account.currencyCode} {money(account.currentBalance)}
+                  </option>
+                ))}
+              </select>
+
+              {compatibleFinancialAccounts.length === 0 ? (
+                <p className="mt-1 text-xs text-red-600">
+                  No compatible financial account is available for this payment
+                  method.
+                </p>
+              ) : null}
             </Field>
 
             <Field label="Payment Reference">
               <input
-                value={
-                  referenceNumber
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setReferenceNumber(
-                    event.target.value,
-                  )
-                }
+                value={referenceNumber}
+                onChange={(event) => setReferenceNumber(event.target.value)}
                 placeholder="Transfer / receipt / reference"
-                className={
-                  inputClass
-                }
+                className={inputClass}
               />
             </Field>
 
-            {paymentMethod ===
-            "bank" ? (
+            {paymentMethod === "bank" ? (
               <Field label="Bank Name">
                 <input
-                  value={
-                    bankName
-                  }
-                  onChange={(
-                    event,
-                  ) =>
-                    setBankName(
-                      event.target.value,
-                    )
-                  }
-                  className={
-                    inputClass
-                  }
+                  value={bankName}
+                  onChange={(event) => setBankName(event.target.value)}
+                  className={inputClass}
                 />
               </Field>
             ) : null}
 
-            {paymentMethod ===
-            "cheque" ? (
+            {paymentMethod === "cheque" ? (
               <>
-                <Field
-                  label="Cheque Number"
-                  required
-                >
+                <Field label="Cheque Number" required>
                   <input
-                    value={
-                      chequeNumber
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setChequeNumber(
-                        event.target.value,
-                      )
-                    }
-                    className={
-                      inputClass
-                    }
+                    value={chequeNumber}
+                    onChange={(event) => setChequeNumber(event.target.value)}
+                    className={inputClass}
                   />
                 </Field>
 
                 <Field label="Cheque Date">
                   <input
                     type="date"
-                    value={
-                      chequeDate
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setChequeDate(
-                        event.target.value,
-                      )
-                    }
-                    className={
-                      inputClass
-                    }
+                    value={chequeDate}
+                    onChange={(event) => setChequeDate(event.target.value)}
+                    className={inputClass}
                   />
                 </Field>
               </>
@@ -733,16 +434,8 @@ export default function NewSupplierPaymentForm({
           <div className="mt-4">
             <Field label="Notes">
               <textarea
-                value={
-                  notes
-                }
-                onChange={(
-                  event,
-                ) =>
-                  setNotes(
-                    event.target.value,
-                  )
-                }
+                value={notes}
+                onChange={(event) => setNotes(event.target.value)}
                 rows={3}
                 className={`${inputClass} h-auto py-3`}
               />
@@ -750,13 +443,10 @@ export default function NewSupplierPaymentForm({
           </div>
         </section>
 
-
         <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-semibold">
-                Outstanding Quick Purchases
-              </h2>
+              <h2 className="font-semibold">Outstanding Quick Purchases</h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 Allocate this payment against supplier purchases.
@@ -766,16 +456,9 @@ export default function NewSupplierPaymentForm({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  setAllocationMode(
-                    "auto",
-                  )
-                }
+                onClick={() => setAllocationMode("auto")}
                 className={
-                  allocationMode ===
-                  "auto"
-                    ? activeButton
-                    : inactiveButton
+                  allocationMode === "auto" ? activeButton : inactiveButton
                 }
               >
                 Auto Allocate
@@ -783,16 +466,9 @@ export default function NewSupplierPaymentForm({
 
               <button
                 type="button"
-                onClick={() =>
-                  setAllocationMode(
-                    "manual",
-                  )
-                }
+                onClick={() => setAllocationMode("manual")}
                 className={
-                  allocationMode ===
-                  "manual"
-                    ? activeButton
-                    : inactiveButton
+                  allocationMode === "manual" ? activeButton : inactiveButton
                 }
               >
                 Manual
@@ -803,174 +479,109 @@ export default function NewSupplierPaymentForm({
           {isLoadingPurchases ? (
             <div className="flex items-center justify-center gap-2 px-6 py-14 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-
               Loading outstanding purchases...
             </div>
           ) : !supplierId ? (
             <div className="px-6 py-14 text-center text-sm text-muted-foreground">
               Select a supplier to view outstanding Quick Purchases.
             </div>
-          ) : purchases.length ===
-            0 ? (
-              <div className="px-6 py-14 text-center">
-                <p className="font-medium">
-                  No outstanding Quick Purchases.
-                </p>
+          ) : purchases.length === 0 ? (
+            <div className="px-6 py-14 text-center">
+              <p className="font-medium">No outstanding Quick Purchases.</p>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Any unallocated amount will remain as supplier advance.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-sm">
-                  <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3">
-                        Purchase
-                      </th>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Any unallocated amount will remain as supplier advance.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-sm">
+                <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">Purchase</th>
 
-                      <th className="px-4 py-3">
-                        Invoice
-                      </th>
+                    <th className="px-4 py-3">Invoice</th>
 
-                      <th className="px-4 py-3">
-                        Date
-                      </th>
+                    <th className="px-4 py-3">Date</th>
 
-                      <th className="px-4 py-3 text-right">
-                        Total
-                      </th>
+                    <th className="px-4 py-3 text-right">Total</th>
 
-                      <th className="px-4 py-3 text-right">
-                        Paid
-                      </th>
+                    <th className="px-4 py-3 text-right">Paid</th>
 
-                      <th className="px-4 py-3 text-right">
-                        Outstanding
-                      </th>
+                    <th className="px-4 py-3 text-right">Outstanding</th>
 
-                      <th className="px-4 py-3 text-right">
-                        Allocate
-                      </th>
-                    </tr>
-                  </thead>
+                    <th className="px-4 py-3 text-right">Allocate</th>
+                  </tr>
+                </thead>
 
-                  <tbody className="divide-y">
-                    {purchases.map(
-                      (
-                        purchase,
-                      ) => {
-                        const allocation =
-                          activeAllocations[
-                            purchase.id
-                          ] ??
-                          0;
+                <tbody className="divide-y">
+                  {purchases.map((purchase) => {
+                    const allocation = activeAllocations[purchase.id] ?? 0;
 
-                        return (
-                          <tr
-                            key={
-                              purchase.id
-                            }
-                          >
-                            <td className="px-4 py-4 font-semibold">
-                              {
-                                purchase.purchaseNumber
+                    return (
+                      <tr key={purchase.id}>
+                        <td className="px-4 py-4 font-semibold">
+                          {purchase.purchaseNumber}
+                        </td>
+
+                        <td className="px-4 py-4 text-muted-foreground">
+                          {purchase.supplierInvoiceNumber ?? "—"}
+                        </td>
+
+                        <td className="px-4 py-4 text-muted-foreground">
+                          {purchase.purchaseDate}
+                        </td>
+
+                        <td className="px-4 py-4 text-right">
+                          AED {money(purchase.grandTotal)}
+                        </td>
+
+                        <td className="px-4 py-4 text-right">
+                          AED {money(purchase.paidAmount)}
+                        </td>
+
+                        <td className="px-4 py-4 text-right font-semibold text-amber-700">
+                          AED {money(purchase.balanceDue)}
+                        </td>
+
+                        <td className="px-4 py-4 text-right">
+                          {allocationMode === "manual" ? (
+                            <input
+                              type="number"
+                              min={0}
+                              max={purchase.balanceDue}
+                              step="0.01"
+                              value={allocation}
+                              onChange={(event) =>
+                                updateManualAllocation(
+                                  purchase,
+                                  Number(event.target.value) || 0,
+                                )
                               }
-                            </td>
+                              className="h-9 w-28 rounded-md border bg-background px-2 text-right"
+                            />
+                          ) : (
+                            <span className="font-semibold text-emerald-700">
+                              AED {money(allocation)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-                            <td className="px-4 py-4 text-muted-foreground">
-                              {
-                                purchase.supplierInvoiceNumber ??
-                                "—"
-                              }
-                            </td>
-
-                            <td className="px-4 py-4 text-muted-foreground">
-                              {
-                                purchase.purchaseDate
-                              }
-                            </td>
-
-                            <td className="px-4 py-4 text-right">
-                              AED{" "}
-                              {money(
-                                purchase.grandTotal,
-                              )}
-                            </td>
-
-                            <td className="px-4 py-4 text-right">
-                              AED{" "}
-                              {money(
-                                purchase.paidAmount,
-                              )}
-                            </td>
-
-                            <td className="px-4 py-4 text-right font-semibold text-amber-700">
-                              AED{" "}
-                              {money(
-                                purchase.balanceDue,
-                              )}
-                            </td>
-
-                            <td className="px-4 py-4 text-right">
-                              {allocationMode ===
-                              "manual" ? (
-                                <input
-                                  type="number"
-                                  min={0}
-                                  max={
-                                    purchase.balanceDue
-                                  }
-                                  step="0.01"
-                                  value={
-                                    allocation
-                                  }
-                                  onChange={(
-                                    event,
-                                  ) =>
-                                    updateManualAllocation(
-                                      purchase,
-                                      Number(
-                                        event
-                                          .target
-                                          .value,
-                                      ) ||
-                                        0,
-                                    )
-                                  }
-                                  className="h-9 w-28 rounded-md border bg-background px-2 text-right"
-                                />
-                              ) : (
-                                <span className="font-semibold text-emerald-700">
-                                  AED{" "}
-                                  {money(
-                                    allocation,
-                                  )}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      },
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-          {allocationMode ===
-          "manual" ? (
+          {allocationMode === "manual" ? (
             <div className="border-t p-4">
               <button
                 type="button"
-                onClick={
-                  clearAllocations
-                }
+                onClick={clearAllocations}
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
               >
                 <RotateCcw className="size-4" />
-
                 Clear allocations
               </button>
             </div>
@@ -978,72 +589,40 @@ export default function NewSupplierPaymentForm({
         </section>
       </div>
 
-
       <aside className="h-fit rounded-xl bg-slate-950 p-6 text-white xl:sticky xl:top-24">
         <div className="flex items-center gap-3">
           <Calculator className="size-5 text-amber-400" />
 
-          <h2 className="font-semibold">
-            Payment Summary
-          </h2>
+          <h2 className="font-semibold">Payment Summary</h2>
         </div>
 
         <div className="mt-6 space-y-4 text-sm">
-          <SummaryRow
-            label="Supplier Outstanding"
-            value={
-              totalOutstanding
-            }
-          />
+          <SummaryRow label="Supplier Outstanding" value={totalOutstanding} />
 
           <div className="border-t border-slate-700 pt-4">
-            <SummaryRow
-              label="Payment Amount"
-              value={
-                amount
-              }
-              strong
-            />
+            <SummaryRow label="Payment Amount" value={amount} strong />
           </div>
 
-          <SummaryRow
-            label="Allocated"
-            value={
-              allocatedAmount
-            }
-          />
+          <SummaryRow label="Allocated" value={allocatedAmount} />
 
           <SummaryRow
             label="Supplier Advance"
-            value={
-              unallocatedAmount
-            }
-            strong={
-              unallocatedAmount >
-              0
-            }
+            value={unallocatedAmount}
+            strong={unallocatedAmount > 0}
           />
         </div>
 
-        {unallocatedAmount >
-        0 ? (
+        {unallocatedAmount > 0 ? (
           <div className="mt-5 rounded-lg bg-amber-500/10 p-3 text-xs leading-5 text-amber-200">
-            AED{" "}
-            {money(
-              unallocatedAmount,
-            )}{" "}
-            will remain as unallocated supplier advance.
+            AED {money(unallocatedAmount)} will remain as unallocated supplier
+            advance.
           </div>
         ) : null}
 
         <button
           type="button"
-          disabled={
-            isPosting
-          }
-          onClick={
-            handleSubmit
-          }
+          disabled={isPosting}
+          onClick={handleSubmit}
           className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isPosting ? (
@@ -1052,15 +631,12 @@ export default function NewSupplierPaymentForm({
             <HandCoins className="size-5" />
           )}
 
-          {isPosting
-            ? "Posting Payment..."
-            : "Post Supplier Payment"}
+          {isPosting ? "Posting Payment..." : "Post Supplier Payment"}
         </button>
       </aside>
     </div>
   );
 }
-
 
 function Field({
   label,
@@ -1069,26 +645,20 @@ function Field({
 }: {
   label: string;
   required?: boolean;
-  children:
-    React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
     <label className="block space-y-2">
       <span className="text-sm font-medium">
         {label}
 
-        {required ? (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        ) : null}
+        {required ? <span className="ml-1 text-red-500">*</span> : null}
       </span>
 
       {children}
     </label>
   );
 }
-
 
 function SummaryRow({
   label,
@@ -1101,26 +671,12 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-slate-300">
-        {label}
-      </span>
+      <span className="text-slate-300">{label}</span>
 
-      <span
-        className={
-          strong
-            ? "font-bold"
-            : ""
-        }
-      >
-        AED{" "}
-        {money(
-          value,
-        )}
-      </span>
+      <span className={strong ? "font-bold" : ""}>AED {money(value)}</span>
     </div>
   );
 }
-
 
 const inputClass =
   "h-11 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring";

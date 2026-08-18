@@ -20,6 +20,8 @@ export type PostCustomerReceiptInput = {
     paymentMethod:
     CustomerReceiptPaymentMethod;
 
+    financialAccountId: string;
+
     currencyCode?: string;
     exchangeRate?: number;
 
@@ -53,7 +55,7 @@ export async function postCustomerReceipt(
         data,
         error,
     } = await supabase.rpc(
-        "post_customer_receipt",
+        "post_customer_receipt_with_account",
         {
             p_customer_id:
                 input.customerId,
@@ -108,6 +110,8 @@ export async function postCustomerReceipt(
                             allocation.amount,
                     }),
                 ),
+            p_financial_account_id:
+                input.financialAccountId,
         },
     );
 
@@ -1026,7 +1030,7 @@ export async function cancelCustomerReceipt(
         error,
     } =
         await supabase.rpc(
-            "cancel_customer_receipt",
+            "cancel_customer_receipt_with_account",
             {
                 p_receipt_id:
                     receiptId,

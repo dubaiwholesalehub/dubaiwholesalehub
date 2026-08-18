@@ -39,6 +39,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_transactions: {
+        Row: {
+          account_id: string
+          amount: number
+          base_amount: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          description: string | null
+          direction: string
+          exchange_rate: number
+          id: string
+          notes: string | null
+          posted_at: string | null
+          posted_by: string | null
+          reference_id: string | null
+          reference_number: string | null
+          reference_type: string | null
+          status: string
+          transaction_date: string
+          transaction_number: string
+          transaction_type: string
+          transfer_group_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          base_amount: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          direction: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_id?: string | null
+          reference_number?: string | null
+          reference_type?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_number: string
+          transaction_type: string
+          transfer_group_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          base_amount?: number
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string | null
+          direction?: string
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_id?: string | null
+          reference_number?: string | null
+          reference_type?: string | null
+          status?: string
+          transaction_date?: string
+          transaction_number?: string
+          transaction_type?: string
+          transfer_group_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_transactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_transactions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_transactions_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           country_id: string | null
@@ -331,6 +444,27 @@ export type Database = {
             foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
             referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
@@ -338,6 +472,7 @@ export type Database = {
       }
       customer_receipts: {
         Row: {
+          account_transaction_id: string | null
           allocated_amount: number
           amount: number
           bank_name: string | null
@@ -351,6 +486,7 @@ export type Database = {
           currency_code: string
           customer_id: string
           exchange_rate: number
+          financial_account_id: string | null
           id: string
           notes: string | null
           payment_method: string
@@ -364,6 +500,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_transaction_id?: string | null
           allocated_amount?: number
           amount: number
           bank_name?: string | null
@@ -377,6 +514,7 @@ export type Database = {
           currency_code?: string
           customer_id: string
           exchange_rate?: number
+          financial_account_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
@@ -390,6 +528,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_transaction_id?: string | null
           allocated_amount?: number
           amount?: number
           bank_name?: string | null
@@ -403,6 +542,7 @@ export type Database = {
           currency_code?: string
           customer_id?: string
           exchange_rate?: number
+          financial_account_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
@@ -416,6 +556,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_receipts_account_transaction_id_fkey"
+            columns: ["account_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_receipts_cancelled_by_fkey"
             columns: ["cancelled_by"]
@@ -435,6 +582,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_financial_account_id_fkey"
+            columns: ["financial_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
             referencedColumns: ["id"]
           },
           {
@@ -618,6 +772,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "delivery_order_items_delivery_order_id_fkey"
+            columns: ["delivery_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["delivery_order_id"]
+          },
+          {
             foreignKeyName: "delivery_order_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -628,8 +789,22 @@ export type Database = {
             foreignKeyName: "delivery_order_items_sales_order_item_id_fkey"
             columns: ["sales_order_item_id"]
             isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_item_id"]
+          },
+          {
+            foreignKeyName: "delivery_order_items_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
             referencedRelation: "sales_order_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_order_items_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_item_id"]
           },
           {
             foreignKeyName: "delivery_order_items_unit_id_fkey"
@@ -780,6 +955,27 @@ export type Database = {
             foreignKeyName: "delivery_orders_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
             referencedRelation: "sales_orders"
             referencedColumns: ["id"]
           },
@@ -795,6 +991,488 @@ export type Database = {
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          expense_type: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          expense_type?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          expense_type?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          account_transaction_id: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          category_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          customer_id: string | null
+          exchange_rate: number
+          expense_date: string
+          expense_number: string
+          expense_type: string
+          financial_account_id: string | null
+          gross_amount: number
+          id: string
+          market_country_id: string | null
+          net_amount: number
+          notes: string | null
+          payee_name: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          pending_tax_amount: number
+          posted_at: string | null
+          posted_by: string | null
+          profitability_notes: string | null
+          recoverable_tax_amount: number
+          sales_channel: string | null
+          sales_order_id: string | null
+          status: string
+          supplier_id: string | null
+          supplier_invoice_date: string | null
+          supplier_invoice_number: string | null
+          supplier_trn: string | null
+          tax_amount: number
+          tax_invoice_verified: boolean
+          tax_invoice_verified_at: string | null
+          tax_treatment: string
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          account_transaction_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_id?: string | null
+          exchange_rate?: number
+          expense_date?: string
+          expense_number: string
+          expense_type: string
+          financial_account_id?: string | null
+          gross_amount?: number
+          id?: string
+          market_country_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          payee_name?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          pending_tax_amount?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          profitability_notes?: string | null
+          recoverable_tax_amount?: number
+          sales_channel?: string | null
+          sales_order_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_invoice_number?: string | null
+          supplier_trn?: string | null
+          tax_amount?: number
+          tax_invoice_verified?: boolean
+          tax_invoice_verified_at?: string | null
+          tax_treatment?: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          account_transaction_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_id?: string | null
+          exchange_rate?: number
+          expense_date?: string
+          expense_number?: string
+          expense_type?: string
+          financial_account_id?: string | null
+          gross_amount?: number
+          id?: string
+          market_country_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          payee_name?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          pending_tax_amount?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          profitability_notes?: string | null
+          recoverable_tax_amount?: number
+          sales_channel?: string | null
+          sales_order_id?: string | null
+          status?: string
+          supplier_id?: string | null
+          supplier_invoice_date?: string | null
+          supplier_invoice_number?: string | null
+          supplier_trn?: string | null
+          tax_amount?: number
+          tax_invoice_verified?: boolean
+          tax_invoice_verified_at?: string | null
+          tax_treatment?: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_account_transaction_id_fkey"
+            columns: ["account_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_financial_account_id_fkey"
+            columns: ["financial_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_market_country_id_fkey"
+            columns: ["market_country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_account_transfers: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          exchange_rate: number
+          from_account_id: string
+          from_amount: number
+          from_currency_code: string
+          id: string
+          in_transaction_id: string | null
+          notes: string | null
+          out_transaction_id: string | null
+          posted_at: string | null
+          reference_number: string | null
+          status: string
+          to_account_id: string
+          to_amount: number
+          to_currency_code: string
+          transfer_date: string
+          transfer_group_id: string
+          transfer_number: string
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          exchange_rate?: number
+          from_account_id: string
+          from_amount: number
+          from_currency_code: string
+          id?: string
+          in_transaction_id?: string | null
+          notes?: string | null
+          out_transaction_id?: string | null
+          posted_at?: string | null
+          reference_number?: string | null
+          status?: string
+          to_account_id: string
+          to_amount: number
+          to_currency_code: string
+          transfer_date?: string
+          transfer_group_id: string
+          transfer_number: string
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          exchange_rate?: number
+          from_account_id?: string
+          from_amount?: number
+          from_currency_code?: string
+          id?: string
+          in_transaction_id?: string | null
+          notes?: string | null
+          out_transaction_id?: string | null
+          posted_at?: string | null
+          reference_number?: string | null
+          status?: string
+          to_account_id?: string
+          to_amount?: number
+          to_currency_code?: string
+          transfer_date?: string
+          transfer_group_id?: string
+          transfer_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_account_transfers_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_transfers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_transfers_from_account_id_fkey"
+            columns: ["from_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_transfers_in_transaction_id_fkey"
+            columns: ["in_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_transfers_out_transaction_id_fkey"
+            columns: ["out_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_account_transfers_to_account_id_fkey"
+            columns: ["to_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_accounts: {
+        Row: {
+          account_code: string
+          account_name: string
+          account_type: string
+          allow_negative_balance: boolean
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          branch_name: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          current_balance: number
+          iban: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          notes: string | null
+          opening_balance: number
+          opening_balance_date: string | null
+          swift_code: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          account_type: string
+          allow_negative_balance?: boolean
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          branch_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          current_balance?: number
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string | null
+          swift_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          account_type?: string
+          allow_negative_balance?: boolean
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          branch_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          current_balance?: number
+          iban?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string | null
+          swift_code?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_accounts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1064,6 +1742,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "inventory_transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transaction_items_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
           },
           {
             foreignKeyName: "inventory_transaction_items_product_id_fkey"
@@ -2162,6 +2847,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "quick_purchases_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+          {
             foreignKeyName: "quick_purchases_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
@@ -2480,6 +3172,170 @@ export type Database = {
           },
         ]
       }
+      sales_margin_approvals: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          decision_notes: string | null
+          id: string
+          lowest_margin_percentage: number | null
+          policy_minimum_percentage: number | null
+          policy_warning_percentage: number | null
+          rejected_at: string | null
+          rejected_by: string | null
+          requested_at: string
+          requested_by: string | null
+          requested_reason: string
+          sales_order_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          lowest_margin_percentage?: number | null
+          policy_minimum_percentage?: number | null
+          policy_warning_percentage?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          requested_reason: string
+          sales_order_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          lowest_margin_percentage?: number | null
+          policy_minimum_percentage?: number | null
+          policy_warning_percentage?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          requested_reason?: string
+          sales_order_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_margin_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_margin_policy: {
+        Row: {
+          block_below_minimum: boolean
+          block_when_cost_missing: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          minimum_margin_percentage: number
+          policy_name: string
+          updated_at: string
+          updated_by: string | null
+          warning_margin_percentage: number
+        }
+        Insert: {
+          block_below_minimum?: boolean
+          block_when_cost_missing?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          minimum_margin_percentage?: number
+          policy_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          warning_margin_percentage?: number
+        }
+        Update: {
+          block_below_minimum?: boolean
+          block_when_cost_missing?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          minimum_margin_percentage?: number
+          policy_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          warning_margin_percentage?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_margin_policy_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_margin_policy_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_order_items: {
         Row: {
           allow_backorder: boolean
@@ -2496,6 +3352,8 @@ export type Database = {
           line_number: number
           line_subtotal: number
           line_total: number
+          margin_cost_override: number | null
+          margin_cost_override_reason: string | null
           procurement_lead_time_days: number
           procurement_notes: string | null
           procurement_required: boolean
@@ -2532,6 +3390,8 @@ export type Database = {
           line_number: number
           line_subtotal?: number
           line_total?: number
+          margin_cost_override?: number | null
+          margin_cost_override_reason?: string | null
           procurement_lead_time_days?: number
           procurement_notes?: string | null
           procurement_required?: boolean
@@ -2568,6 +3428,8 @@ export type Database = {
           line_number?: number
           line_subtotal?: number
           line_total?: number
+          margin_cost_override?: number | null
+          margin_cost_override_reason?: string | null
           procurement_lead_time_days?: number
           procurement_notes?: string | null
           procurement_required?: boolean
@@ -2603,6 +3465,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sales_quotation_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
           },
           {
             foreignKeyName: "sales_order_items_sales_order_id_fkey"
@@ -3137,6 +4020,7 @@ export type Database = {
       }
       supplier_payments: {
         Row: {
+          account_transaction_id: string | null
           allocated_amount: number
           amount: number
           bank_name: string | null
@@ -3149,6 +4033,7 @@ export type Database = {
           created_by: string | null
           currency_code: string
           exchange_rate: number
+          financial_account_id: string | null
           id: string
           notes: string | null
           payment_date: string
@@ -3163,6 +4048,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          account_transaction_id?: string | null
           allocated_amount?: number
           amount: number
           bank_name?: string | null
@@ -3175,6 +4061,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           exchange_rate?: number
+          financial_account_id?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -3189,6 +4076,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          account_transaction_id?: string | null
           allocated_amount?: number
           amount?: number
           bank_name?: string | null
@@ -3201,6 +4089,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           exchange_rate?: number
+          financial_account_id?: string | null
           id?: string
           notes?: string | null
           payment_date?: string
@@ -3215,6 +4104,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_payments_account_transaction_id_fkey"
+            columns: ["account_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_financial_account_id_fkey"
+            columns: ["financial_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_payments_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -3665,7 +4568,335 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profitability_by_category: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          cogs: number | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          quantity_sold: number | null
+          revenue: number | null
+          sales_order_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_by_customer: {
+        Row: {
+          cogs: number | null
+          customer_id: string | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          revenue: number | null
+          sales_order_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_by_product: {
+        Row: {
+          cogs: number | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          item_name: string | null
+          product_id: string | null
+          quantity_sold: number | null
+          revenue: number | null
+          sku: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_by_sales_order: {
+        Row: {
+          cogs: number | null
+          customer_id: string | null
+          first_recognition_date: string | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          last_recognition_date: string | null
+          order_number: string | null
+          recognized_quantity: number | null
+          revenue: number | null
+          sales_order_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_by_sales_source: {
+        Row: {
+          cogs: number | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          quantity_sold: number | null
+          revenue: number | null
+          sales_order_count: number | null
+          source: string | null
+        }
+        Relationships: []
+      }
+      profitability_by_warehouse: {
+        Row: {
+          cogs: number | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          quantity_sold: number | null
+          revenue: number | null
+          sales_order_count: number | null
+          warehouse_code: string | null
+          warehouse_id: string | null
+          warehouse_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_daily_expenses: {
+        Row: {
+          direct_expenses: number | null
+          financial_expenses: number | null
+          operating_expenses: number | null
+          other_expenses: number | null
+          recognition_date: string | null
+          total_expenses: number | null
+        }
+        Relationships: []
+      }
+      profitability_daily_sales: {
+        Row: {
+          cogs: number | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          quantity_sold: number | null
+          recognition_date: string | null
+          revenue: number | null
+          sales_order_count: number | null
+        }
+        Relationships: []
+      }
+      profitability_expense_lines: {
+        Row: {
+          base_profitability_expense_amount: number | null
+          category_code: string | null
+          category_id: string | null
+          category_name: string | null
+          currency_code: string | null
+          customer_id: string | null
+          exchange_rate: number | null
+          expense_id: string | null
+          expense_number: string | null
+          expense_type: string | null
+          gross_amount: number | null
+          net_amount: number | null
+          notes: string | null
+          payee_name: string | null
+          pending_tax_amount: number | null
+          profitability_expense_amount: number | null
+          recognition_date: string | null
+          recoverable_tax_amount: number | null
+          sales_order_id: string | null
+          supplier_id: string | null
+          tax_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profitability_sales_lines: {
+        Row: {
+          base_cogs: number | null
+          base_net_revenue: number | null
+          cogs: number | null
+          currency_code: string | null
+          customer_id: string | null
+          delivery_number: string | null
+          delivery_order_id: string | null
+          exchange_rate: number | null
+          fulfilment_method: string | null
+          gross_margin_percentage: number | null
+          gross_profit: number | null
+          gross_revenue: number | null
+          inventory_transaction_id: string | null
+          inventory_transaction_number: string | null
+          item_name: string | null
+          line_number: number | null
+          net_revenue: number | null
+          order_date: string | null
+          order_number: string | null
+          product_id: string | null
+          recognition_date: string | null
+          recognized_discount: number | null
+          recognized_quantity: number | null
+          sales_order_id: string | null
+          sales_order_item_id: string | null
+          sku: string | null
+          unit_cost: number | null
+          unit_selling_price: number | null
+          warehouse_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_order_margin_analysis: {
+        Row: {
+          category_id: string | null
+          currency_code: string | null
+          current_unit_cost: number | null
+          customer_id: string | null
+          discount_amount: number | null
+          effective_unit_selling_price: number | null
+          estimated_cogs: number | null
+          estimated_gross_profit: number | null
+          estimated_margin_percentage: number | null
+          exchange_rate: number | null
+          fulfilment_method: string | null
+          item_name: string | null
+          line_number: number | null
+          margin_cost_override: number | null
+          margin_cost_override_reason: string | null
+          margin_cost_source: string | null
+          margin_status: string | null
+          net_sales_value: number | null
+          order_number: string | null
+          product_id: string | null
+          quantity: number | null
+          sales_order_id: string | null
+          sales_order_item_id: string | null
+          sku: string | null
+          source: string | null
+          status: string | null
+          unit_price: number | null
+          warehouse_average_unit_cost: number | null
+          warehouse_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       apply_customer_advance_to_sales_order: {
@@ -3675,6 +4906,10 @@ export type Database = {
       apply_supplier_advance_to_quick_purchase: {
         Args: { p_quick_purchase_id: string }
         Returns: number
+      }
+      approve_sales_margin_exception: {
+        Args: { p_decision_notes: string; p_sales_order_id: string }
+        Returns: string
       }
       archive_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
@@ -3719,7 +4954,15 @@ export type Database = {
       can_approve_rfqs: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }
+      cancel_account_transaction: {
+        Args: { p_reason: string; p_transaction_id: string }
+        Returns: undefined
+      }
       cancel_customer_receipt: {
+        Args: { p_reason: string; p_receipt_id: string }
+        Returns: string
+      }
+      cancel_customer_receipt_with_account: {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: string
       }
@@ -3727,11 +4970,27 @@ export type Database = {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
+      cancel_expense: {
+        Args: { p_expense_id: string; p_reason: string }
+        Returns: undefined
+      }
+      cancel_financial_account_opening_balance: {
+        Args: { p_financial_account_id: string; p_reason: string }
+        Returns: undefined
+      }
+      cancel_financial_account_transfer: {
+        Args: { p_reason: string; p_transfer_id: string }
+        Returns: string
+      }
       cancel_sales_order_atomic: {
         Args: { p_sales_order_id: string }
         Returns: Json
       }
       cancel_supplier_payment: {
+        Args: { p_reason: string; p_supplier_payment_id: string }
+        Returns: string
+      }
+      cancel_supplier_payment_with_account: {
         Args: { p_reason: string; p_supplier_payment_id: string }
         Returns: string
       }
@@ -3981,6 +5240,26 @@ export type Database = {
         }
         Returns: Json
       }
+      get_profit_and_loss_summary: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: {
+          cogs: number
+          contribution_profit: number
+          direct_expenses: number
+          financial_expenses: number
+          gross_margin_percentage: number
+          gross_profit: number
+          net_margin_percentage: number
+          net_profit: number
+          operating_expenses: number
+          operating_profit: number
+          other_expenses: number
+          quantity_sold: number
+          revenue: number
+          sales_order_count: number
+          total_expenses: number
+        }[]
+      }
       get_warehouse_stock_page: {
         Args: {
           p_brand_id?: string
@@ -3995,9 +5274,33 @@ export type Database = {
         }
         Returns: Json
       }
+      has_valid_sales_margin_approval: {
+        Args: { p_sales_order_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       mark_delivery_delivered: {
         Args: { p_delivery_order_id: string }
+        Returns: string
+      }
+      next_account_transaction_number: { Args: never; Returns: string }
+      next_expense_number: { Args: never; Returns: string }
+      next_financial_account_transfer_number: { Args: never; Returns: string }
+      post_account_transaction: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_currency_code: string
+          p_description: string
+          p_direction: string
+          p_exchange_rate: number
+          p_notes: string
+          p_reference_id: string
+          p_reference_number: string
+          p_reference_type: string
+          p_transaction_date: string
+          p_transaction_type: string
+        }
         Returns: string
       }
       post_customer_receipt: {
@@ -4014,6 +5317,47 @@ export type Database = {
           p_payment_method: string
           p_receipt_date: string
           p_reference_number: string
+        }
+        Returns: string
+      }
+      post_customer_receipt_with_account: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_customer_id: string
+          p_exchange_rate: number
+          p_financial_account_id: string
+          p_notes: string
+          p_payment_method: string
+          p_receipt_date: string
+          p_reference_number: string
+        }
+        Returns: string
+      }
+      post_expense: { Args: { p_expense_id: string }; Returns: string }
+      post_financial_account_opening_balance: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_financial_account_id: string
+          p_transaction_date: string
+        }
+        Returns: string
+      }
+      post_financial_account_transfer: {
+        Args: {
+          p_exchange_rate?: number
+          p_from_account_id: string
+          p_from_amount: number
+          p_notes?: string
+          p_reference_number?: string
+          p_to_account_id: string
+          p_to_amount: number
+          p_transfer_date: string
         }
         Returns: string
       }
@@ -4059,9 +5403,31 @@ export type Database = {
         }
         Returns: string
       }
+      post_supplier_payment_with_account: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_exchange_rate: number
+          p_financial_account_id: string
+          p_notes: string
+          p_payment_date: string
+          p_payment_method: string
+          p_reference_number: string
+          p_supplier_id: string
+        }
+        Returns: string
+      }
       recalculate_quotation_totals: {
         Args: { target_quotation_id: string }
         Returns: undefined
+      }
+      reject_sales_margin_exception: {
+        Args: { p_decision_notes: string; p_sales_order_id: string }
+        Returns: string
       }
       reject_supplier_quotation: {
         Args: { rejection_reason?: string; target_quotation_id: string }
@@ -4107,6 +5473,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      request_sales_margin_approval: {
+        Args: { p_reason: string; p_sales_order_id: string }
+        Returns: string
       }
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
@@ -4254,6 +5624,10 @@ export type Database = {
         Args: { p_receipt_id: string }
         Returns: undefined
       }
+      sync_financial_account_balance: {
+        Args: { p_account_id: string }
+        Returns: number
+      }
       sync_quick_purchase_paid_amount: {
         Args: { p_quick_purchase_id: string }
         Returns: undefined
@@ -4269,6 +5643,18 @@ export type Database = {
       synchronize_sales_order_fulfilment: {
         Args: { p_sales_order_id: string }
         Returns: string
+      }
+      validate_payment_financial_account: {
+        Args: {
+          p_currency_code: string
+          p_financial_account_id: string
+          p_payment_method: string
+        }
+        Returns: undefined
+      }
+      validate_sales_order_margin: {
+        Args: { p_sales_order_id: string }
+        Returns: Json
       }
     }
     Enums: {

@@ -36,7 +36,9 @@ export type CreateSupplierPaymentInput = {
   paymentDate: string;
 
   paymentMethod:
-    SupplierPaymentMethod;
+  SupplierPaymentMethod;
+
+  financialAccountId: string;
 
   amount: number;
 
@@ -58,17 +60,17 @@ export type CreateSupplierPaymentInput = {
 
 export type CreateSupplierPaymentResult =
   | {
-      success: true;
+    success: true;
 
-      paymentId: string;
+    paymentId: string;
 
-      message: string;
-    }
+    message: string;
+  }
   | {
-      success: false;
+    success: false;
 
-      message: string;
-    };
+    message: string;
+  };
 
 
 export async function createSupplierPayment(
@@ -129,11 +131,19 @@ export async function createSupplierPayment(
 
     if (
       input.paymentMethod ===
-        "cheque" &&
+      "cheque" &&
       !input.chequeNumber?.trim()
     ) {
       throw new Error(
         "Cheque number is required.",
+      );
+    }
+
+    if (
+      !input.financialAccountId?.trim()
+    ) {
+      throw new Error(
+        "Please select a financial account.",
       );
     }
 
@@ -191,6 +201,9 @@ export async function createSupplierPayment(
 
         paymentMethod:
           input.paymentMethod,
+
+        financialAccountId:
+          input.financialAccountId,
 
         currencyCode:
           "AED",

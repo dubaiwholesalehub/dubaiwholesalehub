@@ -8,6 +8,7 @@ import {
     confirmSalesOrder,
     createSalesOrder,
     updateSalesOrder,
+    approveSalesMarginException,
 } from "@/lib/repositories/sales-order.repository";
 import {
     salesOrderSchema,
@@ -334,5 +335,62 @@ export async function cancelSalesOrderAction(
 
     redirect(
         `/admin/sales/orders/${id}`,
+    );
+}
+
+export async function approveAndConfirmSalesOrderAction(
+    formData: FormData,
+) {
+    const salesOrderId =
+        String(
+            formData.get(
+                "salesOrderId",
+            ) ?? "",
+        ).trim();
+
+    const reason =
+        String(
+            formData.get(
+                "reason",
+            ) ?? "",
+        ).trim();
+
+
+    if (!salesOrderId) {
+        throw new Error(
+            "Sales Order ID is required.",
+        );
+    }
+
+
+    if (!reason) {
+        throw new Error(
+            "Approval reason is required.",
+        );
+    }
+
+
+    await approveSalesMarginException(
+        salesOrderId,
+        reason,
+    );
+
+
+    await confirmSalesOrder(
+        salesOrderId,
+    );
+
+
+    revalidatePath(
+        `/admin/sales/orders/${salesOrderId}`,
+    );
+
+    revalidatePath(
+        "/admin/sales/orders",
+    );
+
+
+    redirect(
+        `/admin/sales/orders/${salesOrderId}?success=margin-approved`,
     );
 }

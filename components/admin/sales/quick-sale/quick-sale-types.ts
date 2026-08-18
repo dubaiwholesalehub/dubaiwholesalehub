@@ -41,6 +41,15 @@ export type QuickSaleCountry = {
     iso2: string | null;
 };
 
+export type QuickSaleFinancialAccount = {
+    id: string;
+    accountCode: string;
+    accountName: string;
+    accountType: string;
+    currencyCode: string;
+    currentBalance: number;
+};
+
 export type QuickSaleOptions = {
     customers: QuickSaleCustomer[];
     warehouses: QuickSaleWarehouse[];
@@ -49,6 +58,9 @@ export type QuickSaleOptions = {
     suppliers: QuickSaleSupplier[];
     countries: QuickSaleCountry[];
     purchaseInfo: QuickSalePurchaseInfo[];
+    financialAccounts:
+    QuickSaleFinancialAccount[];
+    marginPolicy: QuickSaleMarginPolicy;
 };
 
 export type QuickSalePurchaseInfo = {
@@ -66,6 +78,11 @@ export type QuickSalePurchaseInfo = {
     currencyCode: string;
 
     lastPriceUpdate: string | null;
+};
+
+export type QuickSaleMarginPolicy = {
+    warningMarginPercentage: number;
+    minimumMarginPercentage: number;
 };
 
 export type QuickSaleTaxTreatment =
@@ -121,6 +138,8 @@ export type CompleteQuickSaleInput = {
     paymentMethod:
     QuickSalePaymentMethod;
 
+    financialAccountId?: string;
+
     paymentReference?: string;
 
     bankName?: string;
@@ -133,7 +152,7 @@ export type CompleteQuickSaleInput = {
 
     deliveryMode:
     QuickSaleDeliveryMode;
-
+    marginApprovalReason?: string;
     items: QuickSaleItemInput[];
 };
 
@@ -151,7 +170,7 @@ export type CompleteQuickSaleResult =
         receiptId:
         | string
         | null;
-        
+
         message: string;
     }
     | {

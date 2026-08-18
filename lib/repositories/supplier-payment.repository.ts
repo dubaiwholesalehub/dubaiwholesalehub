@@ -34,6 +34,8 @@ export type PostSupplierPaymentInput = {
     paymentMethod:
     SupplierPaymentMethod;
 
+    financialAccountId: string;
+
     currencyCode?: string;
     exchangeRate?: number;
 
@@ -101,7 +103,7 @@ export async function postSupplierPayment(
         error,
     } =
         await supabase.rpc(
-            "post_supplier_payment",
+            "post_supplier_payment_with_account",
             {
                 p_supplier_id:
                     input.supplierId,
@@ -111,6 +113,9 @@ export async function postSupplierPayment(
 
                 p_payment_method:
                     input.paymentMethod,
+
+                p_financial_account_id:
+                    input.financialAccountId,
 
                 p_currency_code:
                     input.currencyCode ??
@@ -1164,7 +1169,7 @@ export async function cancelSupplierPayment(
         error,
     } =
         await supabase.rpc(
-            "cancel_supplier_payment",
+            "cancel_supplier_payment_with_account",
             {
                 p_supplier_payment_id:
                     paymentId,

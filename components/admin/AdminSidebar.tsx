@@ -30,6 +30,7 @@ import {
   BookOpenText,
   HandCoins,
   BarChart3,
+  Landmark,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -210,6 +211,36 @@ const navigationGroups = [
         label: "Deliveries",
         href: "/admin/sales/deliveries",
         icon: Truck,
+      },
+    ],
+  },
+  {
+    label: "Accounts",
+    items: [
+      {
+        label: "Dashboard",
+        href: "/admin/accounts",
+        icon: BarChart3,
+      },
+      {
+        label: "Cash & Bank",
+        href: "/admin/accounts/cash-bank",
+        icon: Landmark,
+      },
+      {
+        label: "Transfers",
+        href: "/admin/accounts/transfers",
+        icon: ArrowLeftRight,
+      },
+      {
+        label: "Expenses",
+        href: "/admin/accounts/expenses",
+        icon: ReceiptText,
+      },
+      {
+        label: "Profitability",
+        href: "/admin/accounts/profitability",
+        icon: TrendingUp,
       },
     ],
   },

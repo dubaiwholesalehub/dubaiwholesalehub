@@ -142,6 +142,100 @@ export interface SalesOrderUnit {
     short_name: string;
 }
 
+export interface SalesOrderMarginAnalysisRow {
+    salesOrderItemId: string;
+    lineNumber: number;
+
+    productId:
+    | string
+    | null;
+
+    itemName: string;
+
+    sku:
+    | string
+    | null;
+
+    fulfilmentMethod: string;
+
+    warehouseId:
+    | string
+    | null;
+
+    quantity: number;
+
+    unitPrice: number;
+
+    netSalesValue: number;
+
+    effectiveUnitSellingPrice:
+    number;
+
+    currentUnitCost:
+    | number
+    | null;
+
+    estimatedCogs:
+    | number
+    | null;
+
+    estimatedGrossProfit:
+    | number
+    | null;
+
+    estimatedMarginPercentage:
+    | number
+    | null;
+
+    marginStatus:
+    | "healthy"
+    | "warning"
+    | "blocked"
+    | "cost_missing"
+    | "cost_not_available";
+}
+
+
+export interface SalesMarginApproval {
+    id: string;
+
+    salesOrderId: string;
+
+    status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "cancelled";
+
+    requestedReason: string;
+
+    requestedAt: string;
+
+    approvedAt:
+    | string
+    | null;
+
+    rejectedAt:
+    | string
+    | null;
+
+    decisionNotes:
+    | string
+    | null;
+
+    lowestMarginPercentage:
+    | number
+    | null;
+
+    policyMinimumPercentage:
+    | number
+    | null;
+
+    policyWarningPercentage:
+    | number
+    | null;
+}
+
 /* =========================================================
  * Main Models
  * ========================================================= */
@@ -1695,6 +1789,16 @@ export interface BulkSalesOrderItemInput {
     requested_delivery_date?: string | null;
     expected_delivery_date?: string | null;
 
+    /*
+     * Optional cost used only for pre-sale
+     * margin analysis / approval.
+     *
+     * It does not replace actual inventory COGS.
+     */
+    margin_cost_override?: number | null;
+
+    margin_cost_override_reason?: string | null;
+
     line_notes?: string | null;
 }
 
@@ -2962,6 +3066,15 @@ export async function addSalesOrderItems(
                 expected_delivery_date:
                     item.expected_delivery_date ??
                     null,
+
+                margin_cost_override:
+                    item.margin_cost_override ??
+                    null,
+
+                margin_cost_override_reason:
+                    normalizeNullableText(
+                        item.margin_cost_override_reason,
+                    ),
 
                 line_notes:
                     normalizeNullableText(
@@ -5058,4 +5171,315 @@ function getJsonNumber(
     )
         ? numberValue
         : 0;
+}
+
+export async function getSalesOrderMarginAnalysis(
+    salesOrderId: string,
+): Promise<
+    SalesOrderMarginAnalysisRow[]
+> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "sales_order_margin_analysis",
+            )
+            .select(`
+        sales_order_item_id,
+        line_number,
+        product_id,
+        item_name,
+        sku,
+        fulfilment_method,
+        warehouse_id,
+        quantity,
+        unit_price,
+        net_sales_value,
+        effective_unit_selling_price,
+        current_unit_cost,
+        estimated_cogs,
+        estimated_gross_profit,
+        estimated_margin_percentage,
+        margin_status
+      `)
+            .eq(
+                "sales_order_id",
+                salesOrderId,
+            )
+            .order(
+                "line_number",
+            );
+
+
+    if (error) {
+        throw new Error(
+            `Unable to load Sales Order margin analysis: ${error.message}`,
+        );
+    }
+
+
+    return (
+        data ?? []
+    ).map(
+        (
+            row,
+        ) => ({
+            salesOrderItemId:
+                row.sales_order_item_id ??
+                "",
+
+            lineNumber:
+                Number(
+                    row.line_number ??
+                    0,
+                ),
+
+            productId:
+                row.product_id,
+
+            itemName:
+                row.item_name ??
+                "",
+
+            sku:
+                row.sku,
+
+            fulfilmentMethod:
+                row.fulfilment_method ??
+                "",
+
+            warehouseId:
+                row.warehouse_id,
+
+            quantity:
+                Number(
+                    row.quantity ??
+                    0,
+                ),
+
+            unitPrice:
+                Number(
+                    row.unit_price ??
+                    0,
+                ),
+
+            netSalesValue:
+                Number(
+                    row.net_sales_value ??
+                    0,
+                ),
+
+            effectiveUnitSellingPrice:
+                Number(
+                    row.effective_unit_selling_price ??
+                    0,
+                ),
+
+            currentUnitCost:
+                row.current_unit_cost ===
+                    null
+                    ? null
+                    : Number(
+                        row.current_unit_cost,
+                    ),
+
+            estimatedCogs:
+                row.estimated_cogs ===
+                    null
+                    ? null
+                    : Number(
+                        row.estimated_cogs,
+                    ),
+
+            estimatedGrossProfit:
+                row.estimated_gross_profit ===
+                    null
+                    ? null
+                    : Number(
+                        row.estimated_gross_profit,
+                    ),
+
+            estimatedMarginPercentage:
+                row.estimated_margin_percentage ===
+                    null
+                    ? null
+                    : Number(
+                        row.estimated_margin_percentage,
+                    ),
+
+            marginStatus:
+                (
+                    row.margin_status ??
+                    "cost_not_available"
+                ) as SalesOrderMarginAnalysisRow["marginStatus"],
+        }),
+    );
+}
+
+
+export async function getSalesMarginApproval(
+    salesOrderId: string,
+): Promise<
+    SalesMarginApproval |
+    null
+> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "sales_margin_approvals",
+            )
+            .select(`
+        id,
+        sales_order_id,
+        status,
+        requested_reason,
+        requested_at,
+        approved_at,
+        rejected_at,
+        decision_notes,
+        lowest_margin_percentage,
+        policy_minimum_percentage,
+        policy_warning_percentage
+      `)
+            .eq(
+                "sales_order_id",
+                salesOrderId,
+            )
+            .in(
+                "status",
+                [
+                    "pending",
+                    "approved",
+                ],
+            )
+            .order(
+                "requested_at",
+                {
+                    ascending: false,
+                },
+            )
+            .limit(
+                1,
+            )
+            .maybeSingle();
+
+
+    if (error) {
+        throw new Error(
+            `Unable to load margin approval: ${error.message}`,
+        );
+    }
+
+
+    if (!data) {
+        return null;
+    }
+
+
+    return {
+        id:
+            data.id,
+
+        salesOrderId:
+            data.sales_order_id,
+
+        status:
+            data.status as
+            SalesMarginApproval["status"],
+
+        requestedReason:
+            data.requested_reason,
+
+        requestedAt:
+            data.requested_at,
+
+        approvedAt:
+            data.approved_at,
+
+        rejectedAt:
+            data.rejected_at,
+
+        decisionNotes:
+            data.decision_notes,
+
+        lowestMarginPercentage:
+            data.lowest_margin_percentage ===
+                null
+                ? null
+                : Number(
+                    data.lowest_margin_percentage,
+                ),
+
+        policyMinimumPercentage:
+            data.policy_minimum_percentage ===
+                null
+                ? null
+                : Number(
+                    data.policy_minimum_percentage,
+                ),
+
+        policyWarningPercentage:
+            data.policy_warning_percentage ===
+                null
+                ? null
+                : Number(
+                    data.policy_warning_percentage,
+                ),
+    };
+}
+
+
+export async function approveSalesMarginException(
+    salesOrderId: string,
+    notes: string,
+): Promise<string> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "approve_sales_margin_exception",
+            {
+                p_sales_order_id:
+                    salesOrderId,
+
+                p_decision_notes:
+                    notes.trim(),
+            },
+        );
+
+
+    if (error) {
+        throw new Error(
+            `Unable to approve margin exception: ${error.message}`,
+        );
+    }
+
+
+    if (
+        typeof data !==
+        "string" ||
+        !data
+    ) {
+        throw new Error(
+            "Margin approval completed but no approval ID was returned.",
+        );
+    }
+
+
+    return data;
 }

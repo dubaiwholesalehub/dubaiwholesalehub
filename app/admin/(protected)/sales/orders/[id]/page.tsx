@@ -28,6 +28,8 @@ import {
   type SalesOrderFulfilmentStatus,
   type SalesOrderPaymentStatus,
   type SalesOrderSource,
+  getSalesOrderMarginAnalysis,
+  getSalesMarginApproval,
 } from "@/lib/repositories/sales-order.repository";
 import { cn } from "@/lib/utils";
 import SalesOrderWorkflowActions from "@/components/admin/sales/orders/SalesOrderWorkflowActions";
@@ -43,12 +45,34 @@ export default async function SalesOrderDetailsPage({
 }: SalesOrderDetailsPageProps) {
   const { id } = await params;
 
-  const order = await getSalesOrderById(id);
+  const [order, marginAnalysis, marginApproval] = await Promise.all([
+    getSalesOrderById(id),
+
+    getSalesOrderMarginAnalysis(id),
+
+    getSalesMarginApproval(id),
+  ]);
 
   if (!order) {
     notFound();
   }
 
+  const requiresMarginApproval = marginAnalysis.some(
+    (line) =>
+      line.marginStatus === "blocked" || line.marginStatus === "cost_missing",
+  );
+
+  const hasApprovedMarginException = marginApproval?.status === "approved";
+  const hasMarginWarning = marginAnalysis.some(
+    (line) => line.marginStatus === "warning",
+  );
+
+  const marginPercentages = marginAnalysis
+    .map((line) => line.estimatedMarginPercentage)
+    .filter((value): value is number => value !== null);
+
+  const lowestMarginPercentage =
+    marginPercentages.length > 0 ? Math.min(...marginPercentages) : null;
   return (
     <div className="space-y-6">
       <PageHeader
@@ -81,8 +105,18 @@ export default async function SalesOrderDetailsPage({
         ) : null}
         <SalesOrderWorkflowActions
           salesOrderId={order.id}
+
           status={order.status}
+
           hasItems={order.items.length > 0}
+
+          requiresMarginApproval={requiresMarginApproval}
+
+          hasApprovedMarginException={hasApprovedMarginException}
+
+          hasMarginWarning={hasMarginWarning}
+
+          lowestMarginPercentage={lowestMarginPercentage}
         />
       </PageHeader>
 
@@ -215,6 +249,105 @@ export default async function SalesOrderDetailsPage({
           description="Address used for delivery and fulfilment."
           address={order.shipping_address}
         />
+      </section>
+
+      {/* =====================================================
+          Margin Analysis
+          ===================================================== */}
+
+      <section className="rounded-2xl border bg-card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-semibold">Margin Analysis</h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Estimated margin based on the current warehouse average inventory
+              cost.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[950px] text-sm">
+            <thead className="border-b bg-muted/30 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="px-3 py-3">Product</th>
+                <th className="px-3 py-3 text-right">Qty</th>
+                <th className="px-3 py-3 text-right">Sell / Unit</th>
+                <th className="px-3 py-3 text-right">Cost / Unit</th>
+                <th className="px-3 py-3 text-right">Profit</th>
+                <th className="px-3 py-3 text-right">Margin</th>
+                <th className="px-3 py-3">Status</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y">
+              {marginAnalysis.map((line) => (
+                <tr key={line.salesOrderItemId}>
+                  <td className="px-3 py-4">
+                    <p className="font-medium">{line.itemName}</p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {line.sku ?? "No SKU"}
+                    </p>
+                  </td>
+
+                  <td className="px-3 py-4 text-right">
+                    {line.quantity.toFixed(2)}
+                  </td>
+
+                  <td className="px-3 py-4 text-right">
+                    AED {line.effectiveUnitSellingPrice.toFixed(2)}
+                  </td>
+
+                  <td className="px-3 py-4 text-right">
+                    {line.currentUnitCost === null
+                      ? "—"
+                      : `AED ${line.currentUnitCost.toFixed(2)}`}
+                  </td>
+
+                  <td
+                    className={`px-3 py-4 text-right font-semibold ${
+                      (line.estimatedGrossProfit ?? 0) < 0
+                        ? "text-red-700"
+                        : "text-emerald-700"
+                    }`}
+                  >
+                    {line.estimatedGrossProfit === null
+                      ? "—"
+                      : `AED ${line.estimatedGrossProfit.toFixed(2)}`}
+                  </td>
+
+                  <td className="px-3 py-4 text-right font-semibold">
+                    {line.estimatedMarginPercentage === null
+                      ? "—"
+                      : `${line.estimatedMarginPercentage.toFixed(2)}%`}
+                  </td>
+
+                  <td className="px-3 py-4">
+                    <span
+                      className={
+                        line.marginStatus === "healthy"
+                          ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800"
+                          : line.marginStatus === "warning"
+                            ? "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800"
+                            : "rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800"
+                      }
+                    >
+                      {line.marginStatus === "healthy"
+                        ? "Healthy"
+                        : line.marginStatus === "warning"
+                          ? "Warning"
+                          : line.marginStatus === "blocked"
+                            ? "Approval Required"
+                            : "Cost Review"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <DetailsCard

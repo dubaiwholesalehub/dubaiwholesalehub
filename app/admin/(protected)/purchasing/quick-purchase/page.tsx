@@ -1,52 +1,36 @@
-import {
-  ShoppingBag,
-} from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
-import {
-  requireAdmin,
-} from "@/lib/auth/require-admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
-import {
-  getStockAdjustmentOptions,
-} from "@/lib/inventory/inventory-operation.repository";
+import { getStockAdjustmentOptions } from "@/lib/inventory/inventory-operation.repository";
 
-import {
-  createClient,
-} from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 import QuickPurchaseForm from "@/components/admin/purchasing/quick-purchase/QuickPurchaseForm";
+import { getFinancialAccounts } from "@/lib/repositories/financial-account.repository";
 
 export default async function QuickPurchasePage() {
   await requireAdmin();
 
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
-  const [
-    options,
-    suppliersResult,
-  ] =
-    await Promise.all([
-      getStockAdjustmentOptions(),
+  const [options, suppliersResult, financialAccounts] = await Promise.all([
+    getStockAdjustmentOptions(),
 
-      supabase
-        .from("suppliers")
-        .select(`
+    supabase
+      .from("suppliers")
+      .select(
+        `
           id,
           company_name
-        `)
-        .eq(
-          "is_active",
-          true,
-        )
-        .order(
-          "company_name",
-        ),
-    ]);
+        `,
+      )
+      .eq("is_active", true)
+      .order("company_name"),
+    getFinancialAccounts(),
+  ]);
 
-  if (
-    suppliersResult.error
-  ) {
+  if (suppliersResult.error) {
     throw new Error(
       `Unable to load suppliers: ${suppliersResult.error.message}`,
     );
@@ -66,7 +50,8 @@ export default async function QuickPurchasePage() {
             </h1>
 
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Receive multiple products, record supplier invoice details, VAT treatment and payment status in one step.
+              Receive multiple products, record supplier invoice details, VAT
+              treatment and payment status in one step.
             </p>
           </div>
         </div>
@@ -74,10 +59,24 @@ export default async function QuickPurchasePage() {
 
       <QuickPurchaseForm
         options={options}
-        suppliers={
-          suppliersResult.data ??
-          []
-        }
+
+        suppliers={suppliersResult.data ?? []}
+
+        financialAccounts={financialAccounts
+          .filter((account) => account.isActive)
+          .map((account) => ({
+            id: account.id,
+
+            accountCode: account.accountCode,
+
+            accountName: account.accountName,
+
+            accountType: account.accountType,
+
+            currencyCode: account.currencyCode,
+
+            currentBalance: account.currentBalance,
+          }))}
       />
     </div>
   );

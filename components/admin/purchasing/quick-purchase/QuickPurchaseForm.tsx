@@ -32,10 +32,21 @@ interface SupplierOption {
   company_name: string;
 }
 
+interface FinancialAccountOption {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  currencyCode: string;
+  currentBalance: number;
+}
+
 interface QuickPurchaseFormProps {
   options: StockAdjustmentOptions;
 
   suppliers: SupplierOption[];
+
+  financialAccounts: FinancialAccountOption[];
 }
 
 interface PurchaseLine {
@@ -72,6 +83,7 @@ function money(value: number) {
 export default function QuickPurchaseForm({
   options,
   suppliers,
+  financialAccounts,
 }: QuickPurchaseFormProps) {
   const router = useRouter();
 
@@ -106,6 +118,8 @@ export default function QuickPurchaseForm({
   const [paymentMethod, setPaymentMethod] =
     useState<QuickPurchasePaymentMethod>("cash");
 
+  const [financialAccountId, setFinancialAccountId] = useState("");
+
   const [paidAmount, setPaidAmount] = useState(0);
 
   const [paymentReference, setPaymentReference] = useState("");
@@ -117,6 +131,32 @@ export default function QuickPurchaseForm({
   const [availableSupplierAdvance, setAvailableSupplierAdvance] = useState(0);
 
   const [isLoadingAdvance, startLoadingAdvance] = useTransition();
+
+  const compatibleFinancialAccounts = useMemo(
+    () =>
+      financialAccounts.filter((account) => {
+        if (account.currencyCode !== "AED") {
+          return false;
+        }
+
+        if (paymentMethod === "cash") {
+          return account.accountType === "cash";
+        }
+
+        if (paymentMethod === "bank" || paymentMethod === "cheque") {
+          return account.accountType === "bank";
+        }
+
+        if (paymentMethod === "card") {
+          return ["card", "payment_gateway", "clearing"].includes(
+            account.accountType,
+          );
+        }
+
+        return true;
+      }),
+    [financialAccounts, paymentMethod],
+  );
 
   function addLine() {
     setLines((current) => [...current, createEmptyLine()]);
@@ -267,7 +307,11 @@ export default function QuickPurchaseForm({
 
       return;
     }
+    if (effectivePaidAmount > 0 && !financialAccountId) {
+      toast.error("Please select the financial account used for this payment.");
 
+      return;
+    }
     startPosting(async () => {
       const result = await completeQuickPurchase({
         warehouseId,
@@ -293,6 +337,9 @@ export default function QuickPurchaseForm({
         paymentStatus,
 
         paymentMethod: paymentStatus === "credit" ? undefined : paymentMethod,
+
+        financialAccountId:
+          effectivePaidAmount > 0 ? financialAccountId : undefined,
 
         paidAmount: effectivePaidAmount,
 
@@ -639,11 +686,13 @@ export default function QuickPurchaseForm({
               <Field label="Payment Method">
                 <select
                   value={paymentMethod}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setPaymentMethod(
                       event.target.value as QuickPurchasePaymentMethod,
-                    )
-                  }
+                    );
+
+                    setFinancialAccountId("");
+                  }}
                   className={inputClass}
                 >
                   <option value="cash">Cash</option>
@@ -657,6 +706,37 @@ export default function QuickPurchaseForm({
                   <option value="other">Other</option>
                 </select>
               </Field>
+
+              {effectivePaidAmount > 0 ? (
+                <Field label="Financial Account" required>
+                  <select
+                    value={financialAccountId}
+                    onChange={(event) =>
+                      setFinancialAccountId(event.target.value)
+                    }
+                    className={inputClass}
+                  >
+                    <option value="">Select account</option>
+
+                    {compatibleFinancialAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.accountName}
+                        {" — "}
+                        {account.accountCode}
+                        {" — "}
+                        {account.currencyCode} {money(account.currentBalance)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {compatibleFinancialAccounts.length === 0 ? (
+                    <p className="mt-1 text-xs text-red-600">
+                      No compatible financial account is available for this
+                      payment method.
+                    </p>
+                  ) : null}
+                </Field>
+              ) : null}
 
               {paymentStatus === "partial" ? (
                 <Field label="Paid Amount">

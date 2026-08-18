@@ -30,7 +30,9 @@ export type CreateCustomerReceiptInput = {
     receiptDate: string;
 
     paymentMethod:
-        CustomerReceiptPaymentMethod;
+    CustomerReceiptPaymentMethod;
+
+    financialAccountId: string;
 
     amount: number;
 
@@ -51,14 +53,14 @@ export type CreateCustomerReceiptInput = {
 
 export type CreateCustomerReceiptResult =
     | {
-          success: true;
-          receiptId: string;
-          message: string;
-      }
+        success: true;
+        receiptId: string;
+        message: string;
+    }
     | {
-          success: false;
-          message: string;
-      };
+        success: false;
+        message: string;
+    };
 
 export async function createCustomerReceipt(
     input: CreateCustomerReceiptInput,
@@ -111,7 +113,7 @@ export async function createCustomerReceipt(
 
         if (
             input.paymentMethod ===
-                "cheque" &&
+            "cheque" &&
             !input.chequeNumber?.trim()
         ) {
             throw new Error(
@@ -119,6 +121,13 @@ export async function createCustomerReceipt(
             );
         }
 
+        if (
+            !input.financialAccountId?.trim()
+        ) {
+            throw new Error(
+                "Please select a financial account.",
+            );
+        }
         const allocationTotal =
             input.allocations.reduce(
                 (
@@ -173,6 +182,9 @@ export async function createCustomerReceipt(
 
                 paymentMethod:
                     input.paymentMethod,
+
+                financialAccountId:
+                    input.financialAccountId,
 
                 currencyCode:
                     "AED",

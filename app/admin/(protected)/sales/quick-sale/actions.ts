@@ -6,8 +6,10 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
   addSalesOrderItems,
+  approveSalesMarginException,
   confirmSalesOrder,
   createSalesOrder,
+  getSalesOrderMarginAnalysis,
 } from "@/lib/repositories/sales-order.repository";
 
 import {
@@ -63,7 +65,10 @@ export async function loadCustomerAvailableAdvance(
 export async function completeQuickSale(
   input: CompleteQuickSaleInput,
 ): Promise<CompleteQuickSaleResult> {
-  await requireAdmin();
+  const {
+    supabase,
+  } =
+    await requireAdmin();
 
   try {
     if (!input.customerId) {
@@ -208,6 +213,280 @@ export async function completeQuickSale(
     }
 
     /*
+ * ---------------------------------------------------------
+ * Quick Sale Margin Preflight
+ *
+ * This runs BEFORE:
+ *
+ * - Sales Order creation
+ * - local purchase inventory posting
+ * - inventory reservation
+ * - delivery
+ * - customer receipt
+ *
+ * Cost source:
+ *
+ * Local Purchase
+ *   -> entered purchaseCost
+ *
+ * Warehouse Stock
+ *   -> current warehouse average_unit_cost
+ *
+ * This is an early safety check only.
+ *
+ * The authoritative Sales Order margin analysis still runs
+ * after Sales Order items are created.
+ * ---------------------------------------------------------
+ */
+
+
+    /*
+     * Load active margin policy.
+     */
+
+    const {
+      data: marginPolicy,
+      error: marginPolicyError,
+    } =
+      await supabase
+        .from(
+          "sales_margin_policy",
+        )
+        .select(`
+      minimum_margin_percentage,
+      warning_margin_percentage
+    `)
+        .eq(
+          "is_active",
+          true,
+        )
+        .limit(
+          1,
+        )
+        .maybeSingle();
+
+
+    if (marginPolicyError) {
+      throw new Error(
+        `Unable to load margin policy: ${marginPolicyError.message}`,
+      );
+    }
+
+
+    const minimumMarginPercentage =
+      Number(
+        marginPolicy
+          ?.minimum_margin_percentage ??
+        0,
+      );
+
+
+    /*
+     * Only stock items need warehouse cost lookup.
+     *
+     * Local-purchase items already contain the exact
+     * transaction-specific purchase cost.
+     */
+
+    const stockProductIds =
+      Array.from(
+        new Set(
+          input.items
+            .filter(
+              (item) =>
+                item.fulfilment ===
+                "stock",
+            )
+            .map(
+              (item) =>
+                item.productId,
+            ),
+        ),
+      );
+
+
+    const stockCostByProductId =
+      new Map<
+        string,
+        number
+      >();
+
+
+    if (
+      stockProductIds.length >
+      0
+    ) {
+      const {
+        data: stockRows,
+        error: stockError,
+      } =
+        await supabase
+          .from(
+            "warehouse_stock",
+          )
+          .select(`
+        product_id,
+        average_unit_cost
+      `)
+          .eq(
+            "warehouse_id",
+            input.warehouseId,
+          )
+          .in(
+            "product_id",
+            stockProductIds,
+          );
+
+
+      if (stockError) {
+        throw new Error(
+          `Unable to load inventory cost for margin validation: ${stockError.message}`,
+        );
+      }
+
+
+      for (
+        const row of
+        stockRows ?? []
+      ) {
+        stockCostByProductId.set(
+          row.product_id,
+          Number(
+            row.average_unit_cost ??
+            0,
+          ),
+        );
+      }
+    }
+
+
+    /*
+     * Determine whether any line requires management approval.
+     */
+
+    let preflightApprovalRequired =
+      false;
+
+    let lowestPreflightMargin:
+      number | null =
+      null;
+
+
+    for (
+      const item of
+      input.items
+    ) {
+      const unitCost =
+        item.fulfilment ===
+          "local_purchase"
+          ? item.purchaseCost ??
+          0
+          : stockCostByProductId.get(
+            item.productId,
+          ) ??
+          0;
+
+
+      /*
+       * Missing / zero cost requires review.
+       *
+       * We do not silently treat unknown cost as profit.
+       */
+      if (
+        unitCost <=
+        0
+      ) {
+        preflightApprovalRequired =
+          true;
+
+        continue;
+      }
+
+
+      const lineRevenue =
+        item.quantity *
+        item.sellingPrice;
+
+
+      const lineCost =
+        item.quantity *
+        unitCost;
+
+
+      const lineProfit =
+        lineRevenue -
+        lineCost;
+
+
+      const lineMargin =
+        lineRevenue >
+          0
+          ? (
+            lineProfit /
+            lineRevenue
+          ) *
+          100
+          : null;
+
+
+      if (
+        lineMargin ===
+        null
+      ) {
+        preflightApprovalRequired =
+          true;
+
+        continue;
+      }
+
+
+      lowestPreflightMargin =
+        lowestPreflightMargin ===
+          null
+          ? lineMargin
+          : Math.min(
+            lowestPreflightMargin,
+            lineMargin,
+          );
+
+
+      if (
+        lineMargin <
+        minimumMarginPercentage
+      ) {
+        preflightApprovalRequired =
+          true;
+      }
+    }
+
+
+    /*
+     * Reject BEFORE creating any business document when
+     * approval is required but no reason was supplied.
+     */
+
+    if (
+      preflightApprovalRequired
+    ) {
+      const approvalReason =
+        cleanText(
+          input.marginApprovalReason,
+        );
+
+
+      if (!approvalReason) {
+        throw new Error(
+          lowestPreflightMargin !==
+            null
+            ? `Admin approval is required because this Quick Sale contains a margin below the minimum allowed margin. Lowest margin: ${lowestPreflightMargin.toFixed(
+              2,
+            )}%. Please select an approval reason.`
+            : "Admin approval is required because one or more Quick Sale items do not have a valid cost. Please select an approval reason.",
+        );
+      }
+    }
+
+    /*
      * ---------------------------------------------------------
      * Step 1
      * Group local-purchase items by supplier.
@@ -295,32 +574,7 @@ export async function completeQuickSale(
      * ---------------------------------------------------------
      */
 
-    for (
-      const group of
-      localPurchaseGroups.values()
-    ) {
-      await postLocalPurchaseInventory(
-        {
-          warehouseId:
-            input.warehouseId,
 
-          transactionDate:
-            input.saleDate,
-
-          supplierId:
-            group.supplierId,
-
-          paymentMethod:
-            "quick_sale",
-
-          internalNotes:
-            "Posted automatically from Quick Sale.",
-
-          items:
-            group.items,
-        },
-      );
-    }
 
     /*
      * ---------------------------------------------------------
@@ -404,9 +658,6 @@ export async function completeQuickSale(
      * Load products required by sales-order lines.
      * ---------------------------------------------------------
      */
-
-    const { supabase } =
-      await requireAdmin();
 
     const productIds =
       Array.from(
@@ -527,6 +778,19 @@ export async function completeQuickSale(
             fulfilment_method:
               "stock" as const,
 
+            margin_cost_override:
+              item.fulfilment ===
+                "local_purchase"
+                ? item.purchaseCost ??
+                0
+                : null,
+
+            margin_cost_override_reason:
+              item.fulfilment ===
+                "local_purchase"
+                ? "Quick Sale local purchase"
+                : null,
+
             procurement_lead_time_days:
               0,
 
@@ -542,6 +806,94 @@ export async function completeQuickSale(
         },
       ),
     );
+
+    /*
+ * ---------------------------------------------------------
+ * Margin Protection
+ *
+ * Analyse the completed Sales Order lines BEFORE:
+ *
+ * - local purchase inventory posting
+ * - inventory reservation
+ * - delivery
+ * - receipt
+ *
+ * Quick Sale local-purchase lines already contain their
+ * explicit margin_cost_override at this point.
+ * ---------------------------------------------------------
+ */
+
+    const marginAnalysis =
+      await getSalesOrderMarginAnalysis(
+        salesOrder.id,
+      );
+
+
+    const approvalRequired =
+      marginAnalysis.some(
+        (line) =>
+          line.marginStatus ===
+          "blocked" ||
+          line.marginStatus ===
+          "cost_missing",
+      );
+
+
+    if (approvalRequired) {
+      const approvalReason =
+        cleanText(
+          input.marginApprovalReason,
+        );
+
+
+      if (!approvalReason) {
+        throw new Error(
+          "This sale requires admin margin approval. Please select an approval reason.",
+        );
+      }
+
+
+      await approveSalesMarginException(
+        salesOrder.id,
+        approvalReason,
+      );
+    }
+
+    /*
+ * ---------------------------------------------------------
+ * Receive approved local purchases into warehouse.
+ *
+ * Margin protection has already passed before inventory
+ * is changed.
+ * ---------------------------------------------------------
+ */
+
+    for (
+      const group of
+      localPurchaseGroups.values()
+    ) {
+      await postLocalPurchaseInventory(
+        {
+          warehouseId:
+            input.warehouseId,
+
+          transactionDate:
+            input.saleDate,
+
+          supplierId:
+            group.supplierId,
+
+          paymentMethod:
+            "quick_sale",
+
+          internalNotes:
+            `Posted automatically from Quick Sale ${salesOrder.order_number}.`,
+
+          items:
+            group.items,
+        },
+      );
+    }
 
     /*
      * ---------------------------------------------------------
@@ -732,7 +1084,14 @@ export async function completeQuickSale(
      * Customer Receipt and allocation.
      * ---------------------------------------------------------
      */
-
+    if (
+      input.amountReceived > 0 &&
+      !input.financialAccountId
+    ) {
+      throw new Error(
+        "A financial account is required when receiving customer payment.",
+      );
+    }
     if (
       input.paymentStatus !==
       "credit" &&
@@ -749,6 +1108,9 @@ export async function completeQuickSale(
 
           paymentMethod:
             input.paymentMethod,
+
+          financialAccountId:
+            input.financialAccountId!,
 
           currencyCode:
             confirmed.order

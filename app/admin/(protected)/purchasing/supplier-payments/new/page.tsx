@@ -8,10 +8,15 @@ import { getSupplierPaymentOptions } from "@/lib/repositories/supplier-payment.r
 
 import NewSupplierPaymentForm from "@/components/admin/purchasing/supplier-payments/NewSupplierPaymentForm";
 
+import { getFinancialAccounts } from "@/lib/repositories/financial-account.repository";
+
 export default async function NewSupplierPaymentPage() {
   await requireAdmin();
 
-  const suppliers = await getSupplierPaymentOptions();
+  const [suppliers, financialAccounts] = await Promise.all([
+    getSupplierPaymentOptions(),
+    getFinancialAccounts(),
+  ]);
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-6">
@@ -42,7 +47,24 @@ export default async function NewSupplierPaymentPage() {
         </div>
       </div>
 
-      <NewSupplierPaymentForm suppliers={suppliers} />
+      <NewSupplierPaymentForm
+        suppliers={suppliers}
+        financialAccounts={financialAccounts
+          .filter((account) => account.isActive)
+          .map((account) => ({
+            id: account.id,
+
+            accountCode: account.accountCode,
+
+            accountName: account.accountName,
+
+            accountType: account.accountType,
+
+            currencyCode: account.currencyCode,
+
+            currentBalance: account.currentBalance,
+          }))}
+      />
     </div>
   );
 }

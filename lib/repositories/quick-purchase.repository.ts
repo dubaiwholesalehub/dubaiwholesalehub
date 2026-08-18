@@ -62,6 +62,8 @@ export type CreateQuickPurchaseInput = {
   paymentMethod?:
   QuickPurchasePaymentMethod;
 
+  financialAccountId?: string;
+
   paidAmount: number;
 
   paymentReference?: string;
@@ -732,6 +734,15 @@ export async function createQuickPurchase(
     input.supplierId &&
     actualPaidNow > 0
   ) {
+    if (
+      input.supplierId &&
+      actualPaidNow > 0 &&
+      !input.financialAccountId
+    ) {
+      throw new Error(
+        "A financial account is required when paying a supplier.",
+      );
+    }
     supplierPaymentId =
       await postSupplierPayment({
         supplierId:
@@ -743,6 +754,9 @@ export async function createQuickPurchase(
         paymentMethod:
           input.paymentMethod ??
           "other",
+
+        financialAccountId:
+          input.financialAccountId!,
 
         currencyCode:
           input.currencyCode ??

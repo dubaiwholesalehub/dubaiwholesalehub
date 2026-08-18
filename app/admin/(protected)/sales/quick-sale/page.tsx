@@ -17,6 +17,8 @@ import type { QuickSaleOptions } from "@/components/admin/sales/quick-sale/quick
 
 import { getQuickSalePurchaseInfo } from "@/lib/repositories/product-supplier.repository";
 
+import { getFinancialAccounts } from "@/lib/repositories/financial-account.repository";
+
 export default async function QuickSalePage() {
   await requireAdmin();
 
@@ -29,6 +31,8 @@ export default async function QuickSalePage() {
     purchaseInfo,
     suppliersResult,
     countriesResult,
+    financialAccounts,
+    marginPolicyResult,
   ] = await Promise.all([
     getCustomerLookupOptions(),
 
@@ -42,9 +46,9 @@ export default async function QuickSalePage() {
       .from("suppliers")
       .select(
         `
-        id,
-        company_name
-      `,
+      id,
+      company_name
+    `,
       )
       .eq("is_active", true)
       .order("company_name"),
@@ -53,12 +57,26 @@ export default async function QuickSalePage() {
       .from("countries")
       .select(
         `
-        id,
-        name,
-        iso2
-      `,
+      id,
+      name,
+      iso2
+    `,
       )
       .order("name"),
+
+    getFinancialAccounts(),
+
+    supabase
+      .from("sales_margin_policy")
+      .select(
+        `
+    warning_margin_percentage,
+    minimum_margin_percentage
+  `,
+      )
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (suppliersResult.error) {
@@ -73,7 +91,28 @@ export default async function QuickSalePage() {
     );
   }
 
+  if (marginPolicyResult.error) {
+    throw new Error(
+      `Unable to load sales margin policy: ${marginPolicyResult.error.message}`,
+    );
+  }
+
   const options: QuickSaleOptions = {
+    financialAccounts: financialAccounts
+      .filter((account) => account.isActive)
+      .map((account) => ({
+        id: account.id,
+
+        accountCode: account.accountCode,
+
+        accountName: account.accountName,
+
+        accountType: account.accountType,
+
+        currencyCode: account.currencyCode,
+
+        currentBalance: account.currentBalance,
+      })),
     customers: customers.map((customer) => ({
       id: customer.id,
 
@@ -133,6 +172,16 @@ export default async function QuickSalePage() {
 
       iso2: country.iso2 ?? null,
     })),
+
+    marginPolicy: {
+      warningMarginPercentage: Number(
+        marginPolicyResult.data?.warning_margin_percentage ?? 15,
+      ),
+
+      minimumMarginPercentage: Number(
+        marginPolicyResult.data?.minimum_margin_percentage ?? 0,
+      ),
+    },
   };
 
   return (
