@@ -32,6 +32,9 @@ function parseSupplierForm(formData: FormData) {
     address: optionalFormValue(formData, "address"),
     city: optionalFormValue(formData, "city"),
     countryId: optionalFormValue(formData, "countryId"),
+    paymentTermsDays: String(
+      formData.get("paymentTermsDays") ?? "0",
+    ),
     notes: optionalFormValue(formData, "notes"),
   });
 }
@@ -43,7 +46,7 @@ export async function createSupplier(formData: FormData) {
     redirectWithMessage(
       "error",
       parsed.error.issues[0]?.message ??
-        "Please check the supplier details.",
+      "Please check the supplier details.",
     );
   }
 
@@ -59,6 +62,8 @@ export async function createSupplier(formData: FormData) {
     address: parsed.data.address || null,
     city: parsed.data.city || null,
     country_id: parsed.data.countryId || null,
+    payment_terms_days:
+      parsed.data.paymentTermsDays,
     notes: parsed.data.notes || null,
     is_active: true,
   });
@@ -92,7 +97,7 @@ export async function updateSupplier(formData: FormData) {
     redirectWithMessage(
       "error",
       parsed.error.issues[0]?.message ??
-        "Please check the supplier details.",
+      "Please check the supplier details.",
     );
   }
 
@@ -110,6 +115,8 @@ export async function updateSupplier(formData: FormData) {
       address: parsed.data.address || null,
       city: parsed.data.city || null,
       country_id: parsed.data.countryId || null,
+      payment_terms_days:
+        parsed.data.paymentTermsDays,
       notes: parsed.data.notes || null,
     })
     .eq("id", id);

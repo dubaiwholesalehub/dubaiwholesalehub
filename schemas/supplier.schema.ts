@@ -66,6 +66,12 @@ export const supplierSchema = z.object({
     .uuid("Please select a valid country.")
     .optional(),
 
+  paymentTermsDays: z.coerce
+    .number()
+    .int("Payment terms must be a whole number of days.")
+    .min(0, "Payment terms cannot be negative.")
+    .max(3650, "Payment terms cannot exceed 3650 days."),
+    
   notes: z
     .string()
     .trim()

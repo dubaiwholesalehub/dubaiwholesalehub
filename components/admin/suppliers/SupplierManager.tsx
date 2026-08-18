@@ -137,12 +137,13 @@ export default function SupplierManager({
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1150px] text-left">
+            <table className="w-full min-w-[1250px] text-left">
               <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                 <tr>
                   <th className="px-6 py-4 font-semibold">Supplier</th>
                   <th className="px-6 py-4 font-semibold">Contact</th>
                   <th className="px-6 py-4 font-semibold">Location</th>
+                  <th className="px-6 py-4 font-semibold">Terms</th>
                   <th className="px-6 py-4 text-right font-semibold">
                     Payable
                   </th>
@@ -235,6 +236,14 @@ export default function SupplierManager({
                             .join(", ") || "Not specified"}
                         </span>
                       </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                        {supplier.payment_terms_days === 0
+                          ? "Due immediately"
+                          : `${supplier.payment_terms_days} days`}
+                      </span>
                     </td>
 
                     <td className="px-6 py-4 text-right">
@@ -553,7 +562,35 @@ function SupplierForm({
           ))}
         </select>
       </div>
+      <div>
+        <label
+          htmlFor={`supplier-payment-terms-${suffix}`}
+          className="text-sm font-semibold text-slate-700"
+        >
+          Default payment terms
+        </label>
 
+        <div className="mt-2 flex items-center gap-3">
+          <input
+            id={`supplier-payment-terms-${suffix}`}
+            name="paymentTermsDays"
+            type="number"
+            min={0}
+            max={3650}
+            step={1}
+            required
+            defaultValue={supplier?.payment_terms_days ?? 0}
+            className="h-11 w-full rounded-xl border border-slate-300 px-4 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <span className="shrink-0 text-sm text-slate-500">days</span>
+        </div>
+
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          Used as the default credit period for new purchases from this
+          supplier. Enter 0 for payment due immediately.
+        </p>
+      </div>
       <div>
         <label
           htmlFor={`supplier-city-${suffix}`}

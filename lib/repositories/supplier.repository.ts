@@ -17,6 +17,7 @@ export async function getAdminSuppliers() {
       city,
       country_id,
       notes,
+      payment_terms_days,
       is_active,
       created_at,
       updated_at,

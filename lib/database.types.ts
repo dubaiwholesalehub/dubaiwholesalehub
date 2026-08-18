@@ -352,6 +352,13 @@ export type Database = {
             foreignKeyName: "customer_addresses_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -405,6 +412,13 @@ export type Database = {
             foreignKeyName: "customer_contacts_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_contacts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -452,6 +466,13 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -576,6 +597,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipts_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "customer_receipts_customer_id_fkey"
@@ -948,6 +976,13 @@ export type Database = {
             foreignKeyName: "delivery_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -963,6 +998,13 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "delivery_orders_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -1191,6 +1233,13 @@ export type Database = {
             foreignKeyName: "expenses_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "expenses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -1233,6 +1282,13 @@ export type Database = {
             foreignKeyName: "expenses_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
+            referencedRelation: "receivable_open_items"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -1242,6 +1298,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sales_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
           },
           {
             foreignKeyName: "expenses_supplier_id_fkey"
@@ -1663,6 +1726,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
           },
           {
             foreignKeyName: "goods_receipts_supplier_id_fkey"
@@ -2161,6 +2231,13 @@ export type Database = {
             foreignKeyName: "product_suppliers_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "product_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -2648,6 +2725,13 @@ export type Database = {
             foreignKeyName: "purchase_orders_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -2718,6 +2802,13 @@ export type Database = {
             foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
             isOneToOne: false
+            referencedRelation: "payable_open_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
             referencedRelation: "quick_purchases"
             referencedColumns: ["id"]
           },
@@ -2742,6 +2833,7 @@ export type Database = {
           payment_opening_amount: number
           payment_reference: string | null
           payment_status: string
+          payment_terms_days: number
           pending_tax_amount: number
           posted_at: string | null
           purchase_date: string
@@ -2780,6 +2872,7 @@ export type Database = {
           payment_opening_amount?: number
           payment_reference?: string | null
           payment_status?: string
+          payment_terms_days?: number
           pending_tax_amount?: number
           posted_at?: string | null
           purchase_date?: string
@@ -2818,6 +2911,7 @@ export type Database = {
           payment_opening_amount?: number
           payment_reference?: string | null
           payment_status?: string
+          payment_terms_days?: number
           pending_tax_amount?: number
           posted_at?: string | null
           purchase_date?: string
@@ -2852,6 +2946,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
             referencedColumns: ["inventory_transaction_id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
           },
           {
             foreignKeyName: "quick_purchases_supplier_id_fkey"
@@ -3068,6 +3169,13 @@ export type Database = {
             foreignKeyName: "rfq_suppliers_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "rfq_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -3167,6 +3275,13 @@ export type Database = {
             foreignKeyName: "rfqs_awarded_supplier_id_fkey"
             columns: ["awarded_supplier_id"]
             isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "rfqs_awarded_supplier_id_fkey"
+            columns: ["awarded_supplier_id"]
+            isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -3261,6 +3376,13 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -3484,6 +3606,13 @@ export type Database = {
             foreignKeyName: "sales_order_items_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
+            referencedRelation: "receivable_open_items"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -3651,6 +3780,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "customer_contacts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "sales_orders_customer_id_fkey"
@@ -3907,6 +4043,13 @@ export type Database = {
             foreignKeyName: "sales_quotations_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -4002,6 +4145,13 @@ export type Database = {
           supplier_payment_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "payable_open_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
           {
             foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
@@ -4117,6 +4267,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "financial_accounts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payments_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
           },
           {
             foreignKeyName: "supplier_payments_supplier_id_fkey"
@@ -4358,6 +4515,13 @@ export type Database = {
             foreignKeyName: "supplier_quotations_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
@@ -4375,6 +4539,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           notes: string | null
+          payment_terms_days: number
           phone: string | null
           updated_at: string | null
           website: string | null
@@ -4391,6 +4556,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           notes?: string | null
+          payment_terms_days?: number
           phone?: string | null
           updated_at?: string | null
           website?: string | null
@@ -4407,6 +4573,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           notes?: string | null
+          payment_terms_days?: number
           phone?: string | null
           updated_at?: string | null
           website?: string | null
@@ -4568,6 +4735,81 @@ export type Database = {
       }
     }
     Views: {
+      customer_receivable_summary: {
+        Row: {
+          available_credit: number | null
+          company_name: string | null
+          credit_limit: number | null
+          credit_utilization_percentage: number | null
+          currency_code: string | null
+          current_amount: number | null
+          customer_advance: number | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_number: string | null
+          days_1_30_amount: number | null
+          days_31_60_amount: number | null
+          days_61_90_amount: number | null
+          days_90_plus_amount: number | null
+          maximum_days_overdue: number | null
+          net_receivable_exposure: number | null
+          oldest_due_date: string | null
+          open_order_count: number | null
+          over_credit_limit: boolean | null
+          overdue_amount: number | null
+          payment_terms_days: number | null
+          total_receivable: number | null
+        }
+        Relationships: []
+      }
+      payable_open_items: {
+        Row: {
+          aging_bucket: string | null
+          base_outstanding_amount: number | null
+          currency_code: string | null
+          days_overdue: number | null
+          due_date: string | null
+          exchange_rate: number | null
+          grand_total: number | null
+          outstanding_amount: number | null
+          paid_amount: number | null
+          payment_status: string | null
+          payment_terms_days: number | null
+          purchase_date: string | null
+          purchase_number: string | null
+          quick_purchase_id: string | null
+          status: string | null
+          store_name: string | null
+          supplier_id: string | null
+          supplier_invoice_date: string | null
+          supplier_invoice_number: string | null
+          supplier_name: string | null
+          warehouse_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profitability_by_category: {
         Row: {
           category_id: string | null
@@ -4599,6 +4841,13 @@ export type Database = {
           sales_order_count: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
           {
             foreignKeyName: "sales_orders_customer_id_fkey"
             columns: ["customer_id"]
@@ -4643,6 +4892,13 @@ export type Database = {
           sales_order_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
           {
             foreignKeyName: "sales_orders_customer_id_fkey"
             columns: ["customer_id"]
@@ -4745,6 +5001,13 @@ export type Database = {
             foreignKeyName: "expenses_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "expenses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -4766,6 +5029,13 @@ export type Database = {
             foreignKeyName: "expenses_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
+            referencedRelation: "receivable_open_items"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "expenses_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -4775,6 +5045,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "sales_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
           },
           {
             foreignKeyName: "expenses_supplier_id_fkey"
@@ -4836,6 +5113,57 @@ export type Database = {
             foreignKeyName: "sales_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      receivable_open_items: {
+        Row: {
+          aging_bucket: string | null
+          base_outstanding_amount: number | null
+          company_name: string | null
+          credit_limit: number | null
+          currency_code: string | null
+          customer_currency_code: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_number: string | null
+          customer_reference: string | null
+          days_overdue: number | null
+          due_date: string | null
+          exchange_rate: number | null
+          external_reference: string | null
+          grand_total: number | null
+          order_date: string | null
+          order_number: string | null
+          outstanding_amount: number | null
+          paid_amount: number | null
+          payment_status: string | null
+          payment_terms_days: number | null
+          sales_order_id: string | null
+          source: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -4892,10 +5220,40 @@ export type Database = {
             foreignKeyName: "sales_orders_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "sales_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_payable_summary: {
+        Row: {
+          contact_name: string | null
+          current_amount: number | null
+          days_1_30_amount: number | null
+          days_31_60_amount: number | null
+          days_61_90_amount: number | null
+          days_90_plus_amount: number | null
+          email: string | null
+          maximum_days_overdue: number | null
+          net_payable_exposure: number | null
+          oldest_due_date: string | null
+          open_purchase_count: number | null
+          overdue_amount: number | null
+          payment_terms_days: number | null
+          phone: string | null
+          supplier_advance: number | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_payable: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -5264,6 +5622,7 @@ export type Database = {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json
       }
+      get_receivables_payables_intelligence: { Args: never; Returns: Json }
       get_warehouse_stock_page: {
         Args: {
           p_brand_id?: string
