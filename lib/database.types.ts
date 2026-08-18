@@ -5260,6 +5260,10 @@ export type Database = {
           total_expenses: number
         }[]
       }
+      get_profitability_management_intelligence: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
       get_warehouse_stock_page: {
         Args: {
           p_brand_id?: string

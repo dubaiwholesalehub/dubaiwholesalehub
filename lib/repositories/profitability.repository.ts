@@ -4,220 +4,7 @@ import {
 
 
 /* =========================================================
- * Types
- * ========================================================= */
-
-export interface ProfitAndLossSummary {
-    revenue: number;
-    cogs: number;
-    grossProfit: number;
-    grossMarginPercentage: number;
-
-    directExpenses: number;
-    contributionProfit: number;
-
-    operatingExpenses: number;
-    operatingProfit: number;
-
-    financialExpenses: number;
-    otherExpenses: number;
-    totalExpenses: number;
-
-    netProfit: number;
-    netMarginPercentage: number;
-
-    salesOrderCount: number;
-    quantitySold: number;
-}
-
-
-export interface ProfitabilitySalesLine {
-    recognitionDate: string;
-
-    salesOrderId: string;
-    orderNumber: string;
-
-    customerId:
-    | string
-    | null;
-
-    productId:
-    | string
-    | null;
-
-    itemName: string;
-
-    sku:
-    | string
-    | null;
-
-    warehouseId:
-    | string
-    | null;
-
-    recognizedQuantity: number;
-
-    unitSellingPrice: number;
-    unitCost: number;
-
-    grossRevenue: number;
-    recognizedDiscount: number;
-
-    revenue: number;
-    cogs: number;
-
-    grossProfit: number;
-    grossMarginPercentage: number;
-}
-
-
-export interface ProfitabilityExpenseLine {
-    recognitionDate: string;
-
-    expenseId: string;
-    expenseNumber: string;
-
-    categoryId: string;
-
-    categoryCode: string;
-    categoryName: string;
-
-    expenseType:
-    | "direct"
-    | "operating"
-    | "financial"
-    | "other";
-
-    customerId:
-    | string
-    | null;
-
-    salesOrderId:
-    | string
-    | null;
-
-    profitabilityExpenseAmount:
-    number;
-
-    baseProfitabilityExpenseAmount:
-    number;
-}
-
-
-export interface ProductProfitability {
-    productId:
-    | string
-    | null;
-
-    itemName: string;
-
-    sku:
-    | string
-    | null;
-
-    quantitySold: number;
-
-    revenue: number;
-    cogs: number;
-
-    grossProfit: number;
-    grossMarginPercentage: number;
-}
-
-
-export interface OrderProfitability {
-    salesOrderId: string;
-    orderNumber: string;
-
-    customerId:
-    | string
-    | null;
-
-    quantitySold: number;
-
-    revenue: number;
-    cogs: number;
-
-    grossProfit: number;
-    grossMarginPercentage: number;
-}
-
-
-export interface CustomerProfitability {
-    customerId:
-    | string
-    | null;
-
-    customerName: string;
-
-    salesOrderCount: number;
-
-    quantitySold: number;
-
-    revenue: number;
-    cogs: number;
-
-    grossProfit: number;
-    grossMarginPercentage: number;
-}
-
-
-export interface ExpenseBreakdown {
-    expenseType:
-    | "direct"
-    | "operating"
-    | "financial"
-    | "other";
-
-    amount: number;
-}
-
-
-export interface DailyProfitability {
-    date: string;
-
-    revenue: number;
-    cogs: number;
-    grossProfit: number;
-
-    expenses: number;
-
-    netProfit: number;
-}
-
-
-export interface ProfitabilityDashboardData {
-    summary:
-    ProfitAndLossSummary;
-
-    salesLines:
-    ProfitabilitySalesLine[];
-
-    expenseLines:
-    ProfitabilityExpenseLine[];
-
-    products:
-    ProductProfitability[];
-
-    orders:
-    OrderProfitability[];
-
-    customers:
-    CustomerProfitability[];
-
-    expenseBreakdown:
-    ExpenseBreakdown[];
-
-    daily:
-    DailyProfitability[];
-
-    lossMakingOrders:
-    OrderProfitability[];
-}
-
-
-/* =========================================================
- * Helpers
+ * Shared Helpers
  * ========================================================= */
 
 function numberValue(
@@ -236,84 +23,583 @@ function numberValue(
 }
 
 
-function marginPercentage(
-    profit: number,
-    revenue: number,
-): number {
-    if (revenue <= 0) {
-        return 0;
+function stringValue(
+    value: unknown,
+): string {
+    return typeof value ===
+        "string"
+        ? value
+        : "";
+}
+
+
+function nullableStringValue(
+    value: unknown,
+): string | null {
+    return typeof value ===
+        "string"
+        ? value
+        : null;
+}
+
+
+function booleanValue(
+    value: unknown,
+): boolean {
+    return value === true;
+}
+
+
+function objectValue(
+    value: unknown,
+): Record<
+    string,
+    unknown
+> {
+    if (
+        value &&
+        typeof value ===
+        "object" &&
+        !Array.isArray(
+            value,
+        )
+    ) {
+        return value as Record<
+            string,
+            unknown
+        >;
     }
 
-    return (
-        profit /
-        revenue
-    ) * 100;
+    return {};
+}
+
+
+function arrayValue(
+    value: unknown,
+): unknown[] {
+    return Array.isArray(
+        value,
+    )
+        ? value
+        : [];
 }
 
 
 /* =========================================================
- * P&L Summary
+ * Core P&L Types
  * ========================================================= */
 
-export async function getProfitAndLossSummary(
-    dateFrom: string,
-    dateTo: string,
-): Promise<ProfitAndLossSummary> {
-    const supabase =
-        await createClient();
+export interface ProfitAndLossSummary {
+    revenue: number;
 
-    const {
-        data,
-        error,
-    } =
-        await supabase.rpc(
-            "get_profit_and_loss_summary",
-            {
-                p_date_from:
-                    dateFrom,
+    cogs: number;
 
-                p_date_to:
-                    dateTo,
-            },
-        );
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+
+    directExpenses: number;
+
+    contributionProfit: number;
+
+    operatingExpenses: number;
+
+    operatingProfit: number;
+
+    financialExpenses: number;
+
+    otherExpenses: number;
+
+    totalExpenses: number;
+
+    netProfit: number;
+
+    netMarginPercentage: number;
+
+    salesOrderCount: number;
+
+    quantitySold: number;
+}
 
 
-    if (error) {
-        throw new Error(
-            `Unable to load Profit & Loss summary: ${error.message}`,
-        );
-    }
+/* =========================================================
+ * Reporting Period
+ * ========================================================= */
+
+export interface ProfitabilityPeriod {
+    dateFrom: string;
+
+    dateTo: string;
+
+    days: number;
+
+    trendGranularity:
+    | "day"
+    | "month";
+}
 
 
+/* =========================================================
+ * KPI Comparison
+ * ========================================================= */
+
+export interface ProfitabilityComparison {
+    revenuePercentage:
+    number | null;
+
+    cogsPercentage:
+    number | null;
+
+    grossProfitPercentage:
+    number | null;
+
+    expensesPercentage:
+    number | null;
+
+    netProfitPercentage:
+    number | null;
+
+    ordersPercentage:
+    number | null;
+
+    grossMarginPointChange:
+    number;
+
+    netMarginPointChange:
+    number;
+
+    averageOrderValue:
+    number;
+
+    previousAverageOrderValue:
+    number;
+}
+
+
+/* =========================================================
+ * Trend
+ * ========================================================= */
+
+export interface ProfitabilityTrendRow {
+    period: string;
+
+    label: string;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    expenses: number;
+
+    netProfit: number;
+}
+
+
+/* =========================================================
+ * Product Profitability
+ * ========================================================= */
+
+export interface ProductProfitability {
+    productId:
+    | string
+    | null;
+
+    itemName: string;
+
+    sku:
+    | string
+    | null;
+
+    quantitySold: number;
+
+    salesOrderCount: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Category Profitability
+ * ========================================================= */
+
+export interface CategoryProfitability {
+    categoryId:
+    | string
+    | null;
+
+    categoryName: string;
+
+    salesOrderCount: number;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Customer Profitability
+ * ========================================================= */
+
+export interface CustomerProfitability {
+    customerId:
+    | string
+    | null;
+
+    customerNumber:
+    | string
+    | null;
+
+    customerName: string;
+
+    salesOrderCount: number;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+
+    averageOrderValue: number;
+}
+
+
+/* =========================================================
+ * Warehouse Profitability
+ * ========================================================= */
+
+export interface WarehouseProfitability {
+    warehouseId:
+    | string
+    | null;
+
+    warehouseCode:
+    | string
+    | null;
+
+    warehouseName: string;
+
+    salesOrderCount: number;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Sales Source Profitability
+ * ========================================================= */
+
+export interface SalesSourceProfitability {
+    source: string;
+
+    salesOrderCount: number;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Expense Intelligence
+ * ========================================================= */
+
+export interface ExpenseCategoryProfitability {
+    categoryId: string;
+
+    categoryCode: string;
+
+    categoryName: string;
+
+    expenseType:
+    | "direct"
+    | "operating"
+    | "financial"
+    | "other";
+
+    currentAmount: number;
+
+    previousAmount: number;
+
+    changePercentage:
+    number | null;
+}
+
+
+/* =========================================================
+ * Order Profitability
+ * ========================================================= */
+
+export interface OrderProfitability {
+    salesOrderId: string;
+
+    orderNumber: string;
+
+    customerId:
+    | string
+    | null;
+
+    customerName: string;
+
+    source: string;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Loss-Making Order
+ * ========================================================= */
+
+export interface LossMakingOrder {
+    salesOrderId: string;
+
+    orderNumber: string;
+
+    customerName: string;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Low Margin Product
+ * ========================================================= */
+
+export interface LowMarginProduct {
+    productId:
+    | string
+    | null;
+
+    itemName: string;
+
+    sku:
+    | string
+    | null;
+
+    quantitySold: number;
+
+    revenue: number;
+
+    cogs: number;
+
+    grossProfit: number;
+
+    grossMarginPercentage: number;
+}
+
+
+/* =========================================================
+ * Margin Exception Audit
+ * ========================================================= */
+
+export interface MarginExceptionProfitability {
+    approvalId: string;
+
+    salesOrderId: string;
+
+    orderNumber: string;
+
+    customerId:
+    | string
+    | null;
+
+    customerName: string;
+
+    source: string;
+
+    requestedReason: string;
+
+    decisionNotes:
+    | string
+    | null;
+
+    requestedAt: string;
+
+    approvedAt:
+    | string
+    | null;
+
+    requestedBy:
+    | string
+    | null;
+
+    requestedByName:
+    | string
+    | null;
+
+    approvedBy:
+    | string
+    | null;
+
+    approvedByName:
+    | string
+    | null;
+
+    lowestApprovedMarginPercentage:
+    number | null;
+
+    policyMinimumPercentage:
+    number | null;
+
+    policyWarningPercentage:
+    number | null;
+
+    recognizedRevenue: number;
+
+    recognizedCogs: number;
+
+    actualGrossProfit: number;
+
+    actualGrossMarginPercentage: number;
+
+    approvedMarginSacrificePoints: number;
+}
+
+
+/* =========================================================
+ * Risk Intelligence
+ * ========================================================= */
+
+export interface ProfitabilityRisks {
+    netLoss: boolean;
+
+    expenseGrowthAlert: boolean;
+
+    lossMakingOrderCount: number;
+
+    lowMarginProductCount: number;
+
+    approvedExceptionCount: number;
+
+    grossMarginPointChange: number;
+
+    expenseGrowthPercentage:
+    number | null;
+
+    grossMarginDeteriorating:
+    boolean;
+
+    negativeMarginProductCount:
+    number;
+}
+
+
+/* =========================================================
+ * Dashboard Payload
+ * ========================================================= */
+
+export interface ProfitabilityDashboardData {
+    period:
+    ProfitabilityPeriod;
+
+    previousPeriod:
+    ProfitabilityPeriod;
+
+    summary:
+    ProfitAndLossSummary;
+
+    previousSummary:
+    ProfitAndLossSummary;
+
+    comparison:
+    ProfitabilityComparison;
+
+    trend:
+    ProfitabilityTrendRow[];
+
+    products:
+    ProductProfitability[];
+
+    categories:
+    CategoryProfitability[];
+
+    customers:
+    CustomerProfitability[];
+
+    warehouses:
+    WarehouseProfitability[];
+
+    salesSources:
+    SalesSourceProfitability[];
+
+    expenseCategories:
+    ExpenseCategoryProfitability[];
+
+    orders:
+    OrderProfitability[];
+
+    lossMakingOrders:
+    LossMakingOrder[];
+
+    lowMarginProducts:
+    LowMarginProduct[];
+
+    marginExceptions:
+    MarginExceptionProfitability[];
+
+    risks:
+    ProfitabilityRisks;
+}
+
+
+/* =========================================================
+ * Summary Normalizer
+ * ========================================================= */
+
+function normalizeSummary(
+    value: unknown,
+): ProfitAndLossSummary {
     const row =
-        data?.[0];
-
-
-    if (!row) {
-        return {
-            revenue: 0,
-            cogs: 0,
-            grossProfit: 0,
-            grossMarginPercentage: 0,
-
-            directExpenses: 0,
-            contributionProfit: 0,
-
-            operatingExpenses: 0,
-            operatingProfit: 0,
-
-            financialExpenses: 0,
-            otherExpenses: 0,
-            totalExpenses: 0,
-
-            netProfit: 0,
-            netMarginPercentage: 0,
-
-            salesOrderCount: 0,
-            quantitySold: 0,
-        };
-    }
-
+        objectValue(
+            value,
+        );
 
     return {
         revenue:
@@ -395,954 +681,136 @@ export async function getProfitAndLossSummary(
 
 
 /* =========================================================
- * Sales Lines
+ * Period Normalizer
  * ========================================================= */
 
-export async function getProfitabilitySalesLines(
-    dateFrom: string,
-    dateTo: string,
-): Promise<
-    ProfitabilitySalesLine[]
-> {
-    const supabase =
-        await createClient();
-
-    const {
-        data,
-        error,
-    } =
-        await supabase
-            .from(
-                "profitability_sales_lines",
-            )
-            .select(`
-        recognition_date,
-        sales_order_id,
-        order_number,
-        customer_id,
-        product_id,
-        item_name,
-        sku,
-        warehouse_id,
-        recognized_quantity,
-        unit_selling_price,
-        unit_cost,
-        gross_revenue,
-        recognized_discount,
-        base_net_revenue,
-        base_cogs,
-        gross_profit,
-        gross_margin_percentage
-      `)
-            .gte(
-                "recognition_date",
-                dateFrom,
-            )
-            .lte(
-                "recognition_date",
-                dateTo,
-            )
-            .order(
-                "recognition_date",
-                {
-                    ascending: true,
-                },
-            );
-
-
-    if (error) {
-        throw new Error(
-            `Unable to load sales profitability: ${error.message}`,
+function normalizePeriod(
+    value: unknown,
+): ProfitabilityPeriod {
+    const row =
+        objectValue(
+            value,
         );
-    }
 
-
-    return (
-        data ?? []
-    ).map(
-        (
-            row,
-        ) => ({
-            recognitionDate:
-                row.recognition_date ??
-                "",
-
-            salesOrderId:
-                row.sales_order_id ??
-                "",
-
-            orderNumber:
-                row.order_number ??
-                "",
-
-            customerId:
-                row.customer_id,
-
-            productId:
-                row.product_id,
-
-            itemName:
-                row.item_name ??
-                "",
-
-            sku:
-                row.sku,
-
-            warehouseId:
-                row.warehouse_id,
-
-            recognizedQuantity:
-                numberValue(
-                    row.recognized_quantity,
-                ),
-
-            unitSellingPrice:
-                numberValue(
-                    row.unit_selling_price,
-                ),
-
-            unitCost:
-                numberValue(
-                    row.unit_cost,
-                ),
-
-            grossRevenue:
-                numberValue(
-                    row.gross_revenue,
-                ),
-
-            recognizedDiscount:
-                numberValue(
-                    row.recognized_discount,
-                ),
-
-            revenue:
-                numberValue(
-                    row.base_net_revenue,
-                ),
-
-            cogs:
-                numberValue(
-                    row.base_cogs,
-                ),
-
-            grossProfit:
-                numberValue(
-                    row.gross_profit,
-                ),
-
-            grossMarginPercentage:
-                numberValue(
-                    row.gross_margin_percentage,
-                ),
-        }),
-    );
-}
-
-
-/* =========================================================
- * Expense Lines
- * ========================================================= */
-
-export async function getProfitabilityExpenseLines(
-    dateFrom: string,
-    dateTo: string,
-): Promise<
-    ProfitabilityExpenseLine[]
-> {
-    const supabase =
-        await createClient();
-
-    const {
-        data,
-        error,
-    } =
-        await supabase
-            .from(
-                "profitability_expense_lines",
-            )
-            .select(`
-        recognition_date,
-        expense_id,
-        expense_number,
-        category_id,
-        category_code,
-        category_name,
-        expense_type,
-        customer_id,
-        sales_order_id,
-        profitability_expense_amount,
-        base_profitability_expense_amount
-      `)
-            .gte(
-                "recognition_date",
-                dateFrom,
-            )
-            .lte(
-                "recognition_date",
-                dateTo,
-            )
-            .order(
-                "recognition_date",
-                {
-                    ascending: true,
-                },
-            );
-
-
-    if (error) {
-        throw new Error(
-            `Unable to load expense profitability: ${error.message}`,
-        );
-    }
-
-
-    return (
-        data ?? []
-    ).map(
-        (
-            row,
-        ) => ({
-            recognitionDate:
-                row.recognition_date ??
-                "",
-
-            expenseId:
-                row.expense_id ??
-                "",
-
-            expenseNumber:
-                row.expense_number ??
-                "",
-
-            categoryId:
-                row.category_id ??
-                "",
-
-            categoryCode:
-                row.category_code ??
-                "",
-
-            categoryName:
-                row.category_name ??
-                "",
-
-            expenseType:
-                row.expense_type as
-                ProfitabilityExpenseLine["expenseType"],
-
-            customerId:
-                row.customer_id,
-
-            salesOrderId:
-                row.sales_order_id,
-
-            profitabilityExpenseAmount:
-                numberValue(
-                    row.profitability_expense_amount,
-                ),
-
-            baseProfitabilityExpenseAmount:
-                numberValue(
-                    row.base_profitability_expense_amount,
-                ),
-        }),
-    );
-}
-
-
-/* =========================================================
- * Product Aggregation
- * ========================================================= */
-
-function buildProductProfitability(
-    lines:
-        ProfitabilitySalesLine[],
-): ProductProfitability[] {
-    const map =
-        new Map<
-            string,
-            ProductProfitability
-        >();
-
-
-    for (
-        const line
-        of lines
-    ) {
-        const key =
-            line.productId ??
-            `name:${line.itemName}`;
-
-
-        const current =
-            map.get(
-                key,
-            );
-
-
-        if (current) {
-            current.quantitySold +=
-                line.recognizedQuantity;
-
-            current.revenue +=
-                line.revenue;
-
-            current.cogs +=
-                line.cogs;
-
-            current.grossProfit +=
-                line.grossProfit;
-
-            continue;
-        }
-
-
-        map.set(
-            key,
-            {
-                productId:
-                    line.productId,
-
-                itemName:
-                    line.itemName,
-
-                sku:
-                    line.sku,
-
-                quantitySold:
-                    line.recognizedQuantity,
-
-                revenue:
-                    line.revenue,
-
-                cogs:
-                    line.cogs,
-
-                grossProfit:
-                    line.grossProfit,
-
-                grossMarginPercentage:
-                    0,
-            },
-        );
-    }
-
-
-    return Array.from(
-        map.values(),
-    )
-        .map(
-            (
-                item,
-            ) => ({
-                ...item,
-
-                revenue:
-                    Number(
-                        item.revenue.toFixed(
-                            2,
-                        ),
-                    ),
-
-                cogs:
-                    Number(
-                        item.cogs.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossProfit:
-                    Number(
-                        item.grossProfit.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossMarginPercentage:
-                    Number(
-                        marginPercentage(
-                            item.grossProfit,
-                            item.revenue,
-                        ).toFixed(
-                            2,
-                        ),
-                    ),
-            }),
-        )
-        .sort(
-            (
-                a,
-                b,
-            ) =>
-                b.grossProfit -
-                a.grossProfit,
-        );
-}
-
-
-/* =========================================================
- * Sales Order Aggregation
- * ========================================================= */
-
-function buildOrderProfitability(
-    lines:
-        ProfitabilitySalesLine[],
-): OrderProfitability[] {
-    const map =
-        new Map<
-            string,
-            OrderProfitability
-        >();
-
-
-    for (
-        const line
-        of lines
-    ) {
-        const current =
-            map.get(
-                line.salesOrderId,
-            );
-
-
-        if (current) {
-            current.quantitySold +=
-                line.recognizedQuantity;
-
-            current.revenue +=
-                line.revenue;
-
-            current.cogs +=
-                line.cogs;
-
-            current.grossProfit +=
-                line.grossProfit;
-
-            continue;
-        }
-
-
-        map.set(
-            line.salesOrderId,
-            {
-                salesOrderId:
-                    line.salesOrderId,
-
-                orderNumber:
-                    line.orderNumber,
-
-                customerId:
-                    line.customerId,
-
-                quantitySold:
-                    line.recognizedQuantity,
-
-                revenue:
-                    line.revenue,
-
-                cogs:
-                    line.cogs,
-
-                grossProfit:
-                    line.grossProfit,
-
-                grossMarginPercentage:
-                    0,
-            },
-        );
-    }
-
-
-    return Array.from(
-        map.values(),
-    )
-        .map(
-            (
-                order,
-            ) => ({
-                ...order,
-
-                revenue:
-                    Number(
-                        order.revenue.toFixed(
-                            2,
-                        ),
-                    ),
-
-                cogs:
-                    Number(
-                        order.cogs.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossProfit:
-                    Number(
-                        order.grossProfit.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossMarginPercentage:
-                    Number(
-                        marginPercentage(
-                            order.grossProfit,
-                            order.revenue,
-                        ).toFixed(
-                            2,
-                        ),
-                    ),
-            }),
-        )
-        .sort(
-            (
-                a,
-                b,
-            ) =>
-                b.grossProfit -
-                a.grossProfit,
-        );
-}
-
-
-/* =========================================================
- * Customer Aggregation
- * ========================================================= */
-
-async function buildCustomerProfitability(
-    lines:
-        ProfitabilitySalesLine[],
-): Promise<
-    CustomerProfitability[]
-> {
-    const supabase =
-        await createClient();
-
-    const customerIds =
-        Array.from(
-            new Set(
-                lines
-                    .map(
-                        (
-                            line,
-                        ) =>
-                            line.customerId,
-                    )
-                    .filter(
-                        (
-                            value,
-                        ): value is string =>
-                            Boolean(
-                                value,
-                            ),
-                    ),
+    const granularity =
+        row.trendGranularity ===
+            "month"
+            ? "month"
+            : "day";
+
+    return {
+        dateFrom:
+            stringValue(
+                row.dateFrom,
             ),
-        );
+
+        dateTo:
+            stringValue(
+                row.dateTo,
+            ),
+
+        days:
+            numberValue(
+                row.days,
+            ),
+
+        trendGranularity:
+            granularity,
+    };
+}
 
 
-    const customerNames =
-        new Map<
-            string,
-            string
-        >();
+/* =========================================================
+ * Comparison Normalizer
+ * ========================================================= */
 
-
+function nullableNumber(
+    value: unknown,
+): number | null {
     if (
-        customerIds.length >
-        0
+        value === null ||
+        value === undefined
     ) {
-        const {
-            data,
-            error,
-        } =
-            await supabase
-                .from(
-                    "customers",
-                )
-                .select(`
-          id,
-          display_name,
-          company_name,
-          customer_number
-        `)
-                .in(
-                    "id",
-                    customerIds,
-                );
-
-
-        if (error) {
-            throw new Error(
-                `Unable to load customer profitability names: ${error.message}`,
-            );
-        }
-
-
-        for (
-            const customer
-            of data ?? []
-        ) {
-            customerNames.set(
-                customer.id,
-
-                customer.display_name ||
-                customer.company_name ||
-                customer.customer_number,
-            );
-        }
+        return null;
     }
 
-
-    const map =
-        new Map<
-            string,
-            CustomerProfitability & {
-                orderIds:
-                Set<string>;
-            }
-        >();
-
-
-    for (
-        const line
-        of lines
-    ) {
-        const key =
-            line.customerId ??
-            "unknown";
-
-
-        const current =
-            map.get(
-                key,
-            );
-
-
-        if (current) {
-            current.quantitySold +=
-                line.recognizedQuantity;
-
-            current.revenue +=
-                line.revenue;
-
-            current.cogs +=
-                line.cogs;
-
-            current.grossProfit +=
-                line.grossProfit;
-
-            current.orderIds.add(
-                line.salesOrderId,
-            );
-
-            continue;
-        }
-
-
-        map.set(
-            key,
-            {
-                customerId:
-                    line.customerId,
-
-                customerName:
-                    line.customerId
-                        ? (
-                            customerNames.get(
-                                line.customerId,
-                            ) ??
-                            "Unknown Customer"
-                        )
-                        : "Walk-in / Unknown",
-
-                salesOrderCount:
-                    0,
-
-                quantitySold:
-                    line.recognizedQuantity,
-
-                revenue:
-                    line.revenue,
-
-                cogs:
-                    line.cogs,
-
-                grossProfit:
-                    line.grossProfit,
-
-                grossMarginPercentage:
-                    0,
-
-                orderIds:
-                    new Set([
-                        line.salesOrderId,
-                    ]),
-            },
+    const parsed =
+        Number(
+            value,
         );
-    }
 
-
-    return Array.from(
-        map.values(),
+    return Number.isFinite(
+        parsed,
     )
-        .map(
-            (
-                customer,
-            ) => ({
-                customerId:
-                    customer.customerId,
+        ? parsed
+        : null;
+}
 
-                customerName:
-                    customer.customerName,
 
-                salesOrderCount:
-                    customer.orderIds.size,
-
-                quantitySold:
-                    customer.quantitySold,
-
-                revenue:
-                    Number(
-                        customer.revenue.toFixed(
-                            2,
-                        ),
-                    ),
-
-                cogs:
-                    Number(
-                        customer.cogs.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossProfit:
-                    Number(
-                        customer.grossProfit.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossMarginPercentage:
-                    Number(
-                        marginPercentage(
-                            customer.grossProfit,
-                            customer.revenue,
-                        ).toFixed(
-                            2,
-                        ),
-                    ),
-            }),
-        )
-        .sort(
-            (
-                a,
-                b,
-            ) =>
-                b.grossProfit -
-                a.grossProfit,
+function normalizeComparison(
+    value: unknown,
+): ProfitabilityComparison {
+    const row =
+        objectValue(
+            value,
         );
+
+    return {
+        revenuePercentage:
+            nullableNumber(
+                row.revenuePercentage,
+            ),
+
+        cogsPercentage:
+            nullableNumber(
+                row.cogsPercentage,
+            ),
+
+        grossProfitPercentage:
+            nullableNumber(
+                row.grossProfitPercentage,
+            ),
+
+        expensesPercentage:
+            nullableNumber(
+                row.expensesPercentage,
+            ),
+
+        netProfitPercentage:
+            nullableNumber(
+                row.netProfitPercentage,
+            ),
+
+        ordersPercentage:
+            nullableNumber(
+                row.ordersPercentage,
+            ),
+
+        grossMarginPointChange:
+            numberValue(
+                row.grossMarginPointChange,
+            ),
+
+        netMarginPointChange:
+            numberValue(
+                row.netMarginPointChange,
+            ),
+
+        averageOrderValue:
+            numberValue(
+                row.averageOrderValue,
+            ),
+
+        previousAverageOrderValue:
+            numberValue(
+                row.previousAverageOrderValue,
+            ),
+    };
 }
 
 
 /* =========================================================
- * Expense Breakdown
- * ========================================================= */
-
-function buildExpenseBreakdown(
-    lines:
-        ProfitabilityExpenseLine[],
-): ExpenseBreakdown[] {
-    const types:
-        ExpenseBreakdown["expenseType"][] =
-        [
-            "direct",
-            "operating",
-            "financial",
-            "other",
-        ];
-
-
-    return types.map(
-        (
-            expenseType,
-        ) => ({
-            expenseType,
-
-            amount:
-                Number(
-                    lines
-                        .filter(
-                            (
-                                line,
-                            ) =>
-                                line.expenseType ===
-                                expenseType,
-                        )
-                        .reduce(
-                            (
-                                total,
-                                line,
-                            ) =>
-                                total +
-                                line.baseProfitabilityExpenseAmount,
-                            0,
-                        )
-                        .toFixed(
-                            2,
-                        ),
-                ),
-        }),
-    );
-}
-
-
-/* =========================================================
- * Daily Profitability
- * ========================================================= */
-
-function buildDailyProfitability(
-    sales:
-        ProfitabilitySalesLine[],
-
-    expenses:
-        ProfitabilityExpenseLine[],
-): DailyProfitability[] {
-    const map =
-        new Map<
-            string,
-            DailyProfitability
-        >();
-
-
-    for (
-        const line
-        of sales
-    ) {
-        const current =
-            map.get(
-                line.recognitionDate,
-            ) ?? {
-                date:
-                    line.recognitionDate,
-
-                revenue: 0,
-                cogs: 0,
-                grossProfit: 0,
-                expenses: 0,
-                netProfit: 0,
-            };
-
-
-        current.revenue +=
-            line.revenue;
-
-        current.cogs +=
-            line.cogs;
-
-        current.grossProfit +=
-            line.grossProfit;
-
-
-        map.set(
-            line.recognitionDate,
-            current,
-        );
-    }
-
-
-    for (
-        const line
-        of expenses
-    ) {
-        const current =
-            map.get(
-                line.recognitionDate,
-            ) ?? {
-                date:
-                    line.recognitionDate,
-
-                revenue: 0,
-                cogs: 0,
-                grossProfit: 0,
-                expenses: 0,
-                netProfit: 0,
-            };
-
-
-        current.expenses +=
-            line.baseProfitabilityExpenseAmount;
-
-
-        map.set(
-            line.recognitionDate,
-            current,
-        );
-    }
-
-
-    return Array.from(
-        map.values(),
-    )
-        .map(
-            (
-                row,
-            ) => ({
-                ...row,
-
-                revenue:
-                    Number(
-                        row.revenue.toFixed(
-                            2,
-                        ),
-                    ),
-
-                cogs:
-                    Number(
-                        row.cogs.toFixed(
-                            2,
-                        ),
-                    ),
-
-                grossProfit:
-                    Number(
-                        row.grossProfit.toFixed(
-                            2,
-                        ),
-                    ),
-
-                expenses:
-                    Number(
-                        row.expenses.toFixed(
-                            2,
-                        ),
-                    ),
-
-                netProfit:
-                    Number(
-                        (
-                            row.grossProfit -
-                            row.expenses
-                        ).toFixed(
-                            2,
-                        ),
-                    ),
-            }),
-        )
-        .sort(
-            (
-                a,
-                b,
-            ) =>
-                a.date.localeCompare(
-                    b.date,
-                ),
-        );
-}
-
-
-/* =========================================================
- * Complete Dashboard
+ * Dashboard Repository
  * ========================================================= */
 
 export async function getProfitabilityDashboard(
@@ -1351,88 +819,859 @@ export async function getProfitabilityDashboard(
 ): Promise<
     ProfitabilityDashboardData
 > {
-    const [
-        summary,
-        salesLines,
-        expenseLines,
-    ] =
-        await Promise.all([
-            getProfitAndLossSummary(
-                dateFrom,
-                dateTo,
-            ),
-
-            getProfitabilitySalesLines(
-                dateFrom,
-                dateTo,
-            ),
-
-            getProfitabilityExpenseLines(
-                dateFrom,
-                dateTo,
-            ),
-        ]);
+    const supabase =
+        await createClient();
 
 
-    const products =
-        buildProductProfitability(
-            salesLines,
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "get_profitability_management_intelligence",
+            {
+                p_date_from:
+                    dateFrom,
+
+                p_date_to:
+                    dateTo,
+            },
         );
 
 
-    const orders =
-        buildOrderProfitability(
-            salesLines,
+    if (error) {
+        throw new Error(
+            `Unable to load profitability management intelligence: ${error.message}`,
+        );
+    }
+
+
+    const payload =
+        objectValue(
+            data,
+        );
+
+
+    const trend =
+        arrayValue(
+            payload.trend,
+        ).map(
+            (
+                value,
+            ): ProfitabilityTrendRow => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    period:
+                        stringValue(
+                            row.period,
+                        ),
+
+                    label:
+                        stringValue(
+                            row.label,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    expenses:
+                        numberValue(
+                            row.expenses,
+                        ),
+
+                    netProfit:
+                        numberValue(
+                            row.netProfit,
+                        ),
+                };
+            },
+        );
+
+
+    const products =
+        arrayValue(
+            payload.products,
+        ).map(
+            (
+                value,
+            ): ProductProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    productId:
+                        nullableStringValue(
+                            row.productId,
+                        ),
+
+                    itemName:
+                        stringValue(
+                            row.itemName,
+                        ),
+
+                    sku:
+                        nullableStringValue(
+                            row.sku,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    salesOrderCount:
+                        numberValue(
+                            row.salesOrderCount,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
+        );
+
+
+    const categories =
+        arrayValue(
+            payload.categories,
+        ).map(
+            (
+                value,
+            ): CategoryProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    categoryId:
+                        nullableStringValue(
+                            row.categoryId,
+                        ),
+
+                    categoryName:
+                        stringValue(
+                            row.categoryName,
+                        ),
+
+                    salesOrderCount:
+                        numberValue(
+                            row.salesOrderCount,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
         );
 
 
     const customers =
-        await buildCustomerProfitability(
-            salesLines,
+        arrayValue(
+            payload.customers,
+        ).map(
+            (
+                value,
+            ): CustomerProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    customerId:
+                        nullableStringValue(
+                            row.customerId,
+                        ),
+
+                    customerNumber:
+                        nullableStringValue(
+                            row.customerNumber,
+                        ),
+
+                    customerName:
+                        stringValue(
+                            row.customerName,
+                        ),
+
+                    salesOrderCount:
+                        numberValue(
+                            row.salesOrderCount,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+
+                    averageOrderValue:
+                        numberValue(
+                            row.averageOrderValue,
+                        ),
+                };
+            },
         );
 
 
-    const expenseBreakdown =
-        buildExpenseBreakdown(
-            expenseLines,
+    const warehouses =
+        arrayValue(
+            payload.warehouses,
+        ).map(
+            (
+                value,
+            ): WarehouseProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    warehouseId:
+                        nullableStringValue(
+                            row.warehouseId,
+                        ),
+
+                    warehouseCode:
+                        nullableStringValue(
+                            row.warehouseCode,
+                        ),
+
+                    warehouseName:
+                        stringValue(
+                            row.warehouseName,
+                        ),
+
+                    salesOrderCount:
+                        numberValue(
+                            row.salesOrderCount,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
         );
 
 
-    const daily =
-        buildDailyProfitability(
-            salesLines,
-            expenseLines,
+    const salesSources =
+        arrayValue(
+            payload.salesSources,
+        ).map(
+            (
+                value,
+            ): SalesSourceProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    source:
+                        stringValue(
+                            row.source,
+                        ),
+
+                    salesOrderCount:
+                        numberValue(
+                            row.salesOrderCount,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
+        );
+
+
+    const expenseCategories =
+        arrayValue(
+            payload.expenseCategories,
+        ).map(
+            (
+                value,
+            ): ExpenseCategoryProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                const expenseType =
+                    row.expenseType ===
+                        "direct" ||
+                        row.expenseType ===
+                        "operating" ||
+                        row.expenseType ===
+                        "financial" ||
+                        row.expenseType ===
+                        "other"
+                        ? row.expenseType
+                        : "other";
+
+                return {
+                    categoryId:
+                        stringValue(
+                            row.categoryId,
+                        ),
+
+                    categoryCode:
+                        stringValue(
+                            row.categoryCode,
+                        ),
+
+                    categoryName:
+                        stringValue(
+                            row.categoryName,
+                        ),
+
+                    expenseType,
+
+                    currentAmount:
+                        numberValue(
+                            row.currentAmount,
+                        ),
+
+                    previousAmount:
+                        numberValue(
+                            row.previousAmount,
+                        ),
+
+                    changePercentage:
+                        nullableNumber(
+                            row.changePercentage,
+                        ),
+                };
+            },
+        );
+
+
+    const orders =
+        arrayValue(
+            payload.orders,
+        ).map(
+            (
+                value,
+            ): OrderProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    salesOrderId:
+                        stringValue(
+                            row.salesOrderId,
+                        ),
+
+                    orderNumber:
+                        stringValue(
+                            row.orderNumber,
+                        ),
+
+                    customerId:
+                        nullableStringValue(
+                            row.customerId,
+                        ),
+
+                    customerName:
+                        stringValue(
+                            row.customerName,
+                        ),
+
+                    source:
+                        stringValue(
+                            row.source,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
         );
 
 
     const lossMakingOrders =
-        orders
-            .filter(
-                (
-                    order,
-                ) =>
-                    order.grossProfit <
-                    0,
-            )
-            .sort(
-                (
-                    a,
-                    b,
-                ) =>
-                    a.grossProfit -
-                    b.grossProfit,
-            );
+        arrayValue(
+            payload.lossMakingOrders,
+        ).map(
+            (
+                value,
+            ): LossMakingOrder => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    salesOrderId:
+                        stringValue(
+                            row.salesOrderId,
+                        ),
+
+                    orderNumber:
+                        stringValue(
+                            row.orderNumber,
+                        ),
+
+                    customerName:
+                        stringValue(
+                            row.customerName,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
+        );
+
+
+    const lowMarginProducts =
+        arrayValue(
+            payload.lowMarginProducts,
+        ).map(
+            (
+                value,
+            ): LowMarginProduct => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    productId:
+                        nullableStringValue(
+                            row.productId,
+                        ),
+
+                    itemName:
+                        stringValue(
+                            row.itemName,
+                        ),
+
+                    sku:
+                        nullableStringValue(
+                            row.sku,
+                        ),
+
+                    quantitySold:
+                        numberValue(
+                            row.quantitySold,
+                        ),
+
+                    revenue:
+                        numberValue(
+                            row.revenue,
+                        ),
+
+                    cogs:
+                        numberValue(
+                            row.cogs,
+                        ),
+
+                    grossProfit:
+                        numberValue(
+                            row.grossProfit,
+                        ),
+
+                    grossMarginPercentage:
+                        numberValue(
+                            row.grossMarginPercentage,
+                        ),
+                };
+            },
+        );
+
+
+    const marginExceptions =
+        arrayValue(
+            payload.marginExceptions,
+        ).map(
+            (
+                value,
+            ): MarginExceptionProfitability => {
+                const row =
+                    objectValue(
+                        value,
+                    );
+
+                return {
+                    approvalId:
+                        stringValue(
+                            row.approvalId,
+                        ),
+
+                    salesOrderId:
+                        stringValue(
+                            row.salesOrderId,
+                        ),
+
+                    orderNumber:
+                        stringValue(
+                            row.orderNumber,
+                        ),
+
+                    customerId:
+                        nullableStringValue(
+                            row.customerId,
+                        ),
+
+                    customerName:
+                        stringValue(
+                            row.customerName,
+                        ),
+
+                    source:
+                        stringValue(
+                            row.source,
+                        ),
+
+                    requestedReason:
+                        stringValue(
+                            row.requestedReason,
+                        ),
+
+                    decisionNotes:
+                        nullableStringValue(
+                            row.decisionNotes,
+                        ),
+
+                    requestedAt:
+                        stringValue(
+                            row.requestedAt,
+                        ),
+
+                    approvedAt:
+                        nullableStringValue(
+                            row.approvedAt,
+                        ),
+
+                    requestedBy:
+                        nullableStringValue(
+                            row.requestedBy,
+                        ),
+
+                    requestedByName:
+                        nullableStringValue(
+                            row.requestedByName,
+                        ),
+
+                    approvedBy:
+                        nullableStringValue(
+                            row.approvedBy,
+                        ),
+
+                    approvedByName:
+                        nullableStringValue(
+                            row.approvedByName,
+                        ),
+
+                    lowestApprovedMarginPercentage:
+                        nullableNumber(
+                            row.lowestApprovedMarginPercentage,
+                        ),
+
+                    policyMinimumPercentage:
+                        nullableNumber(
+                            row.policyMinimumPercentage,
+                        ),
+
+                    policyWarningPercentage:
+                        nullableNumber(
+                            row.policyWarningPercentage,
+                        ),
+
+                    recognizedRevenue:
+                        numberValue(
+                            row.recognizedRevenue,
+                        ),
+
+                    recognizedCogs:
+                        numberValue(
+                            row.recognizedCogs,
+                        ),
+
+                    actualGrossProfit:
+                        numberValue(
+                            row.actualGrossProfit,
+                        ),
+
+                    actualGrossMarginPercentage:
+                        numberValue(
+                            row.actualGrossMarginPercentage,
+                        ),
+
+                    approvedMarginSacrificePoints:
+                        numberValue(
+                            row.approvedMarginSacrificePoints,
+                        ),
+                };
+            },
+        );
+
+
+    const risksRow =
+        objectValue(
+            payload.risks,
+        );
+
+
+    const risks:
+        ProfitabilityRisks =
+    {
+        netLoss:
+            booleanValue(
+                risksRow.netLoss,
+            ),
+
+        expenseGrowthAlert:
+            booleanValue(
+                risksRow.expenseGrowthAlert,
+            ),
+
+        lossMakingOrderCount:
+            numberValue(
+                risksRow.lossMakingOrderCount,
+            ),
+
+        lowMarginProductCount:
+            numberValue(
+                risksRow.lowMarginProductCount,
+            ),
+
+        approvedExceptionCount:
+            numberValue(
+                risksRow.approvedExceptionCount,
+            ),
+
+        grossMarginPointChange:
+            numberValue(
+                risksRow.grossMarginPointChange,
+            ),
+
+        expenseGrowthPercentage:
+            nullableNumber(
+                risksRow.expenseGrowthPercentage,
+            ),
+
+        grossMarginDeteriorating:
+            booleanValue(
+                risksRow.grossMarginDeteriorating,
+            ),
+
+        negativeMarginProductCount:
+            numberValue(
+                risksRow.negativeMarginProductCount,
+            ),
+    };
 
 
     return {
-        summary,
-        salesLines,
-        expenseLines,
+        period:
+            normalizePeriod(
+                payload.period,
+            ),
+
+        previousPeriod:
+            normalizePeriod(
+                payload.previousPeriod,
+            ),
+
+        summary:
+            normalizeSummary(
+                payload.summary,
+            ),
+
+        previousSummary:
+            normalizeSummary(
+                payload.previousSummary,
+            ),
+
+        comparison:
+            normalizeComparison(
+                payload.comparison,
+            ),
+
+        trend,
+
         products,
-        orders,
+
+        categories,
+
         customers,
-        expenseBreakdown,
-        daily,
+
+        warehouses,
+
+        salesSources,
+
+        expenseCategories,
+
+        orders,
+
         lossMakingOrders,
+
+        lowMarginProducts,
+
+        marginExceptions,
+
+        risks,
     };
 }
