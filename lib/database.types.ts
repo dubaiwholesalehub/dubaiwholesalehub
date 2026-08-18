@@ -152,6 +152,85 @@ export type Database = {
           },
         ]
       }
+      accounting_periods: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          date_from: string
+          date_to: string
+          fiscal_year: number
+          id: string
+          notes: string | null
+          period_code: string
+          period_number: number
+          reopened_at: string | null
+          reopened_by: string | null
+          soft_closed_at: string | null
+          soft_closed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          date_from: string
+          date_to: string
+          fiscal_year: number
+          id?: string
+          notes?: string | null
+          period_code: string
+          period_number: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          soft_closed_at?: string | null
+          soft_closed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          date_from?: string
+          date_to?: string
+          fiscal_year?: number
+          id?: string
+          notes?: string | null
+          period_code?: string
+          period_number?: number
+          reopened_at?: string | null
+          reopened_by?: string | null
+          soft_closed_at?: string | null
+          soft_closed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounting_periods_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_periods_reopened_by_fkey"
+            columns: ["reopened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounting_periods_soft_closed_by_fkey"
+            columns: ["soft_closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brands: {
         Row: {
           country_id: string | null
@@ -1043,6 +1122,7 @@ export type Database = {
           created_at: string
           description: string | null
           expense_type: string
+          gl_account_id: string | null
           id: string
           is_active: boolean
           name: string
@@ -1053,6 +1133,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           expense_type?: string
+          gl_account_id?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -1063,12 +1144,28 @@ export type Database = {
           created_at?: string
           description?: string | null
           expense_type?: string
+          gl_account_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "expense_categories_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_categories_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -1464,6 +1561,7 @@ export type Database = {
           created_by: string | null
           currency_code: string
           current_balance: number
+          gl_account_id: string | null
           iban: string | null
           id: string
           is_active: boolean
@@ -1488,6 +1586,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           current_balance?: number
+          gl_account_id?: string | null
           iban?: string | null
           id?: string
           is_active?: boolean
@@ -1512,6 +1611,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           current_balance?: number
+          gl_account_id?: string | null
           iban?: string | null
           id?: string
           is_active?: boolean
@@ -1532,10 +1632,454 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "financial_accounts_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_accounts_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "financial_accounts_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gl_account_mappings: {
+        Row: {
+          created_at: string
+          description: string | null
+          gl_account_id: string
+          id: string
+          is_active: boolean
+          mapping_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gl_account_id: string
+          id?: string
+          is_active?: boolean
+          mapping_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gl_account_id?: string
+          id?: string
+          is_active?: boolean
+          mapping_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_account_mappings_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_account_mappings_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gl_accounts: {
+        Row: {
+          account_class: string
+          account_code: string
+          account_name: string
+          allow_manual_posting: boolean
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_control_account: boolean
+          is_posting_account: boolean
+          is_system_account: boolean
+          normal_balance: string
+          parent_id: string | null
+          statement_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          account_class: string
+          account_code: string
+          account_name: string
+          allow_manual_posting?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_control_account?: boolean
+          is_posting_account?: boolean
+          is_system_account?: boolean
+          normal_balance: string
+          parent_id?: string | null
+          statement_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          account_class?: string
+          account_code?: string
+          account_name?: string
+          allow_manual_posting?: boolean
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_control_account?: boolean
+          is_posting_account?: boolean
+          is_system_account?: boolean
+          normal_balance?: string
+          parent_id?: string | null
+          statement_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_accounts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_accounts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gl_journal_entries: {
+        Row: {
+          accounting_period_id: string
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          description: string
+          exchange_rate: number
+          id: string
+          journal_date: string
+          journal_number: string
+          original_entry_id: string | null
+          posted_at: string | null
+          posted_by: string | null
+          posting_date: string
+          reversal_entry_id: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
+          source_id: string | null
+          source_number: string | null
+          source_type: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          accounting_period_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description: string
+          exchange_rate?: number
+          id?: string
+          journal_date: string
+          journal_number: string
+          original_entry_id?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date: string
+          reversal_entry_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          source_id?: string | null
+          source_number?: string | null
+          source_type: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          accounting_period_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          description?: string
+          exchange_rate?: number
+          id?: string
+          journal_date?: string
+          journal_number?: string
+          original_entry_id?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date?: string
+          reversal_entry_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
+          source_id?: string | null
+          source_number?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_journal_entries_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_original_entry_id_fkey"
+            columns: ["original_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_original_entry_id_fkey"
+            columns: ["original_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_reversal_entry_id_fkey"
+            columns: ["reversal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_reversal_entry_id_fkey"
+            columns: ["reversal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_reversed_by_fkey"
+            columns: ["reversed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_entries_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gl_journal_lines: {
+        Row: {
+          base_credit: number
+          base_debit: number
+          created_at: string
+          credit: number
+          customer_id: string | null
+          debit: number
+          description: string | null
+          expense_category_id: string | null
+          financial_account_id: string | null
+          gl_account_id: string
+          id: string
+          journal_entry_id: string
+          line_number: number
+          product_id: string | null
+          source_line_id: string | null
+          source_line_number: number | null
+          source_line_type: string | null
+          supplier_id: string | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          base_credit?: number
+          base_debit?: number
+          created_at?: string
+          credit?: number
+          customer_id?: string | null
+          debit?: number
+          description?: string | null
+          expense_category_id?: string | null
+          financial_account_id?: string | null
+          gl_account_id: string
+          id?: string
+          journal_entry_id: string
+          line_number: number
+          product_id?: string | null
+          source_line_id?: string | null
+          source_line_number?: number | null
+          source_line_type?: string | null
+          supplier_id?: string | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          base_credit?: number
+          base_debit?: number
+          created_at?: string
+          credit?: number
+          customer_id?: string | null
+          debit?: number
+          description?: string | null
+          expense_category_id?: string | null
+          financial_account_id?: string | null
+          gl_account_id?: string
+          id?: string
+          journal_entry_id?: string
+          line_number?: number
+          product_id?: string | null
+          source_line_id?: string | null
+          source_line_number?: number | null
+          source_line_type?: string | null
+          supplier_id?: string | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_journal_lines_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_expense_category_id_fkey"
+            columns: ["expense_category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_financial_account_id_fkey"
+            columns: ["financial_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_gl_account_id_fkey"
+            columns: ["gl_account_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_journal_lines_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -4762,6 +5306,64 @@ export type Database = {
         }
         Relationships: []
       }
+      gl_chart_of_accounts: {
+        Row: {
+          account_class: string | null
+          account_code: string | null
+          account_name: string | null
+          allow_manual_posting: boolean | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string | null
+          is_active: boolean | null
+          is_control_account: boolean | null
+          is_posting_account: boolean | null
+          is_system_account: boolean | null
+          normal_balance: string | null
+          parent_account_code: string | null
+          parent_account_name: string | null
+          parent_id: string | null
+          statement_type: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gl_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gl_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gl_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "gl_chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gl_journal_balance: {
+        Row: {
+          base_difference: number | null
+          is_balanced: boolean | null
+          journal_date: string | null
+          journal_entry_id: string | null
+          journal_number: string | null
+          line_count: number | null
+          posting_date: string | null
+          source_id: string | null
+          source_number: string | null
+          source_type: string | null
+          status: string | null
+          total_base_credit: number | null
+          total_base_debit: number | null
+          total_credit: number | null
+          total_debit: number | null
+        }
+        Relationships: []
+      }
       payable_open_items: {
         Row: {
           aging_bucket: string | null
@@ -5257,6 +5859,28 @@ export type Database = {
       }
     }
     Functions: {
+      add_gl_draft_journal_line: {
+        Args: {
+          p_base_credit: number
+          p_base_debit: number
+          p_credit: number
+          p_customer_id?: string
+          p_debit: number
+          p_description?: string
+          p_expense_category_id?: string
+          p_financial_account_id?: string
+          p_gl_account_id: string
+          p_journal_entry_id: string
+          p_manual_posting?: boolean
+          p_product_id?: string
+          p_source_line_id?: string
+          p_source_line_number?: number
+          p_source_line_type?: string
+          p_supplier_id?: string
+          p_warehouse_id?: string
+        }
+        Returns: string
+      }
       apply_customer_advance_to_sales_order: {
         Args: { p_sales_order_id: string }
         Returns: number
@@ -5410,6 +6034,31 @@ export type Database = {
       }
       create_draft_goods_receipt: {
         Args: { target_purchase_order_id: string; target_warehouse_id: string }
+        Returns: string
+      }
+      create_gl_draft_journal: {
+        Args: {
+          p_currency_code?: string
+          p_description: string
+          p_exchange_rate?: number
+          p_journal_date: string
+          p_posting_date: string
+          p_source_id: string
+          p_source_number: string
+          p_source_type: string
+        }
+        Returns: string
+      }
+      create_manual_gl_journal: {
+        Args: {
+          p_currency_code?: string
+          p_description: string
+          p_exchange_rate?: number
+          p_journal_date: string
+          p_lines: Json
+          p_posting_date: string
+          p_reference?: string
+        }
         Returns: string
       }
       create_purchase_order: {
@@ -5574,6 +6223,10 @@ export type Database = {
       generate_sales_order_number: { Args: never; Returns: string }
       generate_sales_quotation_number: { Args: never; Returns: string }
       generate_supplier_payment_number: { Args: never; Returns: string }
+      get_gl_accounting_period: {
+        Args: { p_posting_date: string; p_require_open?: boolean }
+        Returns: string
+      }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
       get_inventory_product_health: {
         Args: { p_limit?: number }
@@ -5597,6 +6250,10 @@ export type Database = {
           p_warehouse_id?: string
         }
         Returns: Json
+      }
+      get_mapped_gl_account: {
+        Args: { p_mapping_key: string }
+        Returns: string
       }
       get_profit_and_loss_summary: {
         Args: { p_date_from: string; p_date_to: string }
@@ -5649,6 +6306,10 @@ export type Database = {
       next_account_transaction_number: { Args: never; Returns: string }
       next_expense_number: { Args: never; Returns: string }
       next_financial_account_transfer_number: { Args: never; Returns: string }
+      next_gl_journal_number: {
+        Args: { p_journal_date?: string }
+        Returns: string
+      }
       post_account_transaction: {
         Args: {
           p_account_id: string
@@ -5701,6 +6362,20 @@ export type Database = {
         }
         Returns: string
       }
+      post_erp_gl_journal: {
+        Args: {
+          p_currency_code: string
+          p_description: string
+          p_exchange_rate: number
+          p_journal_date: string
+          p_lines: Json
+          p_posting_date: string
+          p_source_id: string
+          p_source_number: string
+          p_source_type: string
+        }
+        Returns: string
+      }
       post_expense: { Args: { p_expense_id: string }; Returns: string }
       post_financial_account_opening_balance: {
         Args: {
@@ -5724,6 +6399,7 @@ export type Database = {
         }
         Returns: string
       }
+      post_gl_journal: { Args: { p_journal_entry_id: string }; Returns: string }
       post_local_purchase_inventory: {
         Args: {
           p_internal_notes: string
@@ -5844,6 +6520,14 @@ export type Database = {
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      reverse_gl_journal: {
+        Args: {
+          p_journal_entry_id: string
+          p_reason: string
+          p_reversal_date: string
+        }
+        Returns: string
       }
       review_supplier_quotation: {
         Args: { target_quotation_id: string }
@@ -6006,6 +6690,14 @@ export type Database = {
       synchronize_sales_order_fulfilment: {
         Args: { p_sales_order_id: string }
         Returns: string
+      }
+      validate_gl_journal: {
+        Args: { p_journal_entry_id: string }
+        Returns: boolean
+      }
+      validate_gl_posting_account: {
+        Args: { p_gl_account_id: string; p_manual_posting?: boolean }
+        Returns: undefined
       }
       validate_payment_financial_account: {
         Args: {
