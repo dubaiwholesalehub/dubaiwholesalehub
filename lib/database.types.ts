@@ -4668,6 +4668,7 @@ export type Database = {
       }
       supplier_payment_allocations: {
         Row: {
+          allocation_source: string
           amount: number
           created_at: string
           id: string
@@ -4675,6 +4676,7 @@ export type Database = {
           supplier_payment_id: string
         }
         Insert: {
+          allocation_source?: string
           amount: number
           created_at?: string
           id?: string
@@ -4682,6 +4684,7 @@ export type Database = {
           supplier_payment_id: string
         }
         Update: {
+          allocation_source?: string
           amount?: number
           created_at?: string
           id?: string
@@ -6443,6 +6446,10 @@ export type Database = {
       }
       post_sales_order_revenue_gl: {
         Args: { p_sales_order_id: string }
+        Returns: string
+      }
+      post_supplier_advance_application_gl: {
+        Args: { p_supplier_payment_allocation_id: string }
         Returns: string
       }
       post_supplier_payment: {

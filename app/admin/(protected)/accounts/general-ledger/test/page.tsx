@@ -19,6 +19,7 @@ import { testSalesOrderGlPostingAction } from "./sales-order-action";
 import { testCustomerReceiptGlPostingAction } from "./customer-receipt-action";
 import { testQuickPurchaseGlPostingAction } from "./quick-purchase-action";
 import { testSupplierPaymentGlPostingAction } from "./supplier-payment-action";
+import { testSupplierAdvanceGlPostingAction } from "./supplier-advance-action";
 
 interface GlValidationPageProps {
   searchParams: Promise<{
@@ -35,6 +36,9 @@ interface GlValidationPageProps {
 
     supplierPaymentId?: string;
     testSupplierPayment?: string;
+
+    supplierAdvanceAllocationId?: string;
+    testSupplierAdvance?: string;
   }>;
 }
 
@@ -132,6 +136,28 @@ export default async function GlValidationPage({
     }
   }
 
+  const supplierAdvanceAllocationId =
+    params.supplierAdvanceAllocationId?.trim() ?? "";
+
+  let supplierAdvanceTest: Awaited<
+    ReturnType<typeof testSupplierAdvanceGlPostingAction>
+  > | null = null;
+
+  let supplierAdvanceTestError: string | null = null;
+
+  if (params.testSupplierAdvance === "1" && supplierAdvanceAllocationId) {
+    try {
+      supplierAdvanceTest = await testSupplierAdvanceGlPostingAction(
+        supplierAdvanceAllocationId,
+      );
+    } catch (error) {
+      supplierAdvanceTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Supplier Advance GL posting.";
+    }
+  }
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -203,7 +229,208 @@ export default async function GlValidationPage({
           </div>
         </div>
       </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Supplier Advance Application → GL Test
+            </h2>
 
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 093
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a Supplier Payment Allocation ID classified as a later
+            supplier advance application. This test validates Accounts Payable
+            reclassification, Supplier Advances, source linkage, balance,
+            idempotency and confirms no Cash/Bank account is posted again.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testSupplierAdvance" value="1" />
+
+          <input
+            type="text"
+            name="supplierAdvanceAllocationId"
+            defaultValue={supplierAdvanceAllocationId}
+            placeholder="Supplier Payment Allocation UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Supplier Advance GL
+          </button>
+        </form>
+
+        {supplierAdvanceTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {supplierAdvanceTestError}
+          </div>
+        )}
+
+        {supplierAdvanceTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                supplierAdvanceTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  supplierAdvanceTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {supplierAdvanceTest.checks.allPassed
+                  ? "Supplier Advance GL reclassification passed"
+                  : "Supplier Advance GL reclassification requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Payment: {supplierAdvanceTest.payment.payment_number}
+                {" · "}
+                Purchase: {supplierAdvanceTest.purchase.purchase_number}
+                {" · "}
+                Journal: {supplierAdvanceTest.journal.journal_number}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <ReceiptMetric
+                label="Applied Advance"
+                value={supplierAdvanceTest.allocation.amount}
+                currency={supplierAdvanceTest.payment.currency_code}
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {supplierAdvanceTest.balance.line_count}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Allocation Source
+                </div>
+
+                <div className="mt-2 text-sm font-bold text-slate-950">
+                  {supplierAdvanceTest.allocation.allocation_source}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+              <CheckCard
+                label="Balanced"
+                passed={supplierAdvanceTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Source Type"
+                passed={supplierAdvanceTest.checks.correctSourceType}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={supplierAdvanceTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={supplierAdvanceTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="Accounts Payable Dr"
+                passed={supplierAdvanceTest.checks.accountsPayableDebit}
+              />
+
+              <CheckCard
+                label="Supplier Advance Cr"
+                passed={supplierAdvanceTest.checks.supplierAdvanceCredit}
+              />
+
+              <CheckCard
+                label="No Treasury Line"
+                passed={supplierAdvanceTest.checks.noTreasuryLine}
+              />
+
+              <CheckCard
+                label="Supplier Link"
+                passed={supplierAdvanceTest.checks.supplierLinkage}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={supplierAdvanceTest.checks.idempotent}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Account</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3 text-right">Debit</th>
+                    <th className="px-4 py-3 text-right">Credit</th>
+                    <th className="px-4 py-3 text-right">Base Debit</th>
+                    <th className="px-4 py-3 text-right">Base Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {supplierAdvanceTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <div className="flex flex-wrap items-center gap-3">
