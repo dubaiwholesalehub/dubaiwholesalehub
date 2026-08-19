@@ -6223,6 +6223,14 @@ export type Database = {
       generate_sales_order_number: { Args: never; Returns: string }
       generate_sales_quotation_number: { Args: never; Returns: string }
       generate_supplier_payment_number: { Args: never; Returns: string }
+      get_expense_category_gl_account: {
+        Args: { p_expense_category_id: string }
+        Returns: string
+      }
+      get_financial_account_gl_account: {
+        Args: { p_financial_account_id: string }
+        Returns: string
+      }
       get_gl_accounting_period: {
         Args: { p_posting_date: string; p_require_open?: boolean }
         Returns: string
@@ -6344,6 +6352,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_customer_receipt_gl: {
+        Args: { p_customer_receipt_id: string }
+        Returns: string
+      }
       post_customer_receipt_with_account: {
         Args: {
           p_allocations: Json
@@ -6423,6 +6435,10 @@ export type Database = {
           p_transaction_type: string
           p_warehouse_id: string
         }
+        Returns: string
+      }
+      post_sales_order_revenue_gl: {
+        Args: { p_sales_order_id: string }
         Returns: string
       }
       post_supplier_payment: {
