@@ -20,6 +20,7 @@ import { testCustomerReceiptGlPostingAction } from "./customer-receipt-action";
 import { testQuickPurchaseGlPostingAction } from "./quick-purchase-action";
 import { testSupplierPaymentGlPostingAction } from "./supplier-payment-action";
 import { testSupplierAdvanceGlPostingAction } from "./supplier-advance-action";
+import { testInventoryCogsGlPostingAction } from "./inventory-cogs-action";
 
 interface GlValidationPageProps {
   searchParams: Promise<{
@@ -39,6 +40,9 @@ interface GlValidationPageProps {
 
     supplierAdvanceAllocationId?: string;
     testSupplierAdvance?: string;
+
+    inventoryTransactionId?: string;
+    testInventoryCogs?: string;
   }>;
 }
 
@@ -158,6 +162,27 @@ export default async function GlValidationPage({
     }
   }
 
+  const inventoryTransactionId = params.inventoryTransactionId?.trim() ?? "";
+
+  let inventoryCogsTest: Awaited<
+    ReturnType<typeof testInventoryCogsGlPostingAction>
+  > | null = null;
+
+  let inventoryCogsTestError: string | null = null;
+
+  if (params.testInventoryCogs === "1" && inventoryTransactionId) {
+    try {
+      inventoryCogsTest = await testInventoryCogsGlPostingAction(
+        inventoryTransactionId,
+      );
+    } catch (error) {
+      inventoryCogsTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Inventory COGS GL posting.";
+    }
+  }
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -229,6 +254,233 @@ export default async function GlValidationPage({
           </div>
         </div>
       </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Inventory COGS → GL Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 094
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a posted sales_issue Inventory Transaction ID linked to a
+            Delivery Order. The test validates actual dispatch COGS, Inventory
+            credit, product and warehouse dimensions, source-line traceability,
+            journal balance and idempotency.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testInventoryCogs" value="1" />
+
+          <input
+            type="text"
+            name="inventoryTransactionId"
+            defaultValue={inventoryTransactionId}
+            placeholder="Inventory Transaction UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Inventory COGS GL
+          </button>
+        </form>
+
+        {inventoryCogsTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {inventoryCogsTestError}
+          </div>
+        )}
+
+        {inventoryCogsTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                inventoryCogsTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  inventoryCogsTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {inventoryCogsTest.checks.allPassed
+                  ? "Inventory COGS GL posting passed"
+                  : "Inventory COGS GL posting requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Transaction: {inventoryCogsTest.transaction.transaction_number}
+                {" · "}
+                Journal: {inventoryCogsTest.journal.journal_number}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ReceiptMetric
+                label="Actual COGS"
+                value={inventoryCogsTest.expected.totalCost}
+                currency="AED"
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Inventory Items
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {inventoryCogsTest.expected.itemCount}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Accounting Items
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {inventoryCogsTest.expected.accountingItemCount}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {inventoryCogsTest.balance.line_count}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <CheckCard
+                label="Balanced"
+                passed={inventoryCogsTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Sales Issue"
+                passed={inventoryCogsTest.checks.postedSalesIssue}
+              />
+
+              <CheckCard
+                label="Delivery Source"
+                passed={inventoryCogsTest.checks.deliveryOrderSource}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={inventoryCogsTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={inventoryCogsTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="COGS Debit"
+                passed={inventoryCogsTest.checks.correctTotalCogs}
+              />
+
+              <CheckCard
+                label="Inventory Credit"
+                passed={inventoryCogsTest.checks.correctInventoryCredit}
+              />
+
+              <CheckCard
+                label="Product Link"
+                passed={inventoryCogsTest.checks.productLinkage}
+              />
+
+              <CheckCard
+                label="Warehouse Link"
+                passed={inventoryCogsTest.checks.warehouseLinkage}
+              />
+
+              <CheckCard
+                label="Source Line Link"
+                passed={inventoryCogsTest.checks.sourceLineLinkage}
+              />
+
+              <CheckCard
+                label="No Unrelated Accounts"
+                passed={inventoryCogsTest.checks.noUnrelatedAccounts}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={inventoryCogsTest.checks.idempotent}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[1000px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Account</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3">Product</th>
+                    <th className="px-4 py-3">Warehouse</th>
+                    <th className="px-4 py-3 text-right">Debit</th>
+                    <th className="px-4 py-3 text-right">Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {inventoryCogsTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {line.product_id ?? "—"}
+                      </td>
+
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {line.warehouse_id ?? "—"}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <div className="flex flex-wrap items-center gap-3">

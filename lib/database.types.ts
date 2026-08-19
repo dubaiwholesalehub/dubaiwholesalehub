@@ -6415,6 +6415,10 @@ export type Database = {
         Returns: string
       }
       post_gl_journal: { Args: { p_journal_entry_id: string }; Returns: string }
+      post_inventory_cogs_gl: {
+        Args: { p_inventory_transaction_id: string }
+        Returns: string
+      }
       post_local_purchase_inventory: {
         Args: {
           p_internal_notes: string
