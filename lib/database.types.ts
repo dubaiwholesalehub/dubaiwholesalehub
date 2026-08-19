@@ -6462,6 +6462,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_supplier_payment_gl: {
+        Args: { p_supplier_payment_id: string }
+        Returns: string
+      }
       post_supplier_payment_with_account: {
         Args: {
           p_allocations: Json

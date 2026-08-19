@@ -18,6 +18,7 @@ import {
 import { testSalesOrderGlPostingAction } from "./sales-order-action";
 import { testCustomerReceiptGlPostingAction } from "./customer-receipt-action";
 import { testQuickPurchaseGlPostingAction } from "./quick-purchase-action";
+import { testSupplierPaymentGlPostingAction } from "./supplier-payment-action";
 
 interface GlValidationPageProps {
   searchParams: Promise<{
@@ -31,6 +32,9 @@ interface GlValidationPageProps {
 
     quickPurchaseId?: string;
     testQuickPurchase?: string;
+
+    supplierPaymentId?: string;
+    testSupplierPayment?: string;
   }>;
 }
 
@@ -108,6 +112,26 @@ export default async function GlValidationPage({
     }
   }
 
+  const supplierPaymentId = params.supplierPaymentId?.trim() ?? "";
+
+  let supplierPaymentTest: Awaited<
+    ReturnType<typeof testSupplierPaymentGlPostingAction>
+  > | null = null;
+
+  let supplierPaymentTestError: string | null = null;
+
+  if (params.testSupplierPayment === "1" && supplierPaymentId) {
+    try {
+      supplierPaymentTest =
+        await testSupplierPaymentGlPostingAction(supplierPaymentId);
+    } catch (error) {
+      supplierPaymentTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Supplier Payment GL posting.";
+    }
+  }
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -178,6 +202,216 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Supplier Payment → GL Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 092
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a real posted Supplier Payment ID. The test validates Accounts
+            Payable, Supplier Advances, the selected Financial Account, journal
+            balance, supplier linkage and idempotency.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testSupplierPayment" value="1" />
+
+          <input
+            type="text"
+            name="supplierPaymentId"
+            defaultValue={supplierPaymentId}
+            placeholder="Supplier Payment UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Supplier Payment GL
+          </button>
+        </form>
+
+        {supplierPaymentTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {supplierPaymentTestError}
+          </div>
+        )}
+
+        {supplierPaymentTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                supplierPaymentTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  supplierPaymentTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {supplierPaymentTest.checks.allPassed
+                  ? "Supplier Payment GL posting passed"
+                  : "Supplier Payment GL posting requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Payment: {supplierPaymentTest.payment.payment_number}
+                {" · "}
+                Journal: {supplierPaymentTest.journal.journal_number}
+                {" · "}
+                Case: {supplierPaymentTest.caseType.replaceAll("_", " ")}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ReceiptMetric
+                label="Payment"
+                value={supplierPaymentTest.payment.amount}
+                currency={supplierPaymentTest.payment.currency_code}
+              />
+
+              <ReceiptMetric
+                label="Allocated"
+                value={supplierPaymentTest.payment.allocated_amount}
+                currency={supplierPaymentTest.payment.currency_code}
+              />
+
+              <ReceiptMetric
+                label="Supplier Advance"
+                value={supplierPaymentTest.payment.unallocated_amount}
+                currency={supplierPaymentTest.payment.currency_code}
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {supplierPaymentTest.balance.line_count}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+              <CheckCard
+                label="Balanced"
+                passed={supplierPaymentTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={supplierPaymentTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={supplierPaymentTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="Financial Account Cr"
+                passed={supplierPaymentTest.checks.financialAccountCredit}
+              />
+
+              <CheckCard
+                label="Accounts Payable Dr"
+                passed={supplierPaymentTest.checks.accountsPayableDebit}
+              />
+
+              <CheckCard
+                label="Supplier Advance Dr"
+                passed={supplierPaymentTest.checks.supplierAdvanceDebit}
+              />
+
+              <CheckCard
+                label="Supplier Link"
+                passed={supplierPaymentTest.checks.supplierLinkage}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={supplierPaymentTest.checks.idempotent}
+              />
+
+              <CheckCard
+                label="Posted Payment"
+                passed={supplierPaymentTest.checks.postedPayment}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+
+                    <th className="px-4 py-3">Account</th>
+
+                    <th className="px-4 py-3">Description</th>
+
+                    <th className="px-4 py-3 text-right">Debit</th>
+
+                    <th className="px-4 py-3 text-right">Credit</th>
+
+                    <th className="px-4 py-3 text-right">Base Debit</th>
+
+                    <th className="px-4 py-3 text-right">Base Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {supplierPaymentTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
