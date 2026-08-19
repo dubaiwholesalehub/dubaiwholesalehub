@@ -17,6 +17,7 @@ import {
 
 import { testSalesOrderGlPostingAction } from "./sales-order-action";
 import { testCustomerReceiptGlPostingAction } from "./customer-receipt-action";
+import { testQuickPurchaseGlPostingAction } from "./quick-purchase-action";
 
 interface GlValidationPageProps {
   searchParams: Promise<{
@@ -27,6 +28,9 @@ interface GlValidationPageProps {
 
     customerReceiptId?: string;
     testCustomerReceipt?: string;
+
+    quickPurchaseId?: string;
+    testQuickPurchase?: string;
   }>;
 }
 
@@ -81,6 +85,26 @@ export default async function GlValidationPage({
         error instanceof Error
           ? error.message
           : "Unable to test Customer Receipt GL posting.";
+    }
+  }
+
+  const quickPurchaseId = params.quickPurchaseId?.trim() ?? "";
+
+  let quickPurchaseTest: Awaited<
+    ReturnType<typeof testQuickPurchaseGlPostingAction>
+  > | null = null;
+
+  let quickPurchaseTestError: string | null = null;
+
+  if (params.testQuickPurchase === "1" && quickPurchaseId) {
+    try {
+      quickPurchaseTest =
+        await testQuickPurchaseGlPostingAction(quickPurchaseId);
+    } catch (error) {
+      quickPurchaseTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Quick Purchase GL posting.";
     }
   }
 
@@ -154,6 +178,221 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Quick Purchase → GL Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 091
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a real posted Quick Purchase ID with a registered supplier.
+            The test validates Inventory, VAT, Accounts Payable, supplier
+            linkage, journal balance and idempotency.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testQuickPurchase" value="1" />
+
+          <input
+            type="text"
+            name="quickPurchaseId"
+            defaultValue={quickPurchaseId}
+            placeholder="Quick Purchase UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Quick Purchase GL
+          </button>
+        </form>
+
+        {quickPurchaseTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {quickPurchaseTestError}
+          </div>
+        )}
+
+        {quickPurchaseTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                quickPurchaseTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  quickPurchaseTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {quickPurchaseTest.checks.allPassed
+                  ? "Quick Purchase GL posting passed"
+                  : "Quick Purchase GL posting requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Purchase: {quickPurchaseTest.purchase.purchase_number}
+                {" · "}
+                Journal: {quickPurchaseTest.journal.journal_number}
+                {" · "}
+                Case: {quickPurchaseTest.caseType.replaceAll("_", " ")}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ReceiptMetric
+                label="Grand Total"
+                value={quickPurchaseTest.purchase.grand_total}
+                currency={quickPurchaseTest.purchase.currency_code}
+              />
+
+              <ReceiptMetric
+                label="Recoverable VAT"
+                value={quickPurchaseTest.purchase.recoverable_tax_amount}
+                currency={quickPurchaseTest.purchase.currency_code}
+              />
+
+              <ReceiptMetric
+                label="Pending VAT"
+                value={quickPurchaseTest.purchase.pending_tax_amount}
+                currency={quickPurchaseTest.purchase.currency_code}
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {quickPurchaseTest.balance.line_count}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+              <CheckCard
+                label="Balanced"
+                passed={quickPurchaseTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={quickPurchaseTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={quickPurchaseTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="Inventory Dr"
+                passed={quickPurchaseTest.checks.inventoryDebit}
+              />
+
+              <CheckCard
+                label="AP Cr"
+                passed={quickPurchaseTest.checks.accountsPayableCredit}
+              />
+
+              <CheckCard
+                label="VAT Recoverable Dr"
+                passed={quickPurchaseTest.checks.recoverableVatDebit}
+              />
+
+              <CheckCard
+                label="VAT Pending Dr"
+                passed={quickPurchaseTest.checks.pendingVatDebit}
+              />
+
+              <CheckCard
+                label="Supplier Link"
+                passed={quickPurchaseTest.checks.supplierLinkage}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={quickPurchaseTest.checks.idempotent}
+              />
+
+              <CheckCard
+                label="Posted Purchase"
+                passed={quickPurchaseTest.checks.postedPurchase}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+
+                    <th className="px-4 py-3">Account</th>
+
+                    <th className="px-4 py-3">Description</th>
+
+                    <th className="px-4 py-3 text-right">Debit</th>
+
+                    <th className="px-4 py-3 text-right">Credit</th>
+
+                    <th className="px-4 py-3 text-right">Base Debit</th>
+
+                    <th className="px-4 py-3 text-right">Base Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {quickPurchaseTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.base_credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>

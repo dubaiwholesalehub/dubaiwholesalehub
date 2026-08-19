@@ -6437,6 +6437,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_quick_purchase_gl: {
+        Args: { p_quick_purchase_id: string }
+        Returns: string
+      }
       post_sales_order_revenue_gl: {
         Args: { p_sales_order_id: string }
         Returns: string
