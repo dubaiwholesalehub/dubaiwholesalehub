@@ -26,6 +26,7 @@ import { testManualInventoryGlPostingAction } from "./manual-inventory-action";
 import { testFinancialAccountTransferGlPostingAction } from "./financial-account-transfer-action";
 import { testFinancialAccountOpeningBalanceGlPostingAction } from "./financial-account-opening-balance-action";
 import { testExpenseCancellationReversalAction } from "./cancellation-reversal-action";
+import { runHistoricalGlBackfillAction } from "./historical-backfill-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -62,6 +63,11 @@ interface GlValidationPageProps {
 
     expenseCancellationId?: string;
     testExpenseCancellation?: string;
+
+    historicalBackfill?: string;
+    historicalReceipts?: string;
+    historicalPayments?: string;
+    historicalTotal?: string;
   }>;
 }
 
@@ -316,6 +322,14 @@ export default async function GlValidationPage({
     }
   }
 
+  const historicalBackfillSuccess = params.historicalBackfill === "success";
+
+  const historicalReceiptCount = Number(params.historicalReceipts ?? 0);
+
+  const historicalPaymentCount = Number(params.historicalPayments ?? 0);
+
+  const historicalTotalCount = Number(params.historicalTotal ?? 0);
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -369,6 +383,72 @@ export default async function GlValidationPage({
         </div>
       </div>
 
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-950">
+            Historical Receipt / Payment GL Backfill
+          </h2>
+
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+            Migration 102
+          </span>
+        </div>
+
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Backfills historical Customer Receipt and Supplier Payment documents
+          that were posted before their GL integrations existed. Existing GL
+          adapters are used, so source-level accounting rules remain unchanged.
+        </p>
+
+        <form action={runHistoricalGlBackfillAction} className="mt-5">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Run Historical GL Backfill
+          </button>
+        </form>
+
+        {historicalBackfillSuccess && (
+          <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="font-semibold text-green-900">
+              Historical GL backfill completed
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Customer Receipts
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalReceiptCount}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Supplier Payments
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalPaymentCount}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Total Sources
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalTotalCount}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
