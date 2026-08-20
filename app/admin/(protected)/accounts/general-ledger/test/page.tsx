@@ -25,6 +25,7 @@ import { testExpenseGlPostingAction } from "./expense-action";
 import { testManualInventoryGlPostingAction } from "./manual-inventory-action";
 import { testFinancialAccountTransferGlPostingAction } from "./financial-account-transfer-action";
 import { testFinancialAccountOpeningBalanceGlPostingAction } from "./financial-account-opening-balance-action";
+import { testExpenseCancellationReversalAction } from "./cancellation-reversal-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -58,6 +59,9 @@ interface GlValidationPageProps {
 
     financialAccountOpeningBalanceId?: string;
     testFinancialAccountOpeningBalance?: string;
+
+    expenseCancellationId?: string;
+    testExpenseCancellation?: string;
   }>;
 }
 
@@ -291,6 +295,27 @@ export default async function GlValidationPage({
     }
   }
 
+  const expenseCancellationId = params.expenseCancellationId?.trim() ?? "";
+
+  let expenseCancellationTest: Awaited<
+    ReturnType<typeof testExpenseCancellationReversalAction>
+  > | null = null;
+
+  let expenseCancellationTestError: string | null = null;
+
+  if (params.testExpenseCancellation === "1" && expenseCancellationId) {
+    try {
+      expenseCancellationTest = await testExpenseCancellationReversalAction(
+        expenseCancellationId,
+      );
+    } catch (error) {
+      expenseCancellationTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Expense cancellation GL reversal.";
+    }
+  }
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -361,6 +386,207 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Expense Cancellation → GL Reversal Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 099
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a posted test Expense ID. This test cancels the operational
+            expense and linked treasury transaction, reverses its formal GL
+            journal, validates exact opposite debit/credit entries and tests
+            duplicate reversal protection.
+          </p>
+
+          <p className="mt-2 text-sm font-semibold text-amber-700">
+            Warning: this test actually cancels the selected expense. Use test
+            data only.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testExpenseCancellation" value="1" />
+
+          <input
+            type="text"
+            name="expenseCancellationId"
+            defaultValue={expenseCancellationId}
+            placeholder="Posted Expense UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Cancellation Reversal
+          </button>
+        </form>
+
+        {expenseCancellationTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {expenseCancellationTestError}
+          </div>
+        )}
+
+        {expenseCancellationTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                expenseCancellationTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  expenseCancellationTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {expenseCancellationTest.checks.allPassed
+                  ? "Expense cancellation GL reversal passed"
+                  : "Expense cancellation GL reversal requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Expense: {expenseCancellationTest.expense.expense_number}
+                {" · "}
+                Original:{" "}
+                {expenseCancellationTest.originalJournal.journal_number}
+                {" · "}
+                Reversal:{" "}
+                {expenseCancellationTest.reversalJournal.journal_number}
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <CheckCard
+                label="Expense Cancelled"
+                passed={expenseCancellationTest.checks.expenseCancelled}
+              />
+
+              <CheckCard
+                label="Account Transaction Cancelled"
+                passed={
+                  expenseCancellationTest.checks.accountTransactionCancelled
+                }
+              />
+
+              <CheckCard
+                label="Original Journal Reversed"
+                passed={expenseCancellationTest.checks.originalJournalReversed}
+              />
+
+              <CheckCard
+                label="Reversal Journal Posted"
+                passed={expenseCancellationTest.checks.reversalJournalPosted}
+              />
+
+              <CheckCard
+                label="Reversal Source Correct"
+                passed={expenseCancellationTest.checks.reversalSourceCorrect}
+              />
+
+              <CheckCard
+                label="Exact Debit/Credit Reversal"
+                passed={expenseCancellationTest.checks.exactReversal}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={expenseCancellationTest.checks.idempotent}
+              />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Original Journal
+                </div>
+
+                <div className="mt-2 font-semibold text-slate-950">
+                  {expenseCancellationTest.originalJournal.journal_number}
+                </div>
+
+                <div className="mt-1 text-sm text-slate-600">
+                  Status: {expenseCancellationTest.originalJournal.status}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-4">
+                <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Reversal Journal
+                </div>
+
+                <div className="mt-2 font-semibold text-slate-950">
+                  {expenseCancellationTest.reversalJournal.journal_number}
+                </div>
+
+                <div className="mt-1 text-sm text-slate-600">
+                  Status: {expenseCancellationTest.reversalJournal.status}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[850px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">Line</th>
+
+                    <th className="px-4 py-3 text-right">Original Debit</th>
+
+                    <th className="px-4 py-3 text-right">Original Credit</th>
+
+                    <th className="px-4 py-3 text-right">Reversal Debit</th>
+
+                    <th className="px-4 py-3 text-right">Reversal Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {expenseCancellationTest.originalLines.map((line, index) => {
+                    const reversed =
+                      expenseCancellationTest.reversalLines[index];
+
+                    return (
+                      <tr key={line.line_number}>
+                        <td className="px-4 py-3">{line.line_number}</td>
+
+                        <td className="px-4 py-3 text-right">
+                          {Number(line.debit).toFixed(2)}
+                        </td>
+
+                        <td className="px-4 py-3 text-right">
+                          {Number(line.credit).toFixed(2)}
+                        </td>
+
+                        <td className="px-4 py-3 text-right">
+                          {Number(reversed?.debit ?? 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-4 py-3 text-right">
+                          {Number(reversed?.credit ?? 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -5951,6 +5951,10 @@ export type Database = {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: string
       }
+      cancel_customer_receipt_with_gl: {
+        Args: { p_reason: string; p_receipt_id: string }
+        Returns: string
+      }
       cancel_delivery_order: {
         Args: { p_delivery_order_id: string }
         Returns: string
@@ -5959,11 +5963,23 @@ export type Database = {
         Args: { p_expense_id: string; p_reason: string }
         Returns: undefined
       }
+      cancel_expense_with_gl: {
+        Args: { p_expense_id: string; p_reason: string }
+        Returns: string
+      }
       cancel_financial_account_opening_balance: {
         Args: { p_financial_account_id: string; p_reason: string }
         Returns: undefined
       }
+      cancel_financial_account_opening_balance_with_gl: {
+        Args: { p_financial_account_id: string; p_reason: string }
+        Returns: string
+      }
       cancel_financial_account_transfer: {
+        Args: { p_reason: string; p_transfer_id: string }
+        Returns: string
+      }
+      cancel_financial_account_transfer_with_gl: {
         Args: { p_reason: string; p_transfer_id: string }
         Returns: string
       }
@@ -5976,6 +5992,10 @@ export type Database = {
         Returns: string
       }
       cancel_supplier_payment_with_account: {
+        Args: { p_reason: string; p_supplier_payment_id: string }
+        Returns: string
+      }
+      cancel_supplier_payment_with_gl: {
         Args: { p_reason: string; p_supplier_payment_id: string }
         Returns: string
       }
@@ -6568,6 +6588,15 @@ export type Database = {
       restore_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      reverse_erp_source_gl_journal: {
+        Args: {
+          p_reason: string
+          p_reversal_date: string
+          p_source_id: string
+          p_source_type: string
+        }
+        Returns: string
       }
       reverse_gl_journal: {
         Args: {
