@@ -6433,6 +6433,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_manual_inventory_gl: {
+        Args: { p_inventory_transaction_id: string }
+        Returns: string
+      }
       post_manual_inventory_transaction: {
         Args: {
           p_description: string

@@ -22,7 +22,7 @@ import { testSupplierPaymentGlPostingAction } from "./supplier-payment-action";
 import { testSupplierAdvanceGlPostingAction } from "./supplier-advance-action";
 import { testInventoryCogsGlPostingAction } from "./inventory-cogs-action";
 import { testExpenseGlPostingAction } from "./expense-action";
-
+import { testManualInventoryGlPostingAction } from "./manual-inventory-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -47,6 +47,9 @@ interface GlValidationPageProps {
 
     expenseId?: string;
     testExpense?: string;
+
+    manualInventoryTransactionId?: string;
+    testManualInventory?: string;
   }>;
 }
 
@@ -206,6 +209,27 @@ export default async function GlValidationPage({
     }
   }
 
+  const manualInventoryTransactionId =
+    params.manualInventoryTransactionId?.trim() ?? "";
+
+  let manualInventoryTest: Awaited<
+    ReturnType<typeof testManualInventoryGlPostingAction>
+  > | null = null;
+
+  let manualInventoryTestError: string | null = null;
+
+  if (params.testManualInventory === "1" && manualInventoryTransactionId) {
+    try {
+      manualInventoryTest = await testManualInventoryGlPostingAction(
+        manualInventoryTransactionId,
+      );
+    } catch (error) {
+      manualInventoryTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Manual Inventory GL posting.";
+    }
+  }
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -276,6 +300,242 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Manual Inventory → GL Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 096
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a posted manual Inventory Transaction ID. This test validates
+            Opening Balance, Adjustment In, Adjustment Out and Stock Count
+            accounting, including inventory valuation, offset accounts,
+            product/warehouse dimensions, source-line linkage and idempotency.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testManualInventory" value="1" />
+
+          <input
+            type="text"
+            name="manualInventoryTransactionId"
+            defaultValue={manualInventoryTransactionId}
+            placeholder="Inventory Transaction UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Manual Inventory GL
+          </button>
+        </form>
+
+        {manualInventoryTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {manualInventoryTestError}
+          </div>
+        )}
+
+        {manualInventoryTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                manualInventoryTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  manualInventoryTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {manualInventoryTest.checks.allPassed
+                  ? "Manual Inventory GL posting passed"
+                  : "Manual Inventory GL posting requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Transaction:{" "}
+                {manualInventoryTest.transaction.transaction_number}
+                {" · "}
+                Journal: {manualInventoryTest.journal.journal_number}
+                {" · "}
+                Case:{" "}
+                {manualInventoryTest.expected.caseType.replaceAll("_", " ")}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ReceiptMetric
+                label="Accounting Value"
+                value={manualInventoryTest.expected.totalValue}
+                currency="AED"
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Accounting Items
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {manualInventoryTest.expected.accountingItemCount}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Expected Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {manualInventoryTest.expected.expectedLineCount}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {manualInventoryTest.balance.line_count}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <CheckCard
+                label="Balanced"
+                passed={manualInventoryTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Posted Transaction"
+                passed={manualInventoryTest.checks.postedTransaction}
+              />
+
+              <CheckCard
+                label="Supported Type"
+                passed={manualInventoryTest.checks.supportedType}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={manualInventoryTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={manualInventoryTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="Inventory Side"
+                passed={manualInventoryTest.checks.inventorySideCorrect}
+              />
+
+              <CheckCard
+                label="Offset Side"
+                passed={manualInventoryTest.checks.offsetSideCorrect}
+              />
+
+              <CheckCard
+                label="Product Link"
+                passed={manualInventoryTest.checks.productLinkage}
+              />
+
+              <CheckCard
+                label="Warehouse Link"
+                passed={manualInventoryTest.checks.warehouseLinkage}
+              />
+
+              <CheckCard
+                label="Source Line Link"
+                passed={manualInventoryTest.checks.sourceLineLinkage}
+              />
+
+              <CheckCard
+                label="Expected Accounts Only"
+                passed={manualInventoryTest.checks.onlyExpectedAccounts}
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={manualInventoryTest.checks.idempotent}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[1000px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+
+                    <th className="px-4 py-3">Account</th>
+
+                    <th className="px-4 py-3">Description</th>
+
+                    <th className="px-4 py-3">Product</th>
+
+                    <th className="px-4 py-3">Warehouse</th>
+
+                    <th className="px-4 py-3 text-right">Debit</th>
+
+                    <th className="px-4 py-3 text-right">Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {manualInventoryTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {line.product_id ?? "—"}
+                      </td>
+
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {line.warehouse_id ?? "—"}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
