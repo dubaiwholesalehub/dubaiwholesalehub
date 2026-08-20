@@ -61,7 +61,7 @@ export async function postManualInventoryTransaction(
         data,
         error,
     } = await supabase.rpc(
-        "post_manual_inventory_transaction",
+        "post_manual_inventory_with_gl",
         {
             p_transaction_type:
                 input.transactionType,

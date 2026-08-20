@@ -6477,6 +6477,18 @@ export type Database = {
         }
         Returns: string
       }
+      post_manual_inventory_with_gl: {
+        Args: {
+          p_description: string
+          p_internal_notes: string
+          p_items: Json
+          p_reference_number: string
+          p_transaction_date: string
+          p_transaction_type: string
+          p_warehouse_id: string
+        }
+        Returns: string
+      }
       post_quick_purchase_gl: {
         Args: { p_quick_purchase_id: string }
         Returns: string
