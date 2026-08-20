@@ -6402,6 +6402,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_financial_account_opening_balance_gl: {
+        Args: { p_financial_account_id: string }
+        Returns: string
+      }
       post_financial_account_transfer: {
         Args: {
           p_exchange_rate?: number
