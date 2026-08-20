@@ -23,6 +23,7 @@ import { testSupplierAdvanceGlPostingAction } from "./supplier-advance-action";
 import { testInventoryCogsGlPostingAction } from "./inventory-cogs-action";
 import { testExpenseGlPostingAction } from "./expense-action";
 import { testManualInventoryGlPostingAction } from "./manual-inventory-action";
+import { testFinancialAccountTransferGlPostingAction } from "./financial-account-transfer-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -50,6 +51,9 @@ interface GlValidationPageProps {
 
     manualInventoryTransactionId?: string;
     testManualInventory?: string;
+
+    financialAccountTransferId?: string;
+    testFinancialAccountTransfer?: string;
   }>;
 }
 
@@ -230,6 +234,33 @@ export default async function GlValidationPage({
           : "Unable to test Manual Inventory GL posting.";
     }
   }
+
+  const financialAccountTransferId =
+    params.financialAccountTransferId?.trim() ?? "";
+
+  let financialAccountTransferTest: Awaited<
+    ReturnType<typeof testFinancialAccountTransferGlPostingAction>
+  > | null = null;
+
+  let financialAccountTransferTestError: string | null = null;
+
+  if (
+    params.testFinancialAccountTransfer === "1" &&
+    financialAccountTransferId
+  ) {
+    try {
+      financialAccountTransferTest =
+        await testFinancialAccountTransferGlPostingAction(
+          financialAccountTransferId,
+        );
+    } catch (error) {
+      financialAccountTransferTestError =
+        error instanceof Error
+          ? error.message
+          : "Unable to test Financial Account Transfer GL posting.";
+    }
+  }
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -300,6 +331,242 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-lg font-bold text-slate-950">
+              Financial Account Transfer → GL Test
+            </h2>
+
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-violet-700">
+              Migration 097
+            </span>
+          </div>
+
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
+            Enter a posted Financial Account Transfer ID. This test validates
+            both operational transfer legs, AED base-value equality, destination
+            debit, source credit, transfer-group linkage, financial-account
+            dimensions, GL source linkage and idempotency.
+          </p>
+        </div>
+
+        <form method="get" className="mt-5 flex flex-col gap-3 md:flex-row">
+          <input type="hidden" name="testFinancialAccountTransfer" value="1" />
+
+          <input
+            type="text"
+            name="financialAccountTransferId"
+            defaultValue={financialAccountTransferId}
+            placeholder="Financial Account Transfer UUID"
+            className="h-11 flex-1 rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100"
+          />
+
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Test Transfer GL
+          </button>
+        </form>
+
+        {financialAccountTransferTestError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {financialAccountTransferTestError}
+          </div>
+        )}
+
+        {financialAccountTransferTest && (
+          <div className="mt-5 space-y-5">
+            <div
+              className={`rounded-xl border p-4 ${
+                financialAccountTransferTest.checks.allPassed
+                  ? "border-green-200 bg-green-50"
+                  : "border-red-200 bg-red-50"
+              }`}
+            >
+              <div
+                className={`font-semibold ${
+                  financialAccountTransferTest.checks.allPassed
+                    ? "text-green-900"
+                    : "text-red-900"
+                }`}
+              >
+                {financialAccountTransferTest.checks.allPassed
+                  ? "Financial Account Transfer GL posting passed"
+                  : "Financial Account Transfer GL posting requires attention"}
+              </div>
+
+              <div className="mt-2 text-sm text-slate-700">
+                Transfer:{" "}
+                {financialAccountTransferTest.transfer.transfer_number}
+                {" · "}
+                Journal: {financialAccountTransferTest.journal.journal_number}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <ReceiptMetric
+                label="Source Amount"
+                value={financialAccountTransferTest.transfer.from_amount}
+                currency={
+                  financialAccountTransferTest.transfer.from_currency_code
+                }
+              />
+
+              <ReceiptMetric
+                label="Destination Amount"
+                value={financialAccountTransferTest.transfer.to_amount}
+                currency={
+                  financialAccountTransferTest.transfer.to_currency_code
+                }
+              />
+
+              <ReceiptMetric
+                label="AED Base Amount"
+                value={
+                  financialAccountTransferTest.transactions.out.base_amount
+                }
+                currency="AED"
+              />
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Journal Lines
+                </div>
+
+                <div className="mt-2 text-xl font-bold text-slate-950">
+                  {financialAccountTransferTest.balance.line_count}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+              <CheckCard
+                label="Balanced"
+                passed={financialAccountTransferTest.checks.balanced}
+              />
+
+              <CheckCard
+                label="Posted Transfer"
+                passed={financialAccountTransferTest.checks.postedTransfer}
+              />
+
+              <CheckCard
+                label="Operational Transactions"
+                passed={
+                  financialAccountTransferTest.checks
+                    .operationalTransactionsPosted
+                }
+              />
+
+              <CheckCard
+                label="Transfer Group"
+                passed={
+                  financialAccountTransferTest.checks.transferGroupLinkage
+                }
+              />
+
+              <CheckCard
+                label="Base Amounts Equal"
+                passed={financialAccountTransferTest.checks.baseAmountsEqual}
+              />
+
+              <CheckCard
+                label="Source Link"
+                passed={financialAccountTransferTest.checks.sourceLinkage}
+              />
+
+              <CheckCard
+                label="Correct Lines"
+                passed={financialAccountTransferTest.checks.correctLineCount}
+              />
+
+              <CheckCard
+                label="Destination Debit"
+                passed={financialAccountTransferTest.checks.destinationDebit}
+              />
+
+              <CheckCard
+                label="Source Credit"
+                passed={financialAccountTransferTest.checks.sourceCredit}
+              />
+
+              <CheckCard
+                label="Financial Account Link"
+                passed={
+                  financialAccountTransferTest.checks.financialAccountLinkage
+                }
+              />
+
+              <CheckCard
+                label="Account Transaction Link"
+                passed={
+                  financialAccountTransferTest.checks.accountTransactionLinkage
+                }
+              />
+
+              <CheckCard
+                label="Expected Accounts Only"
+                passed={
+                  financialAccountTransferTest.checks.expectedAccountsOnly
+                }
+              />
+
+              <CheckCard
+                label="Idempotent"
+                passed={financialAccountTransferTest.checks.idempotent}
+              />
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <table className="w-full min-w-[950px] text-left text-sm">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-4 py-3">#</th>
+                    <th className="px-4 py-3">Account</th>
+                    <th className="px-4 py-3">Description</th>
+                    <th className="px-4 py-3">Financial Account</th>
+                    <th className="px-4 py-3 text-right">Debit</th>
+                    <th className="px-4 py-3 text-right">Credit</th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-slate-200">
+                  {financialAccountTransferTest.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td className="px-4 py-3">{line.line_number}</td>
+
+                      <td className="px-4 py-3 font-medium">
+                        {line.gl_account
+                          ? `${line.gl_account.account_code} — ${line.gl_account.account_name}`
+                          : "Unknown"}
+                      </td>
+
+                      <td className="px-4 py-3 text-slate-600">
+                        {line.description}
+                      </td>
+
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {line.financial_account_id ?? "—"}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.debit.toFixed(2)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {line.credit.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
