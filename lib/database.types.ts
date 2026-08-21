@@ -6262,6 +6262,14 @@ export type Database = {
         Args: { p_as_of_date: string }
         Returns: Json
       }
+      get_formal_general_ledger: {
+        Args: {
+          p_date_from: string
+          p_date_to: string
+          p_gl_account_id: string
+        }
+        Returns: Json
+      }
       get_formal_profit_and_loss_statement: {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json

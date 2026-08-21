@@ -13,40 +13,26 @@ interface TrialBalancePageProps {
   }>;
 }
 
-function formatMoney(
-  value: number,
-): string {
-  return new Intl.NumberFormat(
-    "en-AE",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    },
-  ).format(value);
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat("en-AE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function todayIso(): string {
-  return new Date()
-    .toISOString()
-    .slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
 }
 
 function monthStartIso(): string {
-  const now =
-    new Date();
+  const now = new Date();
 
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1,
-  )
+  return new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
     .slice(0, 10);
 }
 
-function accountClassLabel(
-  accountClass: string,
-): string {
+function accountClassLabel(accountClass: string): string {
   switch (accountClass) {
     case "asset":
       return "Asset";
@@ -77,17 +63,9 @@ function accountClassLabel(
   }
 }
 
-function Amount({
-  value,
-}: {
-  value: number;
-}) {
+function Amount({ value }: { value: number }) {
   if (value === 0) {
-    return (
-      <span className="text-slate-300">
-        —
-      </span>
-    );
+    return <span className="text-slate-300">—</span>;
   }
 
   return (
@@ -128,14 +106,10 @@ function ControlCard({
           <div
             className={[
               "mt-2 text-xl font-black",
-              balanced
-                ? "text-emerald-700"
-                : "text-red-600",
+              balanced ? "text-emerald-700" : "text-red-600",
             ].join(" ")}
           >
-            {balanced
-              ? "Balanced"
-              : "Out of Balance"}
+            {balanced ? "Balanced" : "Out of Balance"}
           </div>
         </div>
 
@@ -147,17 +121,13 @@ function ControlCard({
               : "bg-red-100 text-red-700",
           ].join(" ")}
         >
-          {balanced
-            ? "OK"
-            : "CHECK"}
+          {balanced ? "OK" : "CHECK"}
         </div>
       </div>
 
       <div className="mt-4 space-y-2 border-t border-black/5 pt-4 text-sm">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500">
-            Debit
-          </span>
+          <span className="text-slate-500">Debit</span>
 
           <span className="font-semibold tabular-nums text-slate-950">
             AED {formatMoney(debit)}
@@ -165,9 +135,7 @@ function ControlCard({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <span className="text-slate-500">
-            Credit
-          </span>
+          <span className="text-slate-500">Credit</span>
 
           <span className="font-semibold tabular-nums text-slate-950">
             AED {formatMoney(credit)}
@@ -175,16 +143,12 @@ function ControlCard({
         </div>
 
         <div className="flex items-center justify-between gap-3">
-          <span className="font-semibold text-slate-600">
-            Difference
-          </span>
+          <span className="font-semibold text-slate-600">Difference</span>
 
           <span
             className={[
               "font-bold tabular-nums",
-              balanced
-                ? "text-emerald-700"
-                : "text-red-600",
+              balanced ? "text-emerald-700" : "text-red-600",
             ].join(" ")}
           >
             AED {formatMoney(difference)}
@@ -197,28 +161,39 @@ function ControlCard({
 
 function TrialBalanceRow({
   account,
+  dateFrom,
+  dateTo,
 }: {
   account: TrialBalanceAccount;
+  dateFrom: string;
+  dateTo: string;
 }) {
+  const ledgerHref =
+    `/admin/accounts/reports/general-ledger/${account.glAccountId}` +
+    `?from=${encodeURIComponent(dateFrom)}` +
+    `&to=${encodeURIComponent(dateTo)}`;
+
   return (
     <tr className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
       <td className="whitespace-nowrap px-4 py-3 align-top">
-        <div className="font-mono text-xs font-semibold text-slate-600">
+        <Link
+          href={ledgerHref}
+          className="font-mono text-xs font-semibold text-slate-600 transition hover:text-amber-600 hover:underline"
+        >
           {account.accountCode}
-        </div>
+        </Link>
       </td>
 
       <td className="min-w-[240px] px-4 py-3 align-top">
-        <div className="font-medium text-slate-800">
+        <Link
+          href={ledgerHref}
+          className="font-medium text-slate-800 transition hover:text-amber-600 hover:underline"
+        >
           {account.accountName}
-        </div>
+        </Link>
 
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-          <span>
-            {accountClassLabel(
-              account.accountClass,
-            )}
-          </span>
+          <span>{accountClassLabel(account.accountClass)}</span>
 
           {account.isControlAccount && (
             <>
@@ -233,39 +208,27 @@ function TrialBalanceRow({
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={account.openingDebit}
-        />
+        <Amount value={account.openingDebit} />
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={account.openingCredit}
-        />
+        <Amount value={account.openingCredit} />
       </td>
 
       <td className="whitespace-nowrap border-l border-slate-100 px-4 py-3 text-right align-top">
-        <Amount
-          value={account.periodDebit}
-        />
+        <Amount value={account.periodDebit} />
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={account.periodCredit}
-        />
+        <Amount value={account.periodCredit} />
       </td>
 
       <td className="whitespace-nowrap border-l border-slate-100 px-4 py-3 text-right align-top">
-        <Amount
-          value={account.closingDebit}
-        />
+        <Amount value={account.closingDebit} />
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={account.closingCredit}
-        />
+        <Amount value={account.closingCredit} />
       </td>
     </tr>
   );
@@ -276,32 +239,20 @@ export default async function TrialBalancePage({
 }: TrialBalancePageProps) {
   await requireAdmin();
 
-  const params =
-    (await searchParams) ?? {};
+  const params = (await searchParams) ?? {};
 
-  const dateFrom =
-    params.from ??
-    monthStartIso();
+  const dateFrom = params.from ?? monthStartIso();
 
-  const dateTo =
-    params.to ??
-    todayIso();
+  const dateTo = params.to ?? todayIso();
 
-  const statement =
-    await getFormalTrialBalance(
-      dateFrom,
-      dateTo,
-    );
+  const statement = await getFormalTrialBalance(dateFrom, dateTo);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <Link
-              href="/admin/accounts"
-              className="hover:text-slate-950"
-            >
+            <Link href="/admin/accounts" className="hover:text-slate-950">
               Accounts
             </Link>
 
@@ -311,9 +262,7 @@ export default async function TrialBalancePage({
 
             <span>/</span>
 
-            <span className="font-semibold text-slate-950">
-              Trial Balance
-            </span>
+            <span className="font-semibold text-slate-950">Trial Balance</span>
           </div>
 
           <h1 className="text-3xl font-black tracking-tight text-slate-950">
@@ -388,36 +337,24 @@ export default async function TrialBalancePage({
           title="Opening Balance"
           debit={statement.openingDebit}
           credit={statement.openingCredit}
-          difference={
-            statement.openingDifference
-          }
-          balanced={
-            statement.openingBalanced
-          }
+          difference={statement.openingDifference}
+          balanced={statement.openingBalanced}
         />
 
         <ControlCard
           title="Period Movement"
           debit={statement.periodDebit}
           credit={statement.periodCredit}
-          difference={
-            statement.periodDifference
-          }
-          balanced={
-            statement.periodBalanced
-          }
+          difference={statement.periodDifference}
+          balanced={statement.periodBalanced}
         />
 
         <ControlCard
           title="Closing Balance"
           debit={statement.closingDebit}
           credit={statement.closingCredit}
-          difference={
-            statement.closingDifference
-          }
-          balanced={
-            statement.closingBalanced
-          }
+          difference={statement.closingDifference}
+          balanced={statement.closingBalanced}
         />
 
         <div
@@ -435,14 +372,10 @@ export default async function TrialBalancePage({
           <div
             className={[
               "mt-2 text-2xl font-black",
-              statement.isBalanced
-                ? "text-emerald-700"
-                : "text-red-600",
+              statement.isBalanced ? "text-emerald-700" : "text-red-600",
             ].join(" ")}
           >
-            {statement.isBalanced
-              ? "Balanced"
-              : "Out of Balance"}
+            {statement.isBalanced ? "Balanced" : "Out of Balance"}
           </div>
 
           <div className="mt-3 text-sm leading-6 text-slate-600">
@@ -473,9 +406,7 @@ export default async function TrialBalancePage({
 
           <div className="text-sm font-semibold text-slate-500">
             {statement.accounts.length} active balance
-            {statement.accounts.length === 1
-              ? ""
-              : "s"}
+            {statement.accounts.length === 1 ? "" : "s"}
           </div>
         </div>
 
@@ -548,14 +479,14 @@ export default async function TrialBalancePage({
 
             <tbody>
               {statement.accounts.length > 0 ? (
-                statement.accounts.map(
-                  (account) => (
-                    <TrialBalanceRow
-                      key={account.glAccountId}
-                      account={account}
-                    />
-                  ),
-                )
+                statement.accounts.map((account) => (
+                  <TrialBalanceRow
+                    key={account.glAccountId}
+                    account={account}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                  />
+                ))
               ) : (
                 <tr>
                   <td
@@ -570,47 +501,32 @@ export default async function TrialBalancePage({
 
             <tfoot>
               <tr className="border-t-2 border-slate-950 bg-slate-50 font-bold text-slate-950">
-                <td
-                  colSpan={2}
-                  className="px-4 py-4 text-left"
-                >
+                <td colSpan={2} className="px-4 py-4 text-left">
                   TOTAL
                 </td>
 
                 <td className="border-l border-slate-200 px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.openingDebit,
-                  )}
+                  {formatMoney(statement.openingDebit)}
                 </td>
 
                 <td className="px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.openingCredit,
-                  )}
+                  {formatMoney(statement.openingCredit)}
                 </td>
 
                 <td className="border-l border-slate-200 px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.periodDebit,
-                  )}
+                  {formatMoney(statement.periodDebit)}
                 </td>
 
                 <td className="px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.periodCredit,
-                  )}
+                  {formatMoney(statement.periodCredit)}
                 </td>
 
                 <td className="border-l border-slate-200 px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.closingDebit,
-                  )}
+                  {formatMoney(statement.closingDebit)}
                 </td>
 
                 <td className="px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    statement.closingCredit,
-                  )}
+                  {formatMoney(statement.closingCredit)}
                 </td>
               </tr>
             </tfoot>
@@ -626,8 +542,7 @@ export default async function TrialBalancePage({
             </div>
 
             <div className="mt-1 font-semibold text-slate-950">
-              {statement.dateFrom} to{" "}
-              {statement.dateTo}
+              {statement.dateFrom} to {statement.dateTo}
             </div>
           </div>
 
