@@ -5936,7 +5936,9 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      backfill_historical_inventory_gl: { Args: never; Returns: Json }
       backfill_historical_receipt_payment_gl: { Args: never; Returns: Json }
+      backfill_legacy_local_purchase_gl: { Args: never; Returns: Json }
       can_approve_rfqs: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }

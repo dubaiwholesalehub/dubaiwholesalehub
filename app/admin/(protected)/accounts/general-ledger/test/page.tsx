@@ -27,6 +27,8 @@ import { testFinancialAccountTransferGlPostingAction } from "./financial-account
 import { testFinancialAccountOpeningBalanceGlPostingAction } from "./financial-account-opening-balance-action";
 import { testExpenseCancellationReversalAction } from "./cancellation-reversal-action";
 import { runHistoricalGlBackfillAction } from "./historical-backfill-action";
+import { runHistoricalInventoryGlBackfillAction } from "./historical-inventory-backfill-action";
+import { runLegacyLocalPurchaseGlBackfillAction } from "./legacy-local-purchase-backfill-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -68,6 +70,18 @@ interface GlValidationPageProps {
     historicalReceipts?: string;
     historicalPayments?: string;
     historicalTotal?: string;
+
+    historicalInventoryBackfill?: string;
+    quickPurchases?: string;
+    quickPurchaseInventoryValue?: string;
+    salesIssues?: string;
+    cogsValue?: string;
+    historicalInventoryTotal?: string;
+
+    legacyLocalPurchaseBackfill?: string;
+    legacyLocalPurchases?: string;
+    legacyInventoryValue?: string;
+    roundingAdjustment?: string;
   }>;
 }
 
@@ -330,6 +344,30 @@ export default async function GlValidationPage({
 
   const historicalTotalCount = Number(params.historicalTotal ?? 0);
 
+  const historicalInventoryBackfillSuccess =
+    params.historicalInventoryBackfill === "success";
+
+  const historicalQuickPurchaseCount = Number(params.quickPurchases ?? 0);
+
+  const historicalQuickPurchaseInventoryValue = Number(
+    params.quickPurchaseInventoryValue ?? 0,
+  );
+
+  const historicalSalesIssueCount = Number(params.salesIssues ?? 0);
+
+  const historicalCogsValue = Number(params.cogsValue ?? 0);
+
+  const historicalInventoryTotal = Number(params.historicalInventoryTotal ?? 0);
+
+  const legacyLocalPurchaseBackfillSuccess =
+    params.legacyLocalPurchaseBackfill === "success";
+
+  const legacyLocalPurchaseCount = Number(params.legacyLocalPurchases ?? 0);
+
+  const legacyInventoryValue = Number(params.legacyInventoryValue ?? 0);
+
+  const legacyRoundingAdjustment = Number(params.roundingAdjustment ?? 0);
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -381,6 +419,153 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-950">
+            Legacy Local Purchase GL Reconciliation
+          </h2>
+
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+            Migration 104
+          </span>
+        </div>
+
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Reconciles legacy local-purchase inventory movements against Opening
+          Balance Equity and records the historical COGS rounding adjustment.
+          Cash, Bank and Accounts Payable are not altered.
+        </p>
+
+        <form action={runLegacyLocalPurchaseGlBackfillAction} className="mt-5">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Run Legacy Inventory Reconciliation
+          </button>
+        </form>
+
+        {legacyLocalPurchaseBackfillSuccess && (
+          <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="font-semibold text-green-900">
+              Legacy inventory reconciliation completed
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Legacy Purchases
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {legacyLocalPurchaseCount}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Inventory Value
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  AED {legacyInventoryValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Rounding Adjustment
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  AED {legacyRoundingAdjustment.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-950">
+            Historical Inventory GL Backfill
+          </h2>
+
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+            Migration 103
+          </span>
+        </div>
+
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Backfills historical Quick Purchase journals and historical
+          sales-issue COGS journals using the existing production GL adapters.
+          Legacy unlinked local-purchase inventory movements are intentionally
+          excluded.
+        </p>
+
+        <form action={runHistoricalInventoryGlBackfillAction} className="mt-5">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Run Historical Inventory GL Backfill
+          </button>
+        </form>
+
+        {historicalInventoryBackfillSuccess && (
+          <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="font-semibold text-green-900">
+              Historical inventory GL backfill completed
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Quick Purchases
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalQuickPurchaseCount}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Purchase Inventory
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  AED {historicalQuickPurchaseInventoryValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Sales Issues
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalSalesIssueCount}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  COGS
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  AED {historicalCogsValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Total Sources
+                </div>
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalInventoryTotal}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
