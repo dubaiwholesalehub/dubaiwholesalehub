@@ -17,51 +17,32 @@ interface GeneralLedgerPageProps {
   }>;
 }
 
-function formatMoney(
-  value: number,
-): string {
-  return new Intl.NumberFormat(
-    "en-AE",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    },
-  ).format(value);
+function formatMoney(value: number): string {
+  return new Intl.NumberFormat("en-AE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function todayIso(): string {
-  return new Date()
-    .toISOString()
-    .slice(0, 10);
+  return new Date().toISOString().slice(0, 10);
 }
 
 function monthStartIso(): string {
-  const now =
-    new Date();
+  const now = new Date();
 
-  return new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    1,
-  )
+  return new Date(now.getFullYear(), now.getMonth(), 1)
     .toISOString()
     .slice(0, 10);
 }
 
-function sourceLabel(
-  sourceType: string,
-): string {
+function sourceLabel(sourceType: string): string {
   return sourceType
     .replaceAll("_", " ")
-    .replace(/\b\w/g, (character) =>
-      character.toUpperCase(),
-    );
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function formatBalance(
-  debit: number,
-  credit: number,
-): string {
+function formatBalance(debit: number, credit: number): string {
   if (debit > 0) {
     return `${formatMoney(debit)} Dr`;
   }
@@ -73,17 +54,9 @@ function formatBalance(
   return "0.00";
 }
 
-function Amount({
-  value,
-}: {
-  value: number;
-}) {
+function Amount({ value }: { value: number }) {
   if (value === 0) {
-    return (
-      <span className="text-slate-300">
-        —
-      </span>
-    );
+    return <span className="text-slate-300">—</span>;
   }
 
   return (
@@ -95,15 +68,23 @@ function Amount({
 
 function LedgerRow({
   transaction,
+  accountId,
+  dateFrom,
+  dateTo,
 }: {
   transaction: GeneralLedgerTransaction;
+  accountId: string;
+  dateFrom: string;
+  dateTo: string;
 }) {
+  const journalHref =
+    `/admin/accounts/reports/journal-entry/${transaction.journalEntryId}` +
+    `?accountId=${encodeURIComponent(accountId)}` +
+    `&from=${encodeURIComponent(dateFrom)}` +
+    `&to=${encodeURIComponent(dateTo)}`;
   const isReversal =
-    transaction.sourceType ===
-      "journal_reversal" ||
-    Boolean(
-      transaction.originalEntryId,
-    );
+    transaction.sourceType === "journal_reversal" ||
+    Boolean(transaction.originalEntryId);
 
   return (
     <tr className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
@@ -112,9 +93,12 @@ function LedgerRow({
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 align-top">
-        <div className="font-mono text-xs font-semibold text-slate-700">
+        <Link
+          href={journalHref}
+          className="font-mono text-xs font-semibold text-slate-700 transition hover:text-amber-600 hover:underline"
+        >
           {transaction.journalNumber}
-        </div>
+        </Link>
 
         <div className="mt-1 text-xs text-slate-400">
           Line {transaction.lineNumber}
@@ -123,9 +107,7 @@ function LedgerRow({
 
       <td className="min-w-[180px] px-4 py-3 align-top">
         <div className="text-sm font-medium text-slate-700">
-          {sourceLabel(
-            transaction.sourceType,
-          )}
+          {sourceLabel(transaction.sourceType)}
         </div>
 
         {transaction.sourceNumber && (
@@ -137,17 +119,13 @@ function LedgerRow({
 
       <td className="min-w-[280px] px-4 py-3 align-top">
         <div className="text-sm text-slate-700">
-          {transaction.lineDescription ||
-            transaction.journalDescription}
+          {transaction.lineDescription || transaction.journalDescription}
         </div>
 
         {transaction.lineDescription &&
-          transaction.journalDescription !==
-            transaction.lineDescription && (
+          transaction.journalDescription !== transaction.lineDescription && (
             <div className="mt-1 text-xs leading-5 text-slate-400">
-              {
-                transaction.journalDescription
-              }
+              {transaction.journalDescription}
             </div>
           )}
 
@@ -159,22 +137,15 @@ function LedgerRow({
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={transaction.debit}
-        />
+        <Amount value={transaction.debit} />
       </td>
 
       <td className="whitespace-nowrap px-4 py-3 text-right align-top">
-        <Amount
-          value={transaction.credit}
-        />
+        <Amount value={transaction.credit} />
       </td>
 
       <td className="whitespace-nowrap border-l border-slate-100 px-4 py-3 text-right align-top font-bold tabular-nums text-slate-950">
-        {formatBalance(
-          transaction.runningDebit,
-          transaction.runningCredit,
-        )}
+        {formatBalance(transaction.runningDebit, transaction.runningCredit)}
       </td>
     </tr>
   );
@@ -186,37 +157,22 @@ export default async function GeneralLedgerPage({
 }: GeneralLedgerPageProps) {
   await requireAdmin();
 
-  const {
-    accountId,
-  } = await params;
+  const { accountId } = await params;
 
-  const query =
-    (await searchParams) ?? {};
+  const query = (await searchParams) ?? {};
 
-  const dateFrom =
-    query.from ??
-    monthStartIso();
+  const dateFrom = query.from ?? monthStartIso();
 
-  const dateTo =
-    query.to ??
-    todayIso();
+  const dateTo = query.to ?? todayIso();
 
-  const ledger =
-    await getFormalGeneralLedger(
-      accountId,
-      dateFrom,
-      dateTo,
-    );
+  const ledger = await getFormalGeneralLedger(accountId, dateFrom, dateTo);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <Link
-              href="/admin/accounts"
-              className="hover:text-slate-950"
-            >
+            <Link href="/admin/accounts" className="hover:text-slate-950">
               Accounts
             </Link>
 
@@ -235,14 +191,11 @@ export default async function GeneralLedgerPage({
 
             <span>/</span>
 
-            <span className="font-semibold text-slate-950">
-              General Ledger
-            </span>
+            <span className="font-semibold text-slate-950">General Ledger</span>
           </div>
 
           <h1 className="text-3xl font-black tracking-tight text-slate-950">
-            {ledger.account.accountCode} —{" "}
-            {ledger.account.accountName}
+            {ledger.account.accountCode} — {ledger.account.accountName}
           </h1>
 
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
@@ -322,11 +275,7 @@ export default async function GeneralLedgerPage({
           </div>
 
           <div className="mt-2 text-2xl font-black text-slate-950">
-            AED{" "}
-            {formatBalance(
-              ledger.openingDebit,
-              ledger.openingCredit,
-            )}
+            AED {formatBalance(ledger.openingDebit, ledger.openingCredit)}
           </div>
         </div>
 
@@ -336,10 +285,7 @@ export default async function GeneralLedgerPage({
           </div>
 
           <div className="mt-2 text-2xl font-black text-slate-950">
-            AED{" "}
-            {formatMoney(
-              ledger.periodDebit,
-            )}
+            AED {formatMoney(ledger.periodDebit)}
           </div>
         </div>
 
@@ -349,10 +295,7 @@ export default async function GeneralLedgerPage({
           </div>
 
           <div className="mt-2 text-2xl font-black text-slate-950">
-            AED{" "}
-            {formatMoney(
-              ledger.periodCredit,
-            )}
+            AED {formatMoney(ledger.periodCredit)}
           </div>
         </div>
 
@@ -362,18 +305,12 @@ export default async function GeneralLedgerPage({
           </div>
 
           <div className="mt-2 text-2xl font-black text-white">
-            AED{" "}
-            {formatBalance(
-              ledger.closingDebit,
-              ledger.closingCredit,
-            )}
+            AED {formatBalance(ledger.closingDebit, ledger.closingCredit)}
           </div>
 
           <div className="mt-1 text-xs text-slate-400">
             {ledger.transactionCount} journal line
-            {ledger.transactionCount === 1
-              ? ""
-              : "s"}
+            {ledger.transactionCount === 1 ? "" : "s"}
           </div>
         </div>
       </div>
@@ -391,8 +328,7 @@ export default async function GeneralLedgerPage({
           </div>
 
           <div className="text-sm font-semibold text-slate-500">
-            {ledger.dateFrom} to{" "}
-            {ledger.dateTo}
+            {ledger.dateFrom} to {ledger.dateTo}
           </div>
         </div>
 
@@ -440,49 +376,36 @@ export default async function GeneralLedgerPage({
                 </td>
 
                 <td className="px-4 py-3 text-right">
-                  <Amount
-                    value={
-                      ledger.openingDebit
-                    }
-                  />
+                  <Amount value={ledger.openingDebit} />
                 </td>
 
                 <td className="px-4 py-3 text-right">
-                  <Amount
-                    value={
-                      ledger.openingCredit
-                    }
-                  />
+                  <Amount value={ledger.openingCredit} />
                 </td>
 
                 <td className="border-l border-slate-100 px-4 py-3 text-right font-bold tabular-nums text-slate-950">
-                  {formatBalance(
-                    ledger.openingDebit,
-                    ledger.openingCredit,
-                  )}
+                  {formatBalance(ledger.openingDebit, ledger.openingCredit)}
                 </td>
               </tr>
 
               {ledger.transactions.length > 0 ? (
-                ledger.transactions.map(
-                  (transaction) => (
-                    <LedgerRow
-                      key={
-                        transaction.journalLineId
-                      }
-                      transaction={
-                        transaction
-                      }
-                    />
-                  ),
-                )
+                ledger.transactions.map((transaction) => (
+                  <LedgerRow
+                    key={transaction.journalLineId}
+                    transaction={transaction}
+                    accountId={accountId}
+                    dateFrom={dateFrom}
+                    dateTo={dateTo}
+                  />
+                ))
               ) : (
                 <tr>
                   <td
                     colSpan={7}
                     className="px-6 py-12 text-center text-sm text-slate-400"
                   >
-                    No General Ledger activity exists for this account in the selected period.
+                    No General Ledger activity exists for this account in the
+                    selected period.
                   </td>
                 </tr>
               )}
@@ -490,30 +413,20 @@ export default async function GeneralLedgerPage({
 
             <tfoot>
               <tr className="border-t-2 border-slate-950 bg-slate-50 font-bold text-slate-950">
-                <td
-                  colSpan={4}
-                  className="px-4 py-4"
-                >
+                <td colSpan={4} className="px-4 py-4">
                   PERIOD TOTAL
                 </td>
 
                 <td className="px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    ledger.periodDebit,
-                  )}
+                  {formatMoney(ledger.periodDebit)}
                 </td>
 
                 <td className="px-4 py-4 text-right tabular-nums">
-                  {formatMoney(
-                    ledger.periodCredit,
-                  )}
+                  {formatMoney(ledger.periodCredit)}
                 </td>
 
                 <td className="border-l border-slate-200 px-4 py-4 text-right tabular-nums">
-                  {formatBalance(
-                    ledger.closingDebit,
-                    ledger.closingCredit,
-                  )}
+                  {formatBalance(ledger.closingDebit, ledger.closingCredit)}
                 </td>
               </tr>
             </tfoot>
@@ -529,10 +442,7 @@ export default async function GeneralLedgerPage({
             </div>
 
             <div className="mt-1 font-semibold capitalize text-slate-950">
-              {ledger.account.accountClass.replaceAll(
-                "_",
-                " ",
-              )}
+              {ledger.account.accountClass.replaceAll("_", " ")}
             </div>
           </div>
 
@@ -542,10 +452,7 @@ export default async function GeneralLedgerPage({
             </div>
 
             <div className="mt-1 font-semibold capitalize text-slate-950">
-              {ledger.account.statementType.replaceAll(
-                "_",
-                " ",
-              )}
+              {ledger.account.statementType.replaceAll("_", " ")}
             </div>
           </div>
 
@@ -565,12 +472,8 @@ export default async function GeneralLedgerPage({
             </div>
 
             <div className="mt-1 font-semibold text-slate-950">
-              {ledger.account.isActive
-                ? "Active"
-                : "Inactive"}
-              {ledger.account.isControlAccount
-                ? " · Control Account"
-                : ""}
+              {ledger.account.isActive ? "Active" : "Inactive"}
+              {ledger.account.isControlAccount ? " · Control Account" : ""}
             </div>
           </div>
         </div>

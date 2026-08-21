@@ -6270,6 +6270,10 @@ export type Database = {
         }
         Returns: Json
       }
+      get_formal_journal_entry_detail: {
+        Args: { p_journal_entry_id: string }
+        Returns: Json
+      }
       get_formal_profit_and_loss_statement: {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json
