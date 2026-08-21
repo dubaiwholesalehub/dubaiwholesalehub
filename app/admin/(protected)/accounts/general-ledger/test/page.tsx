@@ -29,6 +29,7 @@ import { testExpenseCancellationReversalAction } from "./cancellation-reversal-a
 import { runHistoricalGlBackfillAction } from "./historical-backfill-action";
 import { runHistoricalInventoryGlBackfillAction } from "./historical-inventory-backfill-action";
 import { runLegacyLocalPurchaseGlBackfillAction } from "./legacy-local-purchase-backfill-action";
+import { runHistoricalArApBackfillAction } from "./historical-ar-ap-backfill-action";
 interface GlValidationPageProps {
   searchParams: Promise<{
     run?: string;
@@ -82,6 +83,25 @@ interface GlValidationPageProps {
     legacyLocalPurchases?: string;
     legacyInventoryValue?: string;
     roundingAdjustment?: string;
+
+    historicalArAp?: string;
+
+    salesOrders?: string;
+    salesOrderValue?: string;
+
+    historicalReceiptArValue?: string;
+
+    historicalSupplierPayments?: string;
+    historicalSupplierPaymentApValue?: string;
+
+    supplierAdvanceApplications?: string;
+    supplierAdvanceApplicationValue?: string;
+
+    openingPayments?: string;
+    openingPaymentValue?: string;
+
+    draftReceiptAllocations?: string;
+    draftReceiptAllocationValue?: string;
   }>;
 }
 
@@ -368,6 +388,44 @@ export default async function GlValidationPage({
 
   const legacyRoundingAdjustment = Number(params.roundingAdjustment ?? 0);
 
+  const historicalArApSuccess = params.historicalArAp === "success";
+
+  const historicalSalesOrders = Number(params.salesOrders ?? 0);
+
+  const historicalSalesOrderValue = Number(params.salesOrderValue ?? 0);
+
+  const historicalReceipts = Number(params.historicalReceipts ?? 0);
+
+  const historicalReceiptArValue = Number(params.historicalReceiptArValue ?? 0);
+
+  const historicalSupplierPayments = Number(
+    params.historicalSupplierPayments ?? 0,
+  );
+
+  const historicalSupplierPaymentApValue = Number(
+    params.historicalSupplierPaymentApValue ?? 0,
+  );
+
+  const historicalSupplierAdvanceApplications = Number(
+    params.supplierAdvanceApplications ?? 0,
+  );
+
+  const historicalSupplierAdvanceApplicationValue = Number(
+    params.supplierAdvanceApplicationValue ?? 0,
+  );
+
+  const historicalOpeningPayments = Number(params.openingPayments ?? 0);
+
+  const historicalOpeningPaymentValue = Number(params.openingPaymentValue ?? 0);
+
+  const historicalDraftReceiptAllocations = Number(
+    params.draftReceiptAllocations ?? 0,
+  );
+
+  const historicalDraftReceiptAllocationValue = Number(
+    params.draftReceiptAllocationValue ?? 0,
+  );
+
   let suite: GlValidationSuiteResult | null = null;
 
   let executionError: string | null = null;
@@ -419,6 +477,129 @@ export default async function GlValidationPage({
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-lg font-bold text-slate-950">
+            Historical AR / AP GL Reconciliation
+          </h2>
+
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-700">
+            Migration 105
+          </span>
+        </div>
+
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+          Reconciles historical Sales Orders, Customer Receipts, Supplier
+          Payments and Supplier Advance applications with the General Ledger.
+          The operation is designed to be idempotent and should bring
+          operational Accounts Receivable and Accounts Payable into agreement
+          with their GL balances.
+        </p>
+
+        <form action={runHistoricalArApBackfillAction} className="mt-5">
+          <button
+            type="submit"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-500 hover:text-slate-950"
+          >
+            Run Historical AR / AP Reconciliation
+          </button>
+        </form>
+
+        {historicalArApSuccess && (
+          <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4">
+            <div className="font-semibold text-green-900">
+              Historical AR / AP reconciliation completed
+            </div>
+
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Sales Orders
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalSalesOrders}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AED {historicalSalesOrderValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Historical Receipts
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalReceipts}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AR AED {historicalReceiptArValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Historical Supplier Payments
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalSupplierPayments}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AP AED {historicalSupplierPaymentApValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Advance Applications
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalSupplierAdvanceApplications}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AED {historicalSupplierAdvanceApplicationValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Opening Payments
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalOpeningPayments}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AED {historicalOpeningPaymentValue.toFixed(2)}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-green-200 bg-white p-3">
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Draft Receipt Allocations
+                </div>
+
+                <div className="mt-1 text-xl font-bold text-slate-950">
+                  {historicalDraftReceiptAllocations}
+                </div>
+
+                <div className="mt-1 text-xs text-slate-500">
+                  AED {historicalDraftReceiptAllocationValue.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
