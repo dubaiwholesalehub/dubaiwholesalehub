@@ -6258,6 +6258,14 @@ export type Database = {
         Args: { p_financial_account_id: string }
         Returns: string
       }
+      get_formal_balance_sheet: {
+        Args: { p_as_of_date: string }
+        Returns: Json
+      }
+      get_formal_profit_and_loss_statement: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
       get_gl_accounting_period: {
         Args: { p_posting_date: string; p_require_open?: boolean }
         Returns: string
