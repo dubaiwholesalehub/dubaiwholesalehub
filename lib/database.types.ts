@@ -6266,6 +6266,10 @@ export type Database = {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json
       }
+      get_formal_trial_balance: {
+        Args: { p_date_from: string; p_date_to: string }
+        Returns: Json
+      }
       get_gl_accounting_period: {
         Args: { p_posting_date: string; p_require_open?: boolean }
         Returns: string
