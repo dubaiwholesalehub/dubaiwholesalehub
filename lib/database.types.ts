@@ -4613,6 +4613,389 @@ export type Database = {
           },
         ]
       }
+      sales_return_items: {
+        Row: {
+          condition: string
+          created_at: string
+          delivery_order_item_id: string
+          discount_amount: number
+          discount_percentage: number
+          id: string
+          item_name: string
+          line_net: number
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          notes: string | null
+          original_unit_cost: number
+          product_id: string
+          quantity_returned: number
+          return_cost: number | null
+          return_reason: string | null
+          sales_order_item_id: string
+          sales_return_id: string
+          sku: string | null
+          tax_amount: number
+          tax_percentage: number
+          unit_id: string | null
+          unit_price: number
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          condition?: string
+          created_at?: string
+          delivery_order_item_id: string
+          discount_amount?: number
+          discount_percentage?: number
+          id?: string
+          item_name: string
+          line_net?: number
+          line_number: number
+          line_subtotal?: number
+          line_total?: number
+          notes?: string | null
+          original_unit_cost?: number
+          product_id: string
+          quantity_returned: number
+          return_cost?: number | null
+          return_reason?: string | null
+          sales_order_item_id: string
+          sales_return_id: string
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price: number
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          condition?: string
+          created_at?: string
+          delivery_order_item_id?: string
+          discount_amount?: number
+          discount_percentage?: number
+          id?: string
+          item_name?: string
+          line_net?: number
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          notes?: string | null
+          original_unit_cost?: number
+          product_id?: string
+          quantity_returned?: number
+          return_cost?: number | null
+          return_reason?: string | null
+          sales_order_item_id?: string
+          sales_return_id?: string
+          sku?: string | null
+          tax_amount?: number
+          tax_percentage?: number
+          unit_id?: string | null
+          unit_price?: number
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_return_items_delivery_order_item_id_fkey"
+            columns: ["delivery_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_item_id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_item_id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_sales_return_id_fkey"
+            columns: ["sales_return_id"]
+            isOneToOne: false
+            referencedRelation: "sales_returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_return_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_returns: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          credit_journal_entry_id: string | null
+          currency_code: string
+          customer_id: string
+          discount_amount: number
+          exchange_rate: number
+          grand_total: number
+          id: string
+          inventory_journal_entry_id: string | null
+          inventory_transaction_id: string | null
+          net_amount: number
+          notes: string | null
+          posted_at: string | null
+          posted_by: string | null
+          posting_date: string
+          reason: string
+          received_at: string | null
+          received_by: string | null
+          return_date: string
+          return_number: string
+          sales_order_id: string
+          status: string
+          subtotal: number
+          tax_amount: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_journal_entry_id?: string | null
+          currency_code?: string
+          customer_id: string
+          discount_amount?: number
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_journal_entry_id?: string | null
+          inventory_transaction_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date: string
+          reason: string
+          received_at?: string | null
+          received_by?: string | null
+          return_date: string
+          return_number: string
+          sales_order_id: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          credit_journal_entry_id?: string | null
+          currency_code?: string
+          customer_id?: string
+          discount_amount?: number
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_journal_entry_id?: string | null
+          inventory_transaction_id?: string | null
+          net_amount?: number
+          notes?: string | null
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date?: string
+          reason?: string
+          received_at?: string | null
+          received_by?: string | null
+          return_date?: string
+          return_number?: string
+          sales_order_id?: string
+          status?: string
+          subtotal?: number
+          tax_amount?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_returns_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_credit_journal_entry_id_fkey"
+            columns: ["credit_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_credit_journal_entry_id_fkey"
+            columns: ["credit_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_inventory_journal_entry_id_fkey"
+            columns: ["inventory_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_inventory_journal_entry_id_fkey"
+            columns: ["inventory_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "receivable_open_items"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_returns_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_returns_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subcategories: {
         Row: {
           category_id: string
@@ -5896,6 +6279,10 @@ export type Database = {
         Args: { p_decision_notes: string; p_sales_order_id: string }
         Returns: string
       }
+      approve_sales_return: {
+        Args: { p_sales_return_id: string }
+        Returns: string
+      }
       archive_product_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
@@ -6227,6 +6614,17 @@ export type Database = {
           rfq_number: string
         }[]
       }
+      create_sales_return: {
+        Args: {
+          p_items: Json
+          p_notes?: string
+          p_posting_date: string
+          p_reason: string
+          p_return_date: string
+          p_sales_order_id: string
+        }
+        Returns: string
+      }
       create_supplier_quotation: {
         Args: {
           p_currency_code: string
@@ -6264,6 +6662,10 @@ export type Database = {
       generate_rfq_number: { Args: never; Returns: string }
       generate_sales_order_number: { Args: never; Returns: string }
       generate_sales_quotation_number: { Args: never; Returns: string }
+      generate_sales_return_number: {
+        Args: { p_return_date?: string }
+        Returns: string
+      }
       generate_supplier_payment_number: { Args: never; Returns: string }
       get_expense_category_gl_account: {
         Args: { p_expense_category_id: string }
@@ -6579,6 +6981,21 @@ export type Database = {
         Args: { p_sales_order_id: string }
         Returns: string
       }
+      post_sales_return_credit_gl: {
+        Args: { p_sales_return_id: string }
+        Returns: string
+      }
+      post_sales_return_gl: {
+        Args: { p_sales_return_id: string }
+        Returns: {
+          credit_journal_id: string
+          inventory_journal_id: string
+        }[]
+      }
+      post_sales_return_inventory_gl: {
+        Args: { p_sales_return_id: string }
+        Returns: string
+      }
       post_supplier_advance_application_gl: {
         Args: { p_supplier_payment_allocation_id: string }
         Returns: string
@@ -6625,6 +7042,10 @@ export type Database = {
       recalculate_quotation_totals: {
         Args: { target_quotation_id: string }
         Returns: undefined
+      }
+      receive_sales_return_inventory: {
+        Args: { p_sales_return_id: string }
+        Returns: string
       }
       reject_sales_margin_exception: {
         Args: { p_decision_notes: string; p_sales_order_id: string }
