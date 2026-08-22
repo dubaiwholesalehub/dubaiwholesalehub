@@ -6289,6 +6289,45 @@ export type Database = {
         Args: { p_journal_entry_id: string }
         Returns: Json
       }
+      get_formal_journal_register: {
+        Args: {
+          p_date_from: string
+          p_date_to: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_source_type?: string
+          p_status?: string
+        }
+        Returns: {
+          accounting_period_id: string
+          base_credit: number
+          base_debit: number
+          created_at: string
+          currency_code: string
+          description: string
+          exchange_rate: number
+          filtered_base_credit: number
+          filtered_base_debit: number
+          journal_date: string
+          journal_entry_id: string
+          journal_number: string
+          line_count: number
+          original_entry_id: string
+          posted_at: string
+          posting_date: string
+          reversal_entry_id: string
+          reversal_reason: string
+          reversed_at: string
+          source_id: string
+          source_number: string
+          source_type: string
+          status: string
+          total_count: number
+          total_credit: number
+          total_debit: number
+        }[]
+      }
       get_formal_profit_and_loss_statement: {
         Args: { p_date_from: string; p_date_to: string }
         Returns: Json
