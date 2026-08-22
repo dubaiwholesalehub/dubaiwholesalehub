@@ -6055,6 +6055,17 @@ export type Database = {
         Args: { p_allow_negative_stock?: boolean; p_sales_order_id: string }
         Returns: Json
       }
+      create_custom_gl_account: {
+        Args: {
+          p_account_code: string
+          p_account_name: string
+          p_allow_manual_posting?: boolean
+          p_description?: string
+          p_display_order?: number
+          p_parent_id: string
+        }
+        Returns: string
+      }
       create_delivery_from_sales_order: {
         Args: { p_sales_order_id: string }
         Returns: string
@@ -6727,6 +6738,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_custom_gl_account_active: {
+        Args: { p_gl_account_id: string; p_is_active: boolean }
+        Returns: string
+      }
       set_product_preferred_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
@@ -6806,6 +6821,16 @@ export type Database = {
       }
       synchronize_sales_order_fulfilment: {
         Args: { p_sales_order_id: string }
+        Returns: string
+      }
+      update_custom_gl_account: {
+        Args: {
+          p_account_name: string
+          p_allow_manual_posting: boolean
+          p_description: string
+          p_display_order: number
+          p_gl_account_id: string
+        }
         Returns: string
       }
       validate_gl_journal: {
