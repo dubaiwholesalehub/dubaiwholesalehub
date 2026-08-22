@@ -6003,6 +6003,10 @@ export type Database = {
         Args: { p_reason: string; p_supplier_payment_id: string }
         Returns: string
       }
+      close_accounting_period: {
+        Args: { p_notes: string; p_period_id: string }
+        Returns: string
+      }
       close_rfq: {
         Args: { target_rfq_id: string }
         Returns: {
@@ -6632,6 +6636,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reopen_accounting_period: {
+        Args: { p_period_id: string; p_reason: string }
+        Returns: string
+      }
       request_sales_margin_approval: {
         Args: { p_reason: string; p_sales_order_id: string }
         Returns: string
@@ -6745,6 +6753,10 @@ export type Database = {
       set_product_preferred_supplier: {
         Args: { p_mapping_id: string; p_product_id: string }
         Returns: undefined
+      }
+      soft_close_accounting_period: {
+        Args: { p_notes?: string; p_period_id: string }
+        Returns: string
       }
       start_delivery_packing: {
         Args: { p_delivery_order_id: string }
