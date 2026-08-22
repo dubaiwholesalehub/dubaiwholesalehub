@@ -6,6 +6,10 @@ import {
   getFormalJournalEntryDetail,
 } from "@/lib/repositories/journal-entry-detail.repository";
 
+import { reverseJournalAction } from "./actions";
+
+import { ReverseJournalForm } from "./ReverseJournalForm";
+
 interface JournalEntryPageProps {
   params: Promise<{
     journalEntryId: string;
@@ -421,6 +425,16 @@ export default async function JournalEntryPage({
           </div>
         </div>
       )}
+
+      {journal.status === "posted" &&
+        !journal.originalEntryId &&
+        !journal.reversalEntryId && (
+          <ReverseJournalForm
+            journalEntryId={journal.journalEntryId}
+            postingDate={journal.postingDate}
+            action={reverseJournalAction}
+          />
+        )}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
