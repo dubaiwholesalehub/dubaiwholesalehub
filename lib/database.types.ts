@@ -3353,8 +3353,22 @@ export type Database = {
             foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
             isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
             referencedRelation: "quick_purchases"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchase_items_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_id"]
           },
         ]
       }
@@ -5086,8 +5100,22 @@ export type Database = {
             foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
             isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
             referencedRelation: "quick_purchases"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_id"]
           },
           {
             foreignKeyName: "supplier_payment_allocations_supplier_payment_id_fkey"
@@ -5457,6 +5485,383 @@ export type Database = {
           },
         ]
       }
+      supplier_return_items: {
+        Row: {
+          created_at: string
+          id: string
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          notes: string | null
+          original_inventory_item_id: string
+          original_unit_cost: number
+          product_id: string
+          quantity_returned: number
+          quick_purchase_item_id: string
+          reason: string | null
+          return_cost: number
+          supplier_return_id: string
+          tax_amount: number
+          tax_percentage: number
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          line_number: number
+          line_subtotal: number
+          line_total: number
+          notes?: string | null
+          original_inventory_item_id: string
+          original_unit_cost: number
+          product_id: string
+          quantity_returned: number
+          quick_purchase_item_id: string
+          reason?: string | null
+          return_cost: number
+          supplier_return_id: string
+          tax_amount?: number
+          tax_percentage?: number
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          line_number?: number
+          line_subtotal?: number
+          line_total?: number
+          notes?: string | null
+          original_inventory_item_id?: string
+          original_unit_cost?: number
+          product_id?: string
+          quantity_returned?: number
+          quick_purchase_item_id?: string
+          reason?: string | null
+          return_cost?: number
+          supplier_return_id?: string
+          tax_amount?: number
+          tax_percentage?: number
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_return_items_original_inventory_item_id_fkey"
+            columns: ["original_inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transaction_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_original_inventory_item_id_fkey"
+            columns: ["original_inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["inventory_transaction_item_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_original_inventory_item_id_fkey"
+            columns: ["original_inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["original_inventory_item_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_quick_purchase_item_id_fkey"
+            columns: ["quick_purchase_item_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_item_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_quick_purchase_item_id_fkey"
+            columns: ["quick_purchase_item_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_quick_purchase_item_id_fkey"
+            columns: ["quick_purchase_item_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_item_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "available_supplier_return_credits"
+            referencedColumns: ["supplier_return_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_items_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_returns: {
+        Row: {
+          ap_reduction_amount: number
+          approved_at: string | null
+          approved_by: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          discount_amount: number
+          dispatched_at: string | null
+          dispatched_by: string | null
+          exchange_rate: number
+          grand_total: number
+          id: string
+          inventory_cost: number
+          inventory_transaction_id: string | null
+          journal_entry_id: string | null
+          notes: string | null
+          pending_tax_amount: number
+          posted_at: string | null
+          posted_by: string | null
+          posting_date: string
+          quick_purchase_id: string
+          reason: string
+          recoverable_tax_amount: number
+          return_date: string
+          return_number: string
+          status: string
+          subtotal: number
+          supplier_credit_amount: number
+          supplier_credit_applied_amount: number
+          supplier_id: string
+          tax_amount: number
+          tax_treatment: string
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          ap_reduction_amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          discount_amount?: number
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_cost?: number
+          inventory_transaction_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          pending_tax_amount?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date: string
+          quick_purchase_id: string
+          reason: string
+          recoverable_tax_amount?: number
+          return_date: string
+          return_number: string
+          status?: string
+          subtotal?: number
+          supplier_credit_amount?: number
+          supplier_credit_applied_amount?: number
+          supplier_id: string
+          tax_amount?: number
+          tax_treatment: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          ap_reduction_amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          discount_amount?: number
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          exchange_rate?: number
+          grand_total?: number
+          id?: string
+          inventory_cost?: number
+          inventory_transaction_id?: string | null
+          journal_entry_id?: string | null
+          notes?: string | null
+          pending_tax_amount?: number
+          posted_at?: string | null
+          posted_by?: string | null
+          posting_date?: string
+          quick_purchase_id?: string
+          reason?: string
+          recoverable_tax_amount?: number
+          return_date?: string
+          return_number?: string
+          status?: string
+          subtotal?: number
+          supplier_credit_amount?: number
+          supplier_credit_applied_amount?: number
+          supplier_id?: string
+          tax_amount?: number
+          tax_treatment?: string
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_returns_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_dispatched_by_fkey"
+            columns: ["dispatched_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_posted_by_fkey"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "payable_open_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -5665,6 +6070,88 @@ export type Database = {
       }
     }
     Views: {
+      available_supplier_return_credits: {
+        Row: {
+          currency_code: string | null
+          exchange_rate: number | null
+          posting_date: string | null
+          quick_purchase_id: string | null
+          return_number: string | null
+          supplier_credit_amount: number | null
+          supplier_credit_applied_amount: number | null
+          supplier_credit_available: number | null
+          supplier_id: string | null
+          supplier_return_id: string | null
+        }
+        Insert: {
+          currency_code?: string | null
+          exchange_rate?: number | null
+          posting_date?: string | null
+          quick_purchase_id?: string | null
+          return_number?: string | null
+          supplier_credit_amount?: number | null
+          supplier_credit_applied_amount?: number | null
+          supplier_credit_available?: never
+          supplier_id?: string | null
+          supplier_return_id?: string | null
+        }
+        Update: {
+          currency_code?: string | null
+          exchange_rate?: number | null
+          posting_date?: string | null
+          quick_purchase_id?: string | null
+          return_number?: string | null
+          supplier_credit_amount?: number | null
+          supplier_credit_applied_amount?: number | null
+          supplier_credit_available?: never
+          supplier_id?: string | null
+          supplier_return_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "payable_open_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_receivable_summary: {
         Row: {
           available_credit: number | null
@@ -6113,6 +6600,50 @@ export type Database = {
           },
         ]
       }
+      quick_purchase_inventory_lineage_audit: {
+        Row: {
+          inventory_quantity: number | null
+          inventory_transaction_id: string | null
+          inventory_transaction_item_id: string | null
+          inventory_transaction_status: string | null
+          inventory_unit_cost: number | null
+          line_number: number | null
+          lineage_status: string | null
+          product_id: string | null
+          purchase_date: string | null
+          purchase_number: string | null
+          purchase_unit_cost: number | null
+          purchased_quantity: number | null
+          quick_purchase_id: string | null
+          quick_purchase_item_id: string | null
+          quick_purchase_status: string | null
+          source_document_item_id: string | null
+          transaction_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+        ]
+      }
       receivable_open_items: {
         Row: {
           aging_bucket: string | null
@@ -6243,6 +6774,61 @@ export type Database = {
         }
         Relationships: []
       }
+      supplier_returnable_purchase_items: {
+        Row: {
+          currency_code: string | null
+          exchange_rate: number | null
+          line_number: number | null
+          line_subtotal: number | null
+          line_total: number | null
+          original_inventory_item_id: string | null
+          original_inventory_unit_cost: number | null
+          product_id: string | null
+          purchase_date: string | null
+          purchase_number: string | null
+          purchase_unit_cost: number | null
+          purchased_quantity: number | null
+          quantity_already_returned: number | null
+          quantity_returnable: number | null
+          quick_purchase_id: string | null
+          quick_purchase_item_id: string | null
+          supplier_id: string | null
+          tax_amount: number | null
+          tax_percentage: number | null
+          tax_treatment: string | null
+          warehouse_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_purchases_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_gl_draft_journal_line: {
@@ -6281,6 +6867,10 @@ export type Database = {
       }
       approve_sales_return: {
         Args: { p_sales_return_id: string }
+        Returns: string
+      }
+      approve_supplier_return: {
+        Args: { p_supplier_return_id: string }
         Returns: string
       }
       archive_product_supplier: {
@@ -6650,9 +7240,24 @@ export type Database = {
         }
         Returns: string
       }
+      create_supplier_return: {
+        Args: {
+          p_items: Json
+          p_notes?: string
+          p_posting_date: string
+          p_quick_purchase_id: string
+          p_reason: string
+          p_return_date: string
+        }
+        Returns: string
+      }
       dispatch_delivery_order_atomic: {
         Args: { p_delivery_order_id: string }
         Returns: Json
+      }
+      dispatch_supplier_return_inventory: {
+        Args: { p_supplier_return_id: string }
+        Returns: string
       }
       generate_customer_number: { Args: never; Returns: string }
       generate_customer_receipt_number: { Args: never; Returns: string }
@@ -6814,6 +7419,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      link_quick_purchase_inventory_items: {
+        Args: { p_quick_purchase_id: string }
+        Returns: number
+      }
       mark_delivery_delivered: {
         Args: { p_delivery_order_id: string }
         Returns: string
@@ -6823,6 +7432,10 @@ export type Database = {
       next_financial_account_transfer_number: { Args: never; Returns: string }
       next_gl_journal_number: {
         Args: { p_journal_date?: string }
+        Returns: string
+      }
+      next_supplier_return_number: {
+        Args: { p_return_date?: string }
         Returns: string
       }
       post_account_transaction: {
@@ -7037,6 +7650,10 @@ export type Database = {
           p_reference_number: string
           p_supplier_id: string
         }
+        Returns: string
+      }
+      post_supplier_return_gl: {
+        Args: { p_supplier_return_id: string }
         Returns: string
       }
       recalculate_quotation_totals: {
