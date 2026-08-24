@@ -7724,6 +7724,7 @@ export type Database = {
       }
       post_expense: { Args: { p_expense_id: string }; Returns: string }
       post_expense_gl: { Args: { p_expense_id: string }; Returns: string }
+      post_expense_with_gl: { Args: { p_expense_id: string }; Returns: string }
       post_financial_account_opening_balance: {
         Args: {
           p_amount: number

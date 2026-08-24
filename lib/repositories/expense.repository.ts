@@ -1442,7 +1442,7 @@ export async function postExpense(
     error,
   } =
     await supabase.rpc(
-      "post_expense",
+      "post_expense_with_gl",
       {
         p_expense_id:
           expenseId,
