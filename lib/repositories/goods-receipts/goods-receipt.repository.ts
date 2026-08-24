@@ -1,5 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
-
 export type GoodsReceiptStatus =
   | "draft"
   | "receiving"
@@ -112,60 +110,4 @@ export interface GoodsReceiptSummary {
   rejected_quantity: number;
 
   damaged_quantity: number;
-}
-
-export interface CreateGoodsReceiptInput {
-  purchase_order_id: string;
-
-  supplier_id: string;
-
-  warehouse_id: string;
-
-  supplier_delivery_note_number?: string | null;
-
-  supplier_invoice_number?: string | null;
-
-  carrier_name?: string | null;
-
-  vehicle_number?: string | null;
-
-  tracking_number?: string | null;
-
-  internal_notes?: string | null;
-
-  supplier_notes?: string | null;
-}
-
-export interface UpdateGoodsReceiptInput
-  extends Partial<CreateGoodsReceiptInput> {
-  status?: GoodsReceiptStatus;
-}
-
-export async function getGoodsReceipts() {
-  throw new Error("Not implemented.");
-}
-
-export async function getGoodsReceiptById(
-  id: string,
-) {
-  throw new Error("Not implemented.");
-}
-
-export async function createGoodsReceipt(
-  input: CreateGoodsReceiptInput,
-) {
-  throw new Error("Not implemented.");
-}
-
-export async function updateGoodsReceipt(
-  id: string,
-  input: UpdateGoodsReceiptInput,
-) {
-  throw new Error("Not implemented.");
-}
-
-export async function deleteGoodsReceipt(
-  id: string,
-) {
-  throw new Error("Not implemented.");
 }
