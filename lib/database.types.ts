@@ -7234,6 +7234,10 @@ export type Database = {
         Args: { p_goods_receipt_id: string }
         Returns: string
       }
+      complete_goods_receipt_managed: {
+        Args: { p_goods_receipt_id: string }
+        Returns: string
+      }
       confirm_delivery_packed: {
         Args: { p_delivery_order_id: string }
         Returns: string
@@ -7359,6 +7363,56 @@ export type Database = {
       }
       create_purchase_order_from_award: {
         Args: { target_rfq_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          delivery_location: string | null
+          delivery_terms: string | null
+          discount_amount: number
+          expected_delivery_date: string | null
+          id: string
+          incoterm: string | null
+          internal_notes: string | null
+          lead_time: string | null
+          lead_time_days: number | null
+          loading_port: string | null
+          order_date: string
+          other_charges: number
+          packaging: string | null
+          partially_received_at: string | null
+          payment_terms: string | null
+          po_number: string
+          received_at: string | null
+          rfq_id: string | null
+          sent_at: string | null
+          shipping_amount: number
+          source: Database["public"]["Enums"]["purchase_order_source"]
+          status: Database["public"]["Enums"]["purchase_order_status"]
+          subtotal: number
+          supplier_id: string
+          supplier_notes: string | null
+          supplier_quotation_id: string | null
+          tax_amount: number
+          total_amount: number
+          updated_at: string
+          updated_by: string | null
+          warranty: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_purchase_order_from_award_managed: {
+        Args: { p_rfq_id: string }
         Returns: {
           approved_at: string | null
           approved_by: string | null

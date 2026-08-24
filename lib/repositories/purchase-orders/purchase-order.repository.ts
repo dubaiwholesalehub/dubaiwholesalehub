@@ -339,9 +339,9 @@ export async function createPurchaseOrderFromAward(
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc(
-    "create_purchase_order_from_award",
+    "create_purchase_order_from_award_managed",
     {
-      target_rfq_id: id,
+      p_rfq_id: id,
     },
   );
 

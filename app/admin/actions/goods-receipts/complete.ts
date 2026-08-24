@@ -30,7 +30,7 @@ export async function completeGoodsReceipt(
     const {
         data: inventoryTransactionId,
         error,
-    } = await supabase.rpc("complete_goods_receipt", {
+    } = await supabase.rpc("complete_goods_receipt_managed", {
         p_goods_receipt_id: goodsReceiptId,
     });
 
