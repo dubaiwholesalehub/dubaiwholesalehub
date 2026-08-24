@@ -5485,6 +5485,131 @@ export type Database = {
           },
         ]
       }
+      supplier_return_credit_applications: {
+        Row: {
+          amount: number
+          application_date: string
+          base_amount: number
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          exchange_rate: number
+          id: string
+          journal_entry_id: string | null
+          notes: string | null
+          posting_date: string
+          quick_purchase_id: string
+          supplier_id: string
+          supplier_return_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          application_date?: string
+          base_amount: number
+          created_at?: string
+          created_by?: string | null
+          currency_code: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          posting_date?: string
+          quick_purchase_id: string
+          supplier_id: string
+          supplier_return_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          application_date?: string
+          base_amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          posting_date?: string
+          quick_purchase_id?: string
+          supplier_id?: string
+          supplier_return_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_return_credit_applications_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "payable_open_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchase_inventory_lineage_audit"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "quick_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_quick_purchase_id_fkey"
+            columns: ["quick_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returnable_purchase_items"
+            referencedColumns: ["quick_purchase_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "available_supplier_return_credits"
+            referencedColumns: ["supplier_return_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_applications_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_return_items: {
         Row: {
           created_at: string
@@ -6860,6 +6985,17 @@ export type Database = {
       apply_supplier_advance_to_quick_purchase: {
         Args: { p_quick_purchase_id: string }
         Returns: number
+      }
+      apply_supplier_return_credit: {
+        Args: {
+          p_amount: number
+          p_application_date?: string
+          p_notes?: string
+          p_posting_date?: string
+          p_quick_purchase_id: string
+          p_supplier_return_id: string
+        }
+        Returns: string
       }
       approve_sales_margin_exception: {
         Args: { p_decision_notes: string; p_sales_order_id: string }
