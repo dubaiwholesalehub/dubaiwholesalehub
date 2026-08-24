@@ -115,6 +115,9 @@ export interface ReceivablesPayablesSummary {
   customerAdvances: number;
   supplierAdvances: number;
 
+  supplierReturnCredits: number;
+  totalSupplierCredits: number;
+
   unassignedPayables: number;
 
   openReceivableCount: number;
@@ -156,10 +159,10 @@ export interface DebtorRow {
   oldestDueDate: string | null;
 
   creditUtilizationPercentage:
-    number | null;
+  number | null;
 
   availableCredit:
-    number | null;
+  number | null;
 
   overCreditLimit: boolean;
 }
@@ -187,6 +190,8 @@ export interface CreditorRow {
   days90Plus: number;
 
   supplierAdvance: number;
+  supplierReturnCredit: number;
+  totalSupplierCredit: number;
   netPayableExposure: number;
 
   maximumDaysOverdue: number;
@@ -227,7 +232,7 @@ export interface OverduePayableRow {
   supplierName: string;
 
   supplierInvoiceNumber:
-    string | null;
+  string | null;
 
   purchaseDate: string;
   dueDate: string;
@@ -311,34 +316,34 @@ export interface ReceivablesPayablesDashboard {
   generatedAt: string;
 
   summary:
-    ReceivablesPayablesSummary;
+  ReceivablesPayablesSummary;
 
   receivableAging:
-    AgingSummary;
+  AgingSummary;
 
   payableAging:
-    AgingSummary;
+  AgingSummary;
 
   topDebtors:
-    DebtorRow[];
+  DebtorRow[];
 
   topCreditors:
-    CreditorRow[];
+  CreditorRow[];
 
   overdueReceivables:
-    OverdueReceivableRow[];
+  OverdueReceivableRow[];
 
   overduePayables:
-    OverduePayableRow[];
+  OverduePayableRow[];
 
   recentReceipts:
-    RecentReceiptRow[];
+  RecentReceiptRow[];
 
   recentSupplierPayments:
-    RecentSupplierPaymentRow[];
+  RecentSupplierPaymentRow[];
 
   risks:
-    ReceivablesPayablesRisks;
+  ReceivablesPayablesRisks;
 }
 
 
@@ -386,7 +391,7 @@ function normalizeAging(
  * ========================================================= */
 
 export async function getReceivablesPayablesDashboard():
-Promise<ReceivablesPayablesDashboard> {
+  Promise<ReceivablesPayablesDashboard> {
   const supabase =
     await createClient();
 
@@ -625,6 +630,16 @@ Promise<ReceivablesPayablesDashboard> {
           supplierAdvance:
             numberValue(
               row.supplierAdvance,
+            ),
+
+          supplierReturnCredit:
+            numberValue(
+              row.supplierReturnCredit,
+            ),
+
+          totalSupplierCredit:
+            numberValue(
+              row.totalSupplierCredit,
             ),
 
           netPayableExposure:
@@ -1011,6 +1026,16 @@ Promise<ReceivablesPayablesDashboard> {
       supplierAdvances:
         numberValue(
           summaryRow.supplierAdvances,
+        ),
+
+      supplierReturnCredits:
+        numberValue(
+          summaryRow.supplierReturnCredits,
+        ),
+
+      totalSupplierCredits:
+        numberValue(
+          summaryRow.totalSupplierCredits,
         ),
 
       unassignedPayables:

@@ -6967,7 +6967,9 @@ export type Database = {
           supplier_advance: number | null
           supplier_id: string | null
           supplier_name: string | null
+          supplier_return_credit: number | null
           total_payable: number | null
+          total_supplier_credit: number | null
         }
         Relationships: []
       }
