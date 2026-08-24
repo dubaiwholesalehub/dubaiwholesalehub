@@ -243,6 +243,80 @@ export type SupplierReturnEligibleItem = {
     lineTotal: number;
 };
 
+export type SupplierReturnCreditSummary = {
+    supplierReturnId: string;
+    returnNumber: string;
+
+    quickPurchaseId: string;
+
+    supplierId: string;
+
+    currencyCode: string;
+
+    supplierCreditAmount: number;
+    supplierCreditAppliedAmount: number;
+    supplierCreditAvailable: number;
+};
+
+
+export type SupplierReturnCreditEligiblePurchase = {
+    id: string;
+    purchaseNumber: string;
+
+    purchaseDate: string;
+
+    supplierId: string;
+    supplierName: string;
+
+    currencyCode: string;
+
+    grandTotal: number;
+    paidAmount: number;
+    balanceDue: number;
+    paymentStatus: string;
+};
+
+
+export type SupplierReturnCreditApplication = {
+    id: string;
+
+    supplierReturnId: string;
+    quickPurchaseId: string;
+
+    purchaseNumber: string;
+
+    supplierId: string;
+
+    applicationDate: string;
+    postingDate: string;
+
+    currencyCode: string;
+    exchangeRate: number;
+
+    amount: number;
+    baseAmount: number;
+
+    journalEntryId: string | null;
+    journalNumber: string | null;
+
+    notes: string | null;
+
+    createdAt: string;
+};
+
+
+export type ApplySupplierReturnCreditInput = {
+    supplierReturnId: string;
+    quickPurchaseId: string;
+
+    amount: number;
+
+    applicationDate: string;
+    postingDate: string;
+
+    notes?: string | null;
+};
+
 
 function toNumber(
     value: unknown,
@@ -393,6 +467,499 @@ export async function postSupplierReturn(
     }
 }
 
+export async function applySupplierReturnCredit(
+    input: ApplySupplierReturnCreditInput,
+): Promise<string> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "apply_supplier_return_credit",
+            {
+                p_supplier_return_id:
+                    input.supplierReturnId,
+
+                p_quick_purchase_id:
+                    input.quickPurchaseId,
+
+                p_amount:
+                    input.amount,
+
+                p_application_date:
+                    input.applicationDate,
+
+                p_posting_date:
+                    input.postingDate,
+
+                p_notes:
+                    input.notes ?? undefined,
+            },
+        );
+
+    if (error) {
+        throw new Error(
+            `Unable to apply Supplier Return credit: ${error.message}`,
+        );
+    }
+
+    if (!data) {
+        throw new Error(
+            "Supplier Return credit was applied without an application ID.",
+        );
+    }
+
+    return String(data);
+}
+
+export async function getSupplierReturnCreditState(
+    supplierReturnId: string,
+): Promise<SupplierReturnCreditSummary | null> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "supplier_returns",
+            )
+            .select(
+                `
+                id,
+                return_number,
+                quick_purchase_id,
+                supplier_id,
+                currency_code,
+                supplier_credit_amount,
+                supplier_credit_applied_amount
+                `,
+            )
+            .eq(
+                "id",
+                supplierReturnId,
+            )
+            .maybeSingle();
+
+    if (error) {
+        throw new Error(
+            `Unable to load Supplier Return credit state: ${error.message}`,
+        );
+    }
+
+    if (!data) {
+        return null;
+    }
+
+    const creditAmount =
+        toNumber(
+            data.supplier_credit_amount,
+        );
+
+    const appliedAmount =
+        toNumber(
+            data.supplier_credit_applied_amount,
+        );
+
+    return {
+        supplierReturnId:
+            data.id,
+
+        returnNumber:
+            data.return_number,
+
+        quickPurchaseId:
+            data.quick_purchase_id,
+
+        supplierId:
+            data.supplier_id,
+
+        currencyCode:
+            data.currency_code,
+
+        supplierCreditAmount:
+            creditAmount,
+
+        supplierCreditAppliedAmount:
+            appliedAmount,
+
+        supplierCreditAvailable:
+            Math.max(
+                creditAmount -
+                appliedAmount,
+                0,
+            ),
+    };
+}
+
+export async function getSupplierReturnCreditEligiblePurchases(
+    supplierReturnId: string,
+): Promise<SupplierReturnCreditEligiblePurchase[]> {
+    const supabase =
+        await createClient();
+
+    const creditState =
+        await getSupplierReturnCreditState(
+            supplierReturnId,
+        );
+
+    if (
+        !creditState ||
+        creditState.supplierCreditAvailable <= 0
+    ) {
+        return [];
+    }
+
+    const {
+        data: supplier,
+        error: supplierError,
+    } =
+        await supabase
+            .from(
+                "suppliers",
+            )
+            .select(
+                `
+                id,
+                company_name
+                `,
+            )
+            .eq(
+                "id",
+                creditState.supplierId,
+            )
+            .maybeSingle();
+
+    if (supplierError) {
+        throw new Error(
+            `Unable to load supplier: ${supplierError.message}`,
+        );
+    }
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "quick_purchases",
+            )
+            .select(
+                `
+                id,
+                purchase_number,
+                purchase_date,
+                supplier_id,
+                currency_code,
+                grand_total,
+                paid_amount,
+                balance_due,
+                payment_status
+                `,
+            )
+            .eq(
+                "supplier_id",
+                creditState.supplierId,
+            )
+            .eq(
+                "currency_code",
+                creditState.currencyCode,
+            )
+            .gt(
+                "balance_due",
+                0,
+            )
+            .neq(
+                "id",
+                creditState.quickPurchaseId,
+            )
+            .order(
+                "purchase_date",
+                {
+                    ascending:
+                        false,
+                },
+            );
+
+    if (error) {
+        throw new Error(
+            `Unable to load eligible Quick Purchases: ${error.message}`,
+        );
+    }
+
+    return (
+        data ?? []
+    ).map(
+        (row) => ({
+            id:
+                row.id,
+
+            purchaseNumber:
+                row.purchase_number,
+
+            purchaseDate:
+                row.purchase_date,
+
+            supplierId:
+                row.supplier_id ?? "",
+
+            supplierName:
+                supplier?.company_name ??
+                "Unknown supplier",
+
+            currencyCode:
+                row.currency_code,
+
+            grandTotal:
+                toNumber(
+                    row.grand_total,
+                ),
+
+            paidAmount:
+                toNumber(
+                    row.paid_amount,
+                ),
+
+            balanceDue:
+                toNumber(
+                    row.balance_due,
+                ),
+
+            paymentStatus:
+                row.payment_status,
+        }),
+    );
+}
+
+export async function getSupplierReturnCreditApplications(
+    supplierReturnId: string,
+): Promise<SupplierReturnCreditApplication[]> {
+    const supabase =
+        await createClient();
+
+    const {
+        data: applications,
+        error,
+    } =
+        await supabase
+            .from(
+                "supplier_return_credit_applications",
+            )
+            .select(
+                `
+                id,
+                supplier_return_id,
+                quick_purchase_id,
+                supplier_id,
+                application_date,
+                posting_date,
+                currency_code,
+                exchange_rate,
+                amount,
+                base_amount,
+                journal_entry_id,
+                notes,
+                created_at
+                `,
+            )
+            .eq(
+                "supplier_return_id",
+                supplierReturnId,
+            )
+            .order(
+                "created_at",
+                {
+                    ascending:
+                        false,
+                },
+            );
+
+    if (error) {
+        throw new Error(
+            `Unable to load Supplier Return credit applications: ${error.message}`,
+        );
+    }
+
+    if (
+        !applications ||
+        applications.length === 0
+    ) {
+        return [];
+    }
+
+    const purchaseIds =
+        [
+            ...new Set(
+                applications.map(
+                    (application) =>
+                        application.quick_purchase_id,
+                ),
+            ),
+        ];
+
+    const journalIds =
+        [
+            ...new Set(
+                applications
+                    .map(
+                        (application) =>
+                            application.journal_entry_id,
+                    )
+                    .filter(
+                        (
+                            value,
+                        ): value is string =>
+                            Boolean(value),
+                    ),
+            ),
+        ];
+
+    const {
+        data: purchases,
+        error: purchaseError,
+    } =
+        await supabase
+            .from(
+                "quick_purchases",
+            )
+            .select(
+                `
+                id,
+                purchase_number
+                `,
+            )
+            .in(
+                "id",
+                purchaseIds,
+            );
+
+    if (purchaseError) {
+        throw new Error(
+            `Unable to load credit application purchases: ${purchaseError.message}`,
+        );
+    }
+
+    const journals =
+        journalIds.length > 0
+            ? await supabase
+                  .from(
+                      "gl_journal_entries",
+                  )
+                  .select(
+                      `
+                      id,
+                      journal_number
+                      `,
+                  )
+                  .in(
+                      "id",
+                      journalIds,
+                  )
+            : {
+                  data: [],
+                  error: null,
+              };
+
+    if (journals.error) {
+        throw new Error(
+            `Unable to load credit application journals: ${journals.error.message}`,
+        );
+    }
+
+    const purchaseNumberById =
+        new Map(
+            (
+                purchases ??
+                []
+            ).map(
+                (purchase) => [
+                    purchase.id,
+                    purchase.purchase_number,
+                ],
+            ),
+        );
+
+    const journalNumberById =
+        new Map(
+            (
+                journals.data ??
+                []
+            ).map(
+                (journal) => [
+                    journal.id,
+                    journal.journal_number,
+                ],
+            ),
+        );
+
+    return applications.map(
+        (application) => ({
+            id:
+                application.id,
+
+            supplierReturnId:
+                application.supplier_return_id,
+
+            quickPurchaseId:
+                application.quick_purchase_id,
+
+            purchaseNumber:
+                purchaseNumberById.get(
+                    application.quick_purchase_id,
+                ) ??
+                "Unknown purchase",
+
+            supplierId:
+                application.supplier_id,
+
+            applicationDate:
+                application.application_date,
+
+            postingDate:
+                application.posting_date,
+
+            currencyCode:
+                application.currency_code,
+
+            exchangeRate:
+                toNumber(
+                    application.exchange_rate,
+                ),
+
+            amount:
+                toNumber(
+                    application.amount,
+                ),
+
+            baseAmount:
+                toNumber(
+                    application.base_amount,
+                ),
+
+            journalEntryId:
+                application.journal_entry_id,
+
+            journalNumber:
+                application.journal_entry_id
+                    ? journalNumberById.get(
+                          application.journal_entry_id,
+                      ) ??
+                      null
+                    : null,
+
+            notes:
+                application.notes,
+
+            createdAt:
+                application.created_at,
+        }),
+    );
+}
 
 /*
  * Kept here because all database numeric values returned by
@@ -1488,7 +2055,7 @@ export async function getEligibleSupplierReturnPurchases(): Promise<
                     taxTreatment:
                         purchase
                             .tax_treatment as
-                            SupplierReturnTaxTreatment,
+                        SupplierReturnTaxTreatment,
 
                     grandTotal:
                         toNumber(
@@ -1575,10 +2142,10 @@ export async function getSupplierReturnEligibleItems(
     if (
         purchase
             .tax_treatment ===
-            "reverse_charge" ||
+        "reverse_charge" ||
         purchase
             .tax_treatment ===
-            "review_required"
+        "review_required"
     ) {
         throw new Error(
             `Supplier Returns for tax treatment "${purchase.tax_treatment}" are not supported.`,
@@ -1640,9 +2207,9 @@ export async function getSupplierReturnEligibleItems(
 
     const {
         data:
-            inventoryItems,
+        inventoryItems,
         error:
-            inventoryError,
+        inventoryError,
     } =
         await supabase
             .from(

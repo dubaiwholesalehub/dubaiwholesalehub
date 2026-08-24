@@ -9,11 +9,11 @@ import {
 } from "@/lib/auth/require-admin";
 
 import {
+  applySupplierReturnCredit,
   approveSupplierReturn,
   dispatchSupplierReturn,
   postSupplierReturn,
 } from "@/lib/repositories/supplier-return.repository";
-
 
 export async function approveSupplierReturnAction(
   supplierReturnId: string,
@@ -68,5 +68,59 @@ export async function postSupplierReturnAction(
 
   revalidatePath(
     "/admin/purchasing/returns",
+  );
+}
+
+export async function applySupplierReturnCreditAction(
+  supplierReturnId: string,
+  quickPurchaseId: string,
+  amount: number,
+  applicationDate: string,
+  postingDate: string,
+  notes?: string | null,
+): Promise<void> {
+  await requireAdmin();
+
+  if (!supplierReturnId) {
+    throw new Error(
+      "Supplier Return ID is required.",
+    );
+  }
+
+  if (!quickPurchaseId) {
+    throw new Error(
+      "Quick Purchase ID is required.",
+    );
+  }
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    throw new Error(
+      "Credit amount must be greater than zero.",
+    );
+  }
+
+  await applySupplierReturnCredit({
+    supplierReturnId,
+    quickPurchaseId,
+    amount,
+    applicationDate,
+    postingDate,
+    notes:
+      notes?.trim() || null,
+  });
+
+  revalidatePath(
+    `/admin/purchasing/returns/${supplierReturnId}`,
+  );
+
+  revalidatePath(
+    "/admin/purchasing/returns",
+  );
+
+  revalidatePath(
+    "/admin/purchasing/quick-purchases",
   );
 }
