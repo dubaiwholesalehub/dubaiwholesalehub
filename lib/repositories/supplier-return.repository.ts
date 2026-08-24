@@ -255,6 +255,7 @@ export type SupplierReturnCreditSummary = {
 
     supplierCreditAmount: number;
     supplierCreditAppliedAmount: number;
+    supplierCreditRefundedAmount: number;
     supplierCreditAvailable: number;
 };
 
@@ -314,6 +315,53 @@ export type ApplySupplierReturnCreditInput = {
     applicationDate: string;
     postingDate: string;
 
+    notes?: string | null;
+};
+
+export type SupplierReturnCreditRefund = {
+    id: string;
+
+    refundNumber: string;
+
+    supplierReturnId: string;
+    supplierId: string;
+
+    financialAccountId: string;
+    financialAccountName: string;
+
+    refundDate: string;
+    postingDate: string;
+
+    currencyCode: string;
+    exchangeRate: number;
+
+    amount: number;
+    baseAmount: number;
+
+    accountTransactionId: string | null;
+    accountTransactionNumber: string | null;
+
+    journalEntryId: string | null;
+    journalNumber: string | null;
+
+    referenceNumber: string | null;
+    notes: string | null;
+
+    createdAt: string;
+};
+
+
+export type RefundSupplierReturnCreditInput = {
+    supplierReturnId: string;
+
+    financialAccountId: string;
+
+    amount: number;
+
+    refundDate: string;
+    postingDate: string;
+
+    referenceNumber?: string | null;
     notes?: string | null;
 };
 
@@ -515,6 +563,64 @@ export async function applySupplierReturnCredit(
     return String(data);
 }
 
+export async function refundSupplierReturnCredit(
+    input: RefundSupplierReturnCreditInput,
+): Promise<string> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "refund_supplier_return_credit",
+            {
+                p_supplier_return_id:
+                    input.supplierReturnId,
+
+                p_financial_account_id:
+                    input.financialAccountId,
+
+                p_amount:
+                    input.amount,
+
+                p_refund_date:
+                    input.refundDate,
+
+                p_posting_date:
+                    input.postingDate,
+
+                p_reference_number:
+                    input.referenceNumber ??
+                    undefined,
+
+                p_notes:
+                    input.notes ??
+                    undefined,
+            },
+        );
+
+
+    if (error) {
+        throw new Error(
+            `Unable to receive Supplier Return refund: ${error.message}`,
+        );
+    }
+
+
+    if (!data) {
+        throw new Error(
+            "Supplier Return refund was received without a refund ID.",
+        );
+    }
+
+
+    return String(
+        data,
+    );
+}
+
 export async function getSupplierReturnCreditState(
     supplierReturnId: string,
 ): Promise<SupplierReturnCreditSummary | null> {
@@ -566,6 +672,51 @@ export async function getSupplierReturnCreditState(
             data.supplier_credit_applied_amount,
         );
 
+    const {
+        data: refundRows,
+        error: refundError,
+    } =
+        await supabase
+            .from(
+                "supplier_return_credit_refunds",
+            )
+            .select(
+                "amount",
+            )
+            .eq(
+                "supplier_return_id",
+                supplierReturnId,
+            )
+            .not(
+                "journal_entry_id",
+                "is",
+                null,
+            );
+
+
+    if (refundError) {
+        throw new Error(
+            `Unable to load Supplier Return refunded credit: ${refundError.message}`,
+        );
+    }
+
+
+    const refundedAmount =
+        (
+            refundRows ??
+            []
+        ).reduce(
+            (
+                total,
+                refund,
+            ) =>
+                total +
+                toNumber(
+                    refund.amount,
+                ),
+            0,
+        );
+
     return {
         supplierReturnId:
             data.id,
@@ -588,10 +739,14 @@ export async function getSupplierReturnCreditState(
         supplierCreditAppliedAmount:
             appliedAmount,
 
+        supplierCreditRefundedAmount:
+            refundedAmount,
+
         supplierCreditAvailable:
             Math.max(
                 creditAmount -
-                appliedAmount,
+                appliedAmount -
+                refundedAmount,
                 0,
             ),
     };
@@ -847,23 +1002,23 @@ export async function getSupplierReturnCreditApplications(
     const journals =
         journalIds.length > 0
             ? await supabase
-                  .from(
-                      "gl_journal_entries",
-                  )
-                  .select(
-                      `
+                .from(
+                    "gl_journal_entries",
+                )
+                .select(
+                    `
                       id,
                       journal_number
                       `,
-                  )
-                  .in(
-                      "id",
-                      journalIds,
-                  )
+                )
+                .in(
+                    "id",
+                    journalIds,
+                )
             : {
-                  data: [],
-                  error: null,
-              };
+                data: [],
+                error: null,
+            };
 
     if (journals.error) {
         throw new Error(
@@ -947,9 +1102,9 @@ export async function getSupplierReturnCreditApplications(
             journalNumber:
                 application.journal_entry_id
                     ? journalNumberById.get(
-                          application.journal_entry_id,
-                      ) ??
-                      null
+                        application.journal_entry_id,
+                    ) ??
+                    null
                     : null,
 
             notes:
@@ -958,6 +1113,173 @@ export async function getSupplierReturnCreditApplications(
             createdAt:
                 application.created_at,
         }),
+    );
+}
+
+export async function getSupplierReturnCreditRefunds(
+    supplierReturnId: string,
+): Promise<SupplierReturnCreditRefund[]> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase
+            .from(
+                "supplier_return_credit_refunds",
+            )
+            .select(
+                `
+                id,
+                refund_number,
+                supplier_return_id,
+                supplier_id,
+                financial_account_id,
+                refund_date,
+                posting_date,
+                currency_code,
+                exchange_rate,
+                amount,
+                base_amount,
+                account_transaction_id,
+                journal_entry_id,
+                reference_number,
+                notes,
+                created_at,
+
+                financial_account:financial_accounts (
+                    account_name
+                ),
+
+                account_transaction:account_transactions (
+                    transaction_number
+                ),
+
+                journal_entry:gl_journal_entries (
+                    journal_number
+                )
+                `,
+            )
+            .eq(
+                "supplier_return_id",
+                supplierReturnId,
+            )
+            .order(
+                "created_at",
+                {
+                    ascending:
+                        false,
+                },
+            );
+
+
+    if (error) {
+        throw new Error(
+            `Unable to load Supplier Return refund history: ${error.message}`,
+        );
+    }
+
+
+    return (
+        data ??
+        []
+    ).map(
+        (refund) => {
+            const financialAccount =
+                Array.isArray(
+                    refund.financial_account,
+                )
+                    ? refund.financial_account[0]
+                    : refund.financial_account;
+
+            const accountTransaction =
+                Array.isArray(
+                    refund.account_transaction,
+                )
+                    ? refund.account_transaction[0]
+                    : refund.account_transaction;
+
+            const journalEntry =
+                Array.isArray(
+                    refund.journal_entry,
+                )
+                    ? refund.journal_entry[0]
+                    : refund.journal_entry;
+
+
+            return {
+                id:
+                    refund.id,
+
+                refundNumber:
+                    refund.refund_number,
+
+                supplierReturnId:
+                    refund.supplier_return_id,
+
+                supplierId:
+                    refund.supplier_id,
+
+                financialAccountId:
+                    refund.financial_account_id,
+
+                financialAccountName:
+                    financialAccount
+                        ?.account_name ??
+                    "Unknown account",
+
+                refundDate:
+                    refund.refund_date,
+
+                postingDate:
+                    refund.posting_date,
+
+                currencyCode:
+                    refund.currency_code,
+
+                exchangeRate:
+                    toNumber(
+                        refund.exchange_rate,
+                    ),
+
+                amount:
+                    toNumber(
+                        refund.amount,
+                    ),
+
+                baseAmount:
+                    toNumber(
+                        refund.base_amount,
+                    ),
+
+                accountTransactionId:
+                    refund.account_transaction_id,
+
+                accountTransactionNumber:
+                    accountTransaction
+                        ?.transaction_number ??
+                    null,
+
+                journalEntryId:
+                    refund.journal_entry_id,
+
+                journalNumber:
+                    journalEntry
+                        ?.journal_number ??
+                    null,
+
+                referenceNumber:
+                    refund.reference_number,
+
+                notes:
+                    refund.notes,
+
+                createdAt:
+                    refund.created_at,
+            };
+        },
     );
 }
 

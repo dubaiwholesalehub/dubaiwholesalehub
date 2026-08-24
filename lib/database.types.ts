@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       account_transactions: {
@@ -5610,6 +5585,126 @@ export type Database = {
           },
         ]
       }
+      supplier_return_credit_refunds: {
+        Row: {
+          account_transaction_id: string | null
+          amount: number
+          base_amount: number
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          exchange_rate: number
+          financial_account_id: string
+          id: string
+          journal_entry_id: string | null
+          notes: string | null
+          posting_date: string
+          reference_number: string | null
+          refund_date: string
+          refund_number: string
+          supplier_id: string
+          supplier_return_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_transaction_id?: string | null
+          amount: number
+          base_amount: number
+          created_at?: string
+          created_by?: string | null
+          currency_code: string
+          exchange_rate?: number
+          financial_account_id: string
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          posting_date?: string
+          reference_number?: string | null
+          refund_date?: string
+          refund_number: string
+          supplier_id: string
+          supplier_return_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_transaction_id?: string | null
+          amount?: number
+          base_amount?: number
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          exchange_rate?: number
+          financial_account_id?: string
+          id?: string
+          journal_entry_id?: string | null
+          notes?: string | null
+          posting_date?: string
+          reference_number?: string | null
+          refund_date?: string
+          refund_number?: string
+          supplier_id?: string
+          supplier_return_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_return_credit_refunds_account_transaction_id_fkey"
+            columns: ["account_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "account_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_financial_account_id_fkey"
+            columns: ["financial_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "available_supplier_return_credits"
+            referencedColumns: ["supplier_return_id"]
+          },
+          {
+            foreignKeyName: "supplier_return_credit_refunds_supplier_return_id_fkey"
+            columns: ["supplier_return_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_return_items: {
         Row: {
           created_at: string
@@ -6205,32 +6300,9 @@ export type Database = {
           supplier_credit_amount: number | null
           supplier_credit_applied_amount: number | null
           supplier_credit_available: number | null
+          supplier_credit_refunded_amount: number | null
           supplier_id: string | null
           supplier_return_id: string | null
-        }
-        Insert: {
-          currency_code?: string | null
-          exchange_rate?: number | null
-          posting_date?: string | null
-          quick_purchase_id?: string | null
-          return_number?: string | null
-          supplier_credit_amount?: number | null
-          supplier_credit_applied_amount?: number | null
-          supplier_credit_available?: never
-          supplier_id?: string | null
-          supplier_return_id?: string | null
-        }
-        Update: {
-          currency_code?: string | null
-          exchange_rate?: number | null
-          posting_date?: string | null
-          quick_purchase_id?: string | null
-          return_number?: string | null
-          supplier_credit_amount?: number | null
-          supplier_credit_applied_amount?: number | null
-          supplier_credit_available?: never
-          supplier_id?: string | null
-          supplier_return_id?: string | null
         }
         Relationships: [
           {
@@ -7570,6 +7642,10 @@ export type Database = {
         Args: { p_journal_date?: string }
         Returns: string
       }
+      next_supplier_return_credit_refund_number: {
+        Args: { p_refund_date?: string }
+        Returns: string
+      }
       next_supplier_return_number: {
         Args: { p_return_date?: string }
         Returns: string
@@ -7798,6 +7874,18 @@ export type Database = {
       }
       receive_sales_return_inventory: {
         Args: { p_sales_return_id: string }
+        Returns: string
+      }
+      refund_supplier_return_credit: {
+        Args: {
+          p_amount: number
+          p_financial_account_id: string
+          p_notes?: string
+          p_posting_date?: string
+          p_reference_number?: string
+          p_refund_date?: string
+          p_supplier_return_id: string
+        }
         Returns: string
       }
       reject_sales_margin_exception: {
@@ -8251,9 +8339,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],

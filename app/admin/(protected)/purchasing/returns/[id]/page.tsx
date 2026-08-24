@@ -10,12 +10,13 @@ import {
   getSupplierReturnById,
   getSupplierReturnCreditApplications,
   getSupplierReturnCreditEligiblePurchases,
+  getSupplierReturnCreditRefunds,
   getSupplierReturnCreditState,
 } from "@/lib/repositories/supplier-return.repository";
 
 import SupplierReturnCreditPanel from "@/components/admin/purchasing/supplier-returns/SupplierReturnCreditPanel";
 import SupplierReturnWorkflowActions from "@/components/admin/purchasing/supplier-returns/SupplierReturnWorkflowActions";
-
+import { getFinancialAccounts } from "@/lib/repositories/financial-account.repository";
 interface SupplierReturnDetailPageProps {
   params: Promise<{
     id: string;
@@ -68,11 +69,16 @@ export default async function SupplierReturnDetailPage({
     notFound();
   }
 
-  const [supplierCredit, creditApplications] = await Promise.all([
-    getSupplierReturnCreditState(supplierReturn.id),
+  const [supplierCredit, creditApplications, creditRefunds, financialAccounts] =
+    await Promise.all([
+      getSupplierReturnCreditState(supplierReturn.id),
 
-    getSupplierReturnCreditApplications(supplierReturn.id),
-  ]);
+      getSupplierReturnCreditApplications(supplierReturn.id),
+
+      getSupplierReturnCreditRefunds(supplierReturn.id),
+
+      getFinancialAccounts(),
+    ]);
 
   const eligibleCreditPurchases =
     supplierCredit &&
@@ -80,6 +86,26 @@ export default async function SupplierReturnDetailPage({
     supplierCredit.supplierCreditAvailable > 0
       ? await getSupplierReturnCreditEligiblePurchases(supplierReturn.id)
       : [];
+
+  const eligibleRefundAccounts = financialAccounts
+    .filter(
+      (account) =>
+        account.isActive &&
+        account.currencyCode === supplierReturn.currencyCode,
+    )
+    .map((account) => ({
+      id: account.id,
+
+      accountName: account.accountName,
+
+      accountCode: account.accountCode,
+
+      accountType: account.accountType,
+
+      currencyCode: account.currencyCode,
+
+      currentBalance: account.currentBalance,
+    }));
 
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
@@ -195,6 +221,8 @@ export default async function SupplierReturnDetailPage({
           credit={supplierCredit}
           eligiblePurchases={eligibleCreditPurchases}
           applications={creditApplications}
+          refunds={creditRefunds}
+          financialAccounts={eligibleRefundAccounts}
         />
       ) : null}
 
