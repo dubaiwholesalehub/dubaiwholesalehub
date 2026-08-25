@@ -4917,11 +4917,43 @@ export async function confirmSalesOrder(
         );
     }
 
+    const warehouseBackedItems = order.items.filter(
+        (item) =>
+            item.fulfilment_method === "stock" ||
+            (
+                item.fulfilment_method === "local_purchase" &&
+                Boolean(item.warehouse_id)
+            ),
+    );
+
+    if (
+        warehouseBackedItems.length > 0 &&
+        !order.warehouse_id
+    ) {
+        throw new Error(
+            "Select a warehouse before confirming this Sales Order because one or more items will be fulfilled from warehouse stock.",
+        );
+    }
+
+    const mismatchedWarehouseItem =
+        warehouseBackedItems.find(
+            (item) =>
+                !item.warehouse_id ||
+                item.warehouse_id !==
+                order.warehouse_id,
+        );
+
+    if (mismatchedWarehouseItem) {
+        throw new Error(
+            "All warehouse-fulfilled items must use the same warehouse as the Sales Order before confirmation.",
+        );
+    }
+
     const supabase = await createClient();
 
     const { data, error } =
         await supabase.rpc(
-            "confirm_sales_order_atomic",
+            "confirm_sales_order_atomic_managed",
             {
                 p_sales_order_id: id,
 
@@ -5013,7 +5045,7 @@ export async function cancelSalesOrder(
 
     const { data, error } =
         await supabase.rpc(
-            "cancel_sales_order_atomic",
+            "cancel_sales_order_atomic_managed",
             {
                 p_sales_order_id: id,
             },

@@ -4,12 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
+    addSalesOrderItem,
     cancelSalesOrder,
     confirmSalesOrder,
     createSalesOrder,
+    deleteSalesOrderItem,
     updateSalesOrder,
+    updateSalesOrderItem,
     approveSalesMarginException,
+    type CreateSalesOrderItemInput,
+    type UpdateSalesOrderItemInput,
 } from "@/lib/repositories/sales-order.repository";
+
 import {
     salesOrderSchema,
     type SalesOrderValidatedValues,
@@ -392,5 +398,159 @@ export async function approveAndConfirmSalesOrderAction(
 
     redirect(
         `/admin/sales/orders/${salesOrderId}?success=margin-approved`,
+    );
+}
+
+/* =========================================================
+ * Add Sales Order Item
+ * ========================================================= */
+
+export async function addSalesOrderItemAction(
+    salesOrderId: string,
+    input: Omit<
+        CreateSalesOrderItemInput,
+        "sales_order_id"
+    >,
+): Promise<void> {
+    const id = salesOrderId.trim();
+
+    if (!id) {
+        throw new Error(
+            "Sales order ID is required.",
+        );
+    }
+
+    try {
+        await addSalesOrderItem({
+            ...input,
+            sales_order_id: id,
+        });
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to add the sales order item.",
+            ),
+        );
+    }
+
+    revalidatePath(
+        SALES_ORDER_LIST_URL,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${id}`,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${id}/edit`,
+    );
+}
+
+
+/* =========================================================
+ * Update Sales Order Item
+ * ========================================================= */
+
+export async function updateSalesOrderItemAction(
+    salesOrderId: string,
+    salesOrderItemId: string,
+    input: UpdateSalesOrderItemInput,
+): Promise<void> {
+    const orderId =
+        salesOrderId.trim();
+
+    const itemId =
+        salesOrderItemId.trim();
+
+    if (!orderId) {
+        throw new Error(
+            "Sales order ID is required.",
+        );
+    }
+
+    if (!itemId) {
+        throw new Error(
+            "Sales order item ID is required.",
+        );
+    }
+
+    try {
+        await updateSalesOrderItem(
+            itemId,
+            input,
+        );
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to update the sales order item.",
+            ),
+        );
+    }
+
+    revalidatePath(
+        SALES_ORDER_LIST_URL,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${orderId}`,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${orderId}/edit`,
+    );
+}
+
+
+/* =========================================================
+ * Delete Sales Order Item
+ * ========================================================= */
+
+export async function deleteSalesOrderItemAction(
+    salesOrderId: string,
+    salesOrderItemId: string,
+): Promise<void> {
+    const orderId =
+        salesOrderId.trim();
+
+    const itemId =
+        salesOrderItemId.trim();
+
+    if (!orderId) {
+        throw new Error(
+            "Sales order ID is required.",
+        );
+    }
+
+    if (!itemId) {
+        throw new Error(
+            "Sales order item ID is required.",
+        );
+    }
+
+    try {
+        await deleteSalesOrderItem(
+            itemId,
+        );
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to delete the sales order item.",
+            ),
+        );
+    }
+
+    revalidatePath(
+        SALES_ORDER_LIST_URL,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${orderId}`,
+    );
+
+    revalidatePath(
+        `/admin/sales/orders/${orderId}/edit`,
     );
 }

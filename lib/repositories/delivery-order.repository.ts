@@ -2197,12 +2197,12 @@ export async function getDeliverableSalesOrders():
 
 async function runDeliveryIdWorkflow(
   functionName:
-    | "start_delivery_picking"
-    | "confirm_delivery_picked"
-    | "start_delivery_packing"
-    | "confirm_delivery_packed"
-    | "mark_delivery_delivered"
-    | "cancel_delivery_order",
+    | "start_delivery_picking_managed"
+    | "confirm_delivery_picked_managed"
+    | "start_delivery_packing_managed"
+    | "confirm_delivery_packed_managed"
+    | "mark_delivery_delivered_managed"
+    | "cancel_delivery_order_managed",
   deliveryOrderId: string,
   actionLabel: string,
 ): Promise<string> {
@@ -2261,7 +2261,7 @@ export async function createDeliveryFromSalesOrder(
     data,
     error,
   } = await supabase.rpc(
-    "create_delivery_from_sales_order",
+    "create_delivery_from_sales_order_managed",
     {
       p_sales_order_id: id,
     },
@@ -2305,7 +2305,7 @@ export async function startDeliveryPicking(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "start_delivery_picking",
+      "start_delivery_picking_managed",
       deliveryOrderId,
       "Unable to start delivery picking",
     );
@@ -2331,7 +2331,7 @@ export async function confirmDeliveryPicked(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "confirm_delivery_picked",
+      "confirm_delivery_picked_managed",
       deliveryOrderId,
       "Unable to confirm delivery picking",
     );
@@ -2357,7 +2357,7 @@ export async function startDeliveryPacking(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "start_delivery_packing",
+      "start_delivery_packing_managed",
       deliveryOrderId,
       "Unable to start delivery packing",
     );
@@ -2383,7 +2383,7 @@ export async function confirmDeliveryPacked(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "confirm_delivery_packed",
+      "confirm_delivery_packed_managed",
       deliveryOrderId,
       "Unable to confirm delivery packing",
     );
@@ -2420,7 +2420,7 @@ export async function dispatchDeliveryOrder(
       data,
       error,
     } = await supabase.rpc(
-      "dispatch_delivery_order_atomic",
+      "dispatch_delivery_order_atomic_managed",
       {
         p_delivery_order_id: id,
       },
@@ -2452,7 +2452,7 @@ export async function markDeliveryDelivered(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "mark_delivery_delivered",
+      "mark_delivery_delivered_managed",
       deliveryOrderId,
       "Unable to mark delivery as delivered",
     );
@@ -2478,7 +2478,7 @@ export async function cancelDeliveryOrder(
 ): Promise<DeliveryOrderDetails> {
   const id =
     await runDeliveryIdWorkflow(
-      "cancel_delivery_order",
+      "cancel_delivery_order_managed",
       deliveryOrderId,
       "Unable to cancel delivery order",
     );

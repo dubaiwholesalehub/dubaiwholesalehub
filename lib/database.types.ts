@@ -7150,6 +7150,10 @@ export type Database = {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
+      cancel_delivery_order_managed: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
       cancel_expense: {
         Args: { p_expense_id: string; p_reason: string }
         Returns: undefined
@@ -7175,6 +7179,10 @@ export type Database = {
         Returns: string
       }
       cancel_sales_order_atomic: {
+        Args: { p_sales_order_id: string }
+        Returns: Json
+      }
+      cancel_sales_order_atomic_managed: {
         Args: { p_sales_order_id: string }
         Returns: Json
       }
@@ -7242,12 +7250,24 @@ export type Database = {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
+      confirm_delivery_packed_managed: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
       confirm_delivery_picked: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
+      confirm_delivery_picked_managed: {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
       confirm_sales_order_atomic: {
         Args: { p_allow_negative_stock?: boolean; p_sales_order_id: string }
+        Returns: Json
+      }
+      confirm_sales_order_atomic_managed: {
+        Args: { p_allow_negative_stock: boolean; p_sales_order_id: string }
         Returns: Json
       }
       create_custom_gl_account: {
@@ -7262,6 +7282,10 @@ export type Database = {
         Returns: string
       }
       create_delivery_from_sales_order: {
+        Args: { p_sales_order_id: string }
+        Returns: string
+      }
+      create_delivery_from_sales_order_managed: {
         Args: { p_sales_order_id: string }
         Returns: string
       }
@@ -7519,6 +7543,10 @@ export type Database = {
         Args: { p_delivery_order_id: string }
         Returns: Json
       }
+      dispatch_delivery_order_atomic_managed: {
+        Args: { p_delivery_order_id: string }
+        Returns: Json
+      }
       dispatch_supplier_return_inventory: {
         Args: { p_supplier_return_id: string }
         Returns: string
@@ -7688,6 +7716,10 @@ export type Database = {
         Returns: number
       }
       mark_delivery_delivered: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
+      mark_delivery_delivered_managed: {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
@@ -8120,7 +8152,15 @@ export type Database = {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
+      start_delivery_packing_managed: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
       start_delivery_picking: {
+        Args: { p_delivery_order_id: string }
+        Returns: string
+      }
+      start_delivery_picking_managed: {
         Args: { p_delivery_order_id: string }
         Returns: string
       }
