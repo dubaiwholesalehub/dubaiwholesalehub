@@ -7965,6 +7965,10 @@ export type Database = {
         Args: { p_sales_return_id: string }
         Returns: string
       }
+      reconcile_customer_receipt_gl: {
+        Args: { p_customer_receipt_id: string }
+        Returns: string
+      }
       refund_supplier_return_credit: {
         Args: {
           p_amount: number
