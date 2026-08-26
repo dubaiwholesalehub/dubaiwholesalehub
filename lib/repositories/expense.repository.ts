@@ -306,6 +306,11 @@ export interface CreateExpenseInput {
   notes?: string;
 }
 
+export interface UpdateExpenseInput
+  extends CreateExpenseInput {
+  expenseId: string;
+}
+
 
 /* =========================================================
  * Helpers
@@ -1422,6 +1427,253 @@ export async function createExpense(
     );
   }
 
+
+  return data.id;
+}
+
+/* =========================================================
+ * Update Draft Expense
+ * ========================================================= */
+
+export async function updateExpense(
+  input: UpdateExpenseInput,
+): Promise<string> {
+  const supabase =
+    await createClient();
+
+  if (!input.expenseId) {
+    throw new Error(
+      "Expense ID is required.",
+    );
+  }
+
+  if (!input.categoryId) {
+    throw new Error(
+      "Expense category is required.",
+    );
+  }
+
+  if (
+    !Number.isFinite(
+      input.netAmount,
+    ) ||
+    input.netAmount <= 0
+  ) {
+    throw new Error(
+      "Expense net amount must be greater than zero.",
+    );
+  }
+
+  if (
+    !Number.isFinite(
+      input.taxAmount,
+    ) ||
+    input.taxAmount < 0
+  ) {
+    throw new Error(
+      "Expense VAT amount cannot be negative.",
+    );
+  }
+
+  /*
+   * Resolve category again.
+   *
+   * This is important because changing the category
+   * may also change expense_type.
+   */
+  const {
+    data: category,
+    error: categoryError,
+  } =
+    await supabase
+      .from(
+        "expense_categories",
+      )
+      .select(
+        "expense_type",
+      )
+      .eq(
+        "id",
+        input.categoryId,
+      )
+      .single();
+
+  if (
+    categoryError ||
+    !category
+  ) {
+    throw new Error(
+      `Unable to resolve expense category: ${
+        categoryError?.message ??
+        "Category not found."
+      }`,
+    );
+  }
+
+  const grossAmount =
+    Math.round(
+      (
+        input.netAmount +
+        input.taxAmount
+      ) *
+        100,
+    ) / 100;
+
+  const {
+    data,
+    error,
+  } =
+    await supabase
+      .from(
+        "expenses",
+      )
+      .update({
+        expense_date:
+          input.expenseDate,
+
+        category_id:
+          input.categoryId,
+
+        expense_type:
+          category.expense_type,
+
+        payee_name:
+          cleanText(
+            input.payeeName,
+          ),
+
+        supplier_id:
+          input.supplierId ||
+          null,
+
+        financial_account_id:
+          input.financialAccountId ||
+          null,
+
+        payment_method:
+          input.paymentMethod ??
+          null,
+
+        payment_reference:
+          cleanText(
+            input.paymentReference,
+          ),
+
+        currency_code:
+          input.currencyCode ??
+          "AED",
+
+        exchange_rate:
+          input.exchangeRate ??
+          1,
+
+        tax_treatment:
+          input.taxTreatment,
+
+        supplier_trn:
+          cleanText(
+            input.supplierTrn,
+          ),
+
+        supplier_invoice_number:
+          cleanText(
+            input.supplierInvoiceNumber,
+          ),
+
+        supplier_invoice_date:
+          input.supplierInvoiceDate ||
+          null,
+
+        tax_invoice_verified:
+          input.taxInvoiceVerified ??
+          false,
+
+        tax_invoice_verified_at:
+          input.taxInvoiceVerified
+            ? new Date()
+                .toISOString()
+            : null,
+
+        net_amount:
+          input.netAmount,
+
+        tax_amount:
+          input.taxAmount,
+
+        /*
+         * These values are calculated during posting.
+         * A draft edit must reset them.
+         */
+        recoverable_tax_amount:
+          0,
+
+        pending_tax_amount:
+          0,
+
+        gross_amount:
+          grossAmount,
+
+        customer_id:
+          input.customerId ||
+          null,
+
+        sales_order_id:
+          input.salesOrderId ||
+          null,
+
+        warehouse_id:
+          input.warehouseId ||
+          null,
+
+        sales_channel:
+          cleanText(
+            input.salesChannel,
+          ),
+
+        market_country_id:
+          input.marketCountryId ||
+          null,
+
+        profitability_notes:
+          cleanText(
+            input.profitabilityNotes,
+          ),
+
+        notes:
+          cleanText(
+            input.notes,
+          ),
+      })
+      .eq(
+        "id",
+        input.expenseId,
+      )
+
+      /*
+       * CRITICAL:
+       *
+       * Posted/cancelled expenses cannot be edited.
+       */
+      .eq(
+        "status",
+        "draft",
+      )
+      .select(
+        "id",
+      )
+      .maybeSingle();
+
+  if (error) {
+    throw new Error(
+      `Unable to update expense: ${error.message}`,
+    );
+  }
+
+  if (!data) {
+    throw new Error(
+      "Expense was not found or is no longer a draft.",
+    );
+  }
 
   return data.id;
 }
