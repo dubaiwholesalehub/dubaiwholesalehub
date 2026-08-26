@@ -485,7 +485,7 @@ export async function cancelFinancialTransfer(
     error,
   } =
     await supabase.rpc(
-      "cancel_financial_account_transfer",
+      "cancel_financial_account_transfer_with_gl",
       {
         p_transfer_id:
           transferId,
