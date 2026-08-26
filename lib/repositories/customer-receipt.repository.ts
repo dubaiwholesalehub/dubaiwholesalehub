@@ -1030,7 +1030,7 @@ export async function cancelCustomerReceipt(
         error,
     } =
         await supabase.rpc(
-            "cancel_customer_receipt_with_account",
+            "cancel_customer_receipt_with_gl",
             {
                 p_receipt_id:
                     receiptId,
