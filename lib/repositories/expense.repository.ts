@@ -1739,7 +1739,7 @@ export async function cancelExpense(
     error,
   } =
     await supabase.rpc(
-      "cancel_expense",
+      "cancel_expense_with_gl",
       {
         p_expense_id:
           expenseId,
