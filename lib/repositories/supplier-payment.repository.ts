@@ -1169,7 +1169,7 @@ export async function cancelSupplierPayment(
         error,
     } =
         await supabase.rpc(
-            "cancel_supplier_payment_with_account",
+            "cancel_supplier_payment_with_gl",
             {
                 p_supplier_payment_id:
                     paymentId,
