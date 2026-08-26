@@ -7969,6 +7969,7 @@ export type Database = {
         Args: { p_customer_receipt_id: string }
         Returns: string
       }
+      reconcile_targeted_sales_cogs_gl: { Args: never; Returns: Json }
       refund_supplier_return_credit: {
         Args: {
           p_amount: number
