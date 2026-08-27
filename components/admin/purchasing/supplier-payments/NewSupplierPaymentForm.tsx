@@ -241,11 +241,29 @@ export default function NewSupplierPaymentForm({
 
     const allocations = Object.entries(activeAllocations)
       .filter(([, value]) => value > 0)
-      .map(([quickPurchaseId, allocationAmount]) => ({
-        quickPurchaseId,
+      .map(([sourceId, allocationAmount]) => {
+        const payable = purchases.find((purchase) => purchase.id === sourceId);
 
-        amount: Number(allocationAmount.toFixed(2)),
-      }));
+        if (!payable) {
+          throw new Error("Unable to resolve supplier payable allocation.");
+        }
+
+        const amountValue = Number(allocationAmount.toFixed(2));
+
+        if (payable.sourceType === "goods_receipt") {
+          return {
+            goodsReceiptId: payable.goodsReceiptId ?? payable.id,
+
+            amount: amountValue,
+          };
+        }
+
+        return {
+          quickPurchaseId: payable.quickPurchaseId ?? payable.id,
+
+          amount: amountValue,
+        };
+      });
 
     startPosting(async () => {
       const result = await createSupplierPayment({
@@ -285,7 +303,6 @@ export default function NewSupplierPaymentForm({
       router.refresh();
     });
   }
-
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
       <div className="space-y-6">
@@ -301,7 +318,6 @@ export default function NewSupplierPaymentForm({
               </p>
             </div>
           </div>
-
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <Field label="Supplier" required>
               <select
@@ -479,15 +495,15 @@ export default function NewSupplierPaymentForm({
           {isLoadingPurchases ? (
             <div className="flex items-center justify-center gap-2 px-6 py-14 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-              Loading outstanding purchases...
+              Loading outstanding payables...
             </div>
           ) : !supplierId ? (
             <div className="px-6 py-14 text-center text-sm text-muted-foreground">
-              Select a supplier to view outstanding Quick Purchases.
+              Select a supplier to view outstanding supplier payables.
             </div>
           ) : purchases.length === 0 ? (
             <div className="px-6 py-14 text-center">
-              <p className="font-medium">No outstanding Quick Purchases.</p>
+              <p className="font-medium">No outstanding supplier payables.</p>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 Any unallocated amount will remain as supplier advance.
@@ -498,7 +514,7 @@ export default function NewSupplierPaymentForm({
               <table className="w-full min-w-[900px] text-sm">
                 <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3">Purchase</th>
+                    <th className="px-4 py-3">Document</th>
 
                     <th className="px-4 py-3">Invoice</th>
 
@@ -521,7 +537,15 @@ export default function NewSupplierPaymentForm({
                     return (
                       <tr key={purchase.id}>
                         <td className="px-4 py-4 font-semibold">
-                          {purchase.purchaseNumber}
+                          <div>
+                            <div>{purchase.purchaseNumber}</div>
+
+                            <div className="mt-1 text-xs font-normal text-muted-foreground">
+                              {purchase.sourceType === "goods_receipt"
+                                ? "Goods Receipt"
+                                : "Quick Purchase"}
+                            </div>
+                          </div>
                         </td>
 
                         <td className="px-4 py-4 text-muted-foreground">

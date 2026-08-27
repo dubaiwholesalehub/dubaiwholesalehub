@@ -20,11 +20,17 @@ export type SupplierPaymentStatus =
     | "cancelled";
 
 
-export type SupplierPaymentAllocationInput = {
-    quickPurchaseId: string;
-    amount: number;
-};
-
+export type SupplierPaymentAllocationInput =
+    | {
+        quickPurchaseId: string;
+        goodsReceiptId?: never;
+        amount: number;
+    }
+    | {
+        quickPurchaseId?: never;
+        goodsReceiptId: string;
+        amount: number;
+    };
 
 export type PostSupplierPaymentInput = {
     supplierId: string;
@@ -58,6 +64,18 @@ export type PostSupplierPaymentInput = {
 export type SupplierOutstandingPurchase = {
     id: string;
 
+    sourceType:
+    | "quick_purchase"
+    | "goods_receipt";
+
+    quickPurchaseId:
+    | string
+    | null;
+
+    goodsReceiptId:
+    | string
+    | null;
+
     purchaseNumber: string;
     purchaseDate: string;
 
@@ -73,9 +91,10 @@ export type SupplierOutstandingPurchase = {
 
     paymentStatus: string;
 
-    taxTreatment: string;
+    taxTreatment:
+    | string
+    | null;
 };
-
 
 /* =========================================================
  * Helpers
@@ -160,7 +179,14 @@ export async function postSupplierPayment(
                             allocation,
                         ) => ({
                             quick_purchase_id:
-                                allocation.quickPurchaseId,
+                                "quickPurchaseId" in allocation
+                                    ? allocation.quickPurchaseId
+                                    : null,
+
+                            goods_receipt_id:
+                                "goodsReceiptId" in allocation
+                                    ? allocation.goodsReceiptId
+                                    : null,
 
                             amount:
                                 allocation.amount,
@@ -193,6 +219,52 @@ export async function postSupplierPayment(
  * Outstanding Quick Purchases
  * ========================================================= */
 
+type SupplierPayableOpenItemRow = {
+    source_type:
+    | "quick_purchase"
+    | "goods_receipt";
+
+    source_id: string;
+
+    quick_purchase_id:
+    | string
+    | null;
+
+    goods_receipt_id:
+    | string
+    | null;
+
+    document_number: string;
+
+    document_date: string;
+
+    supplier_id:
+    | string
+    | null;
+
+    supplier_invoice_number:
+    | string
+    | null;
+
+    currency_code: string;
+
+    gross_amount:
+    | number
+    | string;
+
+    paid_amount:
+    | number
+    | string;
+
+    outstanding_amount:
+    | number
+    | string;
+
+    payment_status: string;
+
+    due_date: string;
+};
+
 export async function getSupplierOutstandingPurchases(
     supplierId: string,
 ): Promise<
@@ -209,42 +281,47 @@ export async function getSupplierOutstandingPurchases(
         data,
         error,
     } =
-        await supabase
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "supplier_payable_open_items",
+                ) => any;
+            }
+        )
             .from(
-                "quick_purchases",
-            )
-            .select(`
-        id,
-        purchase_number,
-        purchase_date,
+                "supplier_payable_open_items",
+            ).select(`
+        source_type,
+        source_id,
+        quick_purchase_id,
+        goods_receipt_id,
+        document_number,
+        document_date,
         supplier_invoice_number,
         currency_code,
-        grand_total,
+        gross_amount,
         paid_amount,
-        balance_due,
+        outstanding_amount,
         payment_status,
-        tax_treatment
+        due_date
       `)
             .eq(
                 "supplier_id",
                 supplierId,
             )
-            .eq(
-                "status",
-                "posted",
-            )
             .gt(
-                "balance_due",
+                "outstanding_amount",
                 0,
             )
             .order(
-                "purchase_date",
+                "due_date",
                 {
                     ascending: true,
                 },
             )
             .order(
-                "created_at",
+                "document_date",
                 {
                     ascending: true,
                 },
@@ -252,53 +329,66 @@ export async function getSupplierOutstandingPurchases(
 
     if (error) {
         throw new Error(
-            `Unable to load supplier outstanding purchases: ${error.message}`,
+            `Unable to load supplier outstanding payables: ${error.message}`,
         );
     }
 
-    return (
-        data ?? []
-    ).map(
-        (purchase) => ({
+    const payables =
+        (
+            data ??
+            []
+        ) as SupplierPayableOpenItemRow[];
+    return payables.map(
+        (payable) => ({
             id:
-                purchase.id,
+                payable.source_id,
+
+            sourceType:
+                payable.source_type as
+                | "quick_purchase"
+                | "goods_receipt",
+
+            quickPurchaseId:
+                payable.quick_purchase_id,
+
+            goodsReceiptId:
+                payable.goods_receipt_id,
 
             purchaseNumber:
-                purchase.purchase_number,
+                payable.document_number,
 
             purchaseDate:
-                purchase.purchase_date,
+                payable.document_date,
 
             supplierInvoiceNumber:
-                purchase.supplier_invoice_number,
+                payable.supplier_invoice_number,
 
             currencyCode:
-                purchase.currency_code,
+                payable.currency_code,
 
             grandTotal:
                 Number(
-                    purchase.grand_total,
+                    payable.gross_amount,
                 ),
 
             paidAmount:
                 Number(
-                    purchase.paid_amount,
+                    payable.paid_amount,
                 ),
 
             balanceDue:
                 Number(
-                    purchase.balance_due,
+                    payable.outstanding_amount,
                 ),
 
             paymentStatus:
-                purchase.payment_status,
+                payable.payment_status,
 
             taxTreatment:
-                purchase.tax_treatment,
+                null,
         }),
     );
 }
-
 
 /* =========================================================
  * Supplier Options
@@ -812,14 +902,27 @@ export async function getSupplierPaymentSummary():
 export type SupplierPaymentAllocation = {
     id: string;
 
-    quickPurchaseId: string;
-    purchaseNumber: string;
+    sourceType:
+    | "quick_purchase"
+    | "goods_receipt";
+
+    sourceId: string;
+
+    quickPurchaseId:
+    | string
+    | null;
+
+    goodsReceiptId:
+    | string
+    | null;
+
+    documentNumber: string;
 
     supplierInvoiceNumber:
     | string
     | null;
 
-    purchaseDate: string;
+    documentDate: string;
 
     amount: number;
 
@@ -829,7 +932,6 @@ export type SupplierPaymentAllocation = {
 
     paymentStatus: string;
 };
-
 
 export type SupplierPaymentDetails = {
     id: string;
@@ -890,7 +992,161 @@ export type SupplierPaymentDetails = {
     SupplierPaymentAllocation[];
 };
 
+type SupplierPaymentAllocationQueryRow = {
+    id: string;
 
+    quick_purchase_id:
+    | string
+    | null;
+
+    goods_receipt_id:
+    | string
+    | null;
+
+    amount:
+    | number
+    | string;
+
+    quick_purchase:
+    | {
+        purchase_number:
+        | string
+        | null;
+
+        supplier_invoice_number:
+        | string
+        | null;
+
+        purchase_date:
+        | string
+        | null;
+
+        grand_total:
+        | number
+        | string
+        | null;
+
+        paid_amount:
+        | number
+        | string
+        | null;
+
+        balance_due:
+        | number
+        | string
+        | null;
+
+        payment_status:
+        | string
+        | null;
+    }
+    | {
+        purchase_number:
+        | string
+        | null;
+
+        supplier_invoice_number:
+        | string
+        | null;
+
+        purchase_date:
+        | string
+        | null;
+
+        grand_total:
+        | number
+        | string
+        | null;
+
+        paid_amount:
+        | number
+        | string
+        | null;
+
+        balance_due:
+        | number
+        | string
+        | null;
+
+        payment_status:
+        | string
+        | null;
+    }[]
+    | null;
+
+    goods_receipt:
+    | {
+        receipt_number:
+        | string
+        | null;
+
+        supplier_invoice_number:
+        | string
+        | null;
+
+        received_date:
+        | string
+        | null;
+
+        completed_at:
+        | string
+        | null;
+
+        created_at:
+        | string
+        | null;
+
+        paid_amount:
+        | number
+        | string
+        | null;
+
+        balance_due:
+        | number
+        | string
+        | null;
+
+        payment_status:
+        | string
+        | null;
+    }
+    | {
+        receipt_number:
+        | string
+        | null;
+
+        supplier_invoice_number:
+        | string
+        | null;
+
+        received_date:
+        | string
+        | null;
+
+        completed_at:
+        | string
+        | null;
+
+        created_at:
+        | string
+        | null;
+
+        paid_amount:
+        | number
+        | string
+        | null;
+
+        balance_due:
+        | number
+        | string
+        | null;
+
+        payment_status:
+        | string
+        | null;
+    }[]
+    | null;
+};
 export async function getSupplierPaymentById(
     paymentId: string,
 ): Promise<
@@ -943,9 +1199,10 @@ export async function getSupplierPaymentById(
           company_name
         ),
 
-        allocations:supplier_payment_allocations (
+                allocations:supplier_payment_allocations (
           id,
           quick_purchase_id,
+          goods_receipt_id,
           amount,
 
           quick_purchase:quick_purchases (
@@ -954,6 +1211,19 @@ export async function getSupplierPaymentById(
             purchase_date,
 
             grand_total,
+            paid_amount,
+            balance_due,
+
+            payment_status
+          ),
+
+          goods_receipt:goods_receipts (
+            receipt_number,
+            supplier_invoice_number,
+            received_date,
+            completed_at,
+            created_at,
+
             paid_amount,
             balance_due,
 
@@ -988,12 +1258,17 @@ export async function getSupplierPaymentById(
             : data.supplier;
 
 
-    const allocations:
-        SupplierPaymentAllocation[] =
+    const allocationRows =
         (
             data.allocations ??
             []
-        ).map(
+        ) as unknown as
+        SupplierPaymentAllocationQueryRow[];
+
+
+    const allocations:
+        SupplierPaymentAllocation[] =
+        allocationRows.map(
             (
                 allocation,
             ) => {
@@ -1006,24 +1281,133 @@ export async function getSupplierPaymentById(
                         : allocation
                             .quick_purchase;
 
+                const goodsReceipt =
+                    Array.isArray(
+                        allocation.goods_receipt,
+                    )
+                        ? allocation
+                            .goods_receipt[0]
+                        : allocation
+                            .goods_receipt;
+
+
+                if (
+                    allocation.goods_receipt_id &&
+                    goodsReceipt
+                ) {
+                    const paidAmount =
+                        Number(
+                            goodsReceipt
+                                .paid_amount ??
+                            0,
+                        );
+
+                    const balanceDue =
+                        Number(
+                            goodsReceipt
+                                .balance_due ??
+                            0,
+                        );
+
+                    return {
+                        id:
+                            allocation.id,
+
+                        sourceType:
+                            "goods_receipt" as const,
+
+                        sourceId:
+                            allocation.goods_receipt_id,
+
+                        quickPurchaseId:
+                            null,
+
+                        goodsReceiptId:
+                            allocation.goods_receipt_id,
+
+                        documentNumber:
+                            goodsReceipt
+                                .receipt_number ??
+                            "Unknown Goods Receipt",
+
+                        supplierInvoiceNumber:
+                            goodsReceipt
+                                .supplier_invoice_number ??
+                            null,
+
+                        documentDate:
+                            goodsReceipt
+                                .received_date ??
+                            goodsReceipt
+                                .completed_at
+                                ?.slice(
+                                    0,
+                                    10,
+                                ) ??
+                            goodsReceipt
+                                .created_at
+                                ?.slice(
+                                    0,
+                                    10,
+                                ) ??
+                            "",
+
+                        amount:
+                            Number(
+                                allocation.amount,
+                            ),
+
+                        grandTotal:
+                            paidAmount +
+                            balanceDue,
+
+                        paidAmount,
+
+                        balanceDue,
+
+                        paymentStatus:
+                            goodsReceipt
+                                .payment_status ??
+                            "unknown",
+                    };
+                }
+
+                if (
+                    !allocation.quick_purchase_id
+                ) {
+                    throw new Error(
+                        "Supplier Payment allocation is missing its Quick Purchase source.",
+                    );
+                }
+
+
                 return {
                     id:
                         allocation.id,
 
+                    sourceType:
+                        "quick_purchase" as const,
+
+                    sourceId:
+                        allocation.quick_purchase_id,
+
                     quickPurchaseId:
                         allocation.quick_purchase_id,
 
-                    purchaseNumber:
+                    goodsReceiptId:
+                        null,
+
+                    documentNumber:
                         purchase
                             ?.purchase_number ??
-                        "Unknown Purchase",
+                        "Unknown Quick Purchase",
 
                     supplierInvoiceNumber:
                         purchase
                             ?.supplier_invoice_number ??
                         null,
 
-                    purchaseDate:
+                    documentDate:
                         purchase
                             ?.purchase_date ??
                         "",
@@ -1061,7 +1445,6 @@ export async function getSupplierPaymentById(
                 };
             },
         );
-
 
     return {
         id:

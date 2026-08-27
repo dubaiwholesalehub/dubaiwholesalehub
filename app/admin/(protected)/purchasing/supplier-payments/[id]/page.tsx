@@ -158,16 +158,15 @@ export default async function SupplierPaymentDetailPage({
 
           <section className="overflow-hidden rounded-xl border bg-card">
             <div className="border-b p-5">
-              <h2 className="font-semibold">Quick Purchase Allocations</h2>
-
+              <h2 className="font-semibold">Payment Allocations</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Purchases paid by this supplier payment.
+                Supplier payable documents settled by this payment.
               </p>
             </div>
 
             {payment.allocations.length === 0 ? (
               <div className="px-6 py-14 text-center">
-                <p className="font-medium">No Quick Purchase allocations.</p>
+                <p className="font-medium">No payment allocations.</p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
                   The full payment remains as an unallocated supplier advance.
@@ -178,13 +177,13 @@ export default async function SupplierPaymentDetailPage({
                 <table className="w-full min-w-[900px] text-sm">
                   <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">Quick Purchase</th>
+                      <th className="px-4 py-3">Document</th>
 
                       <th className="px-4 py-3">Supplier Invoice</th>
 
                       <th className="px-4 py-3">Date</th>
 
-                      <th className="px-4 py-3 text-right">Purchase Total</th>
+                      <th className="px-4 py-3 text-right">Document Total</th>
 
                       <th className="px-4 py-3 text-right">This Payment</th>
 
@@ -198,7 +197,15 @@ export default async function SupplierPaymentDetailPage({
                     {payment.allocations.map((allocation) => (
                       <tr key={allocation.id}>
                         <td className="px-4 py-4 font-semibold">
-                          {allocation.purchaseNumber}
+                          <div>
+                            <div>{allocation.documentNumber}</div>
+
+                            <div className="mt-1 text-xs font-normal text-muted-foreground">
+                              {allocation.sourceType === "goods_receipt"
+                                ? "Goods Receipt"
+                                : "Quick Purchase"}
+                            </div>
+                          </div>
                         </td>
 
                         <td className="px-4 py-4 text-muted-foreground">
@@ -206,7 +213,7 @@ export default async function SupplierPaymentDetailPage({
                         </td>
 
                         <td className="px-4 py-4 text-muted-foreground">
-                          {allocation.purchaseDate}
+                          {allocation.documentDate}
                         </td>
 
                         <td className="px-4 py-4 text-right">

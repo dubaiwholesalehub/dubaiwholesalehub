@@ -31,10 +31,15 @@ function money(value: number) {
   }).format(value);
 }
 
-function typeLabel(type: "purchase" | "payment" | "legacy_payment") {
+function typeLabel(
+  type: "purchase" | "goods_receipt" | "payment" | "legacy_payment",
+) {
   switch (type) {
     case "purchase":
       return "Purchase";
+
+    case "goods_receipt":
+      return "Goods Receipt";
 
     case "legacy_payment":
       return "Opening Payment";

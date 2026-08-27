@@ -9,9 +9,9 @@ import {
 
 export type SupplierStatementEntryType =
     | "purchase"
+    | "goods_receipt"
     | "payment"
     | "legacy_payment";
-
 
 export type SupplierStatementEntry = {
     id: string;
@@ -34,6 +34,10 @@ export type SupplierStatementEntry = {
     runningBalance: number;
 
     quickPurchaseId:
+    | string
+    | null;
+
+    goodsReceiptId:
     | string
     | null;
 
@@ -279,7 +283,110 @@ export async function getSupplierStatement(
         );
     }
 
+    /* -------------------------------------------------------
+     * All Completed Goods Receipts
+     *
+     * We intentionally load all dates because statements
+     * require the complete historical supplier liability
+     * ledger, including GRNs that are already fully paid.
+     * ------------------------------------------------------- */
 
+    const {
+        data: goodsReceipts,
+        error: goodsReceiptsError,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "goods_receipts",
+                ) => any;
+            }
+        )
+            .from(
+                "goods_receipts",
+            )
+            .select(`
+        id,
+        receipt_number,
+        purchase_order_id,
+        supplier_invoice_number,
+        received_date,
+        completed_at,
+        created_at,
+        status,
+        internal_notes,
+        paid_amount,
+        balance_due,
+        payment_status
+      `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            )
+            .eq(
+                "status",
+                "completed",
+            )
+            .order(
+                "received_date",
+                {
+                    ascending: true,
+                    nullsFirst: false,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true,
+                },
+            );
+
+
+    if (goodsReceiptsError) {
+        throw new Error(
+            `Unable to load supplier Goods Receipts: ${goodsReceiptsError.message}`,
+        );
+    }
+
+    const goodsReceiptPayables =
+        await Promise.all(
+            (
+                goodsReceipts ??
+                []
+            ).map(
+                async (
+                    receipt: any,
+                ) => {
+                    const {
+                        data,
+                        error,
+                    } =
+                        await supabase.rpc(
+                            "get_goods_receipt_payable_amount" as never,
+                            {
+                                p_goods_receipt_id:
+                                    receipt.id,
+                            } as never,
+                        );
+
+                    if (error) {
+                        throw new Error(
+                            `Unable to calculate payable for ${receipt.receipt_number}: ${error.message}`,
+                        );
+                    }
+
+                    return {
+                        ...receipt,
+
+                        payableAmount:
+                            numberValue(
+                                data,
+                            ),
+                    };
+                },
+            ),
+        );
     /* -------------------------------------------------------
      * Supplier Payments
      *
@@ -367,6 +474,10 @@ export async function getSupplierStatement(
         | string
         | null;
 
+        goodsReceiptId:
+        | string
+        | null;
+
         supplierPaymentId:
         | string
         | null;
@@ -429,6 +540,9 @@ export async function getSupplierStatement(
             quickPurchaseId:
                 purchase.id,
 
+            goodsReceiptId:
+                null,
+
             supplierPaymentId:
                 null,
 
@@ -476,7 +590,8 @@ export async function getSupplierStatement(
 
                 quickPurchaseId:
                     purchase.id,
-
+                goodsReceiptId:
+                    null,
                 supplierPaymentId:
                     null,
 
@@ -486,6 +601,65 @@ export async function getSupplierStatement(
         }
     }
 
+    /* -------------------------------------------------------
+ * Goods Receipt liabilities
+ * ------------------------------------------------------- */
+
+    for (
+        const receipt of
+        goodsReceiptPayables
+    ) {
+        const receiptDate =
+            receipt.received_date ??
+            receipt.completed_at?.slice(
+                0,
+                10,
+            ) ??
+            receipt.created_at.slice(
+                0,
+                10,
+            );
+
+        rawEntries.push({
+            id:
+                `goods-receipt-${receipt.id}`,
+
+            date:
+                receiptDate,
+
+            sortTimestamp:
+                receipt.completed_at ??
+                receipt.created_at,
+
+            sortPriority: 1,
+
+            type:
+                "goods_receipt",
+
+            documentNumber:
+                receipt.receipt_number,
+
+            referenceNumber:
+                receipt.supplier_invoice_number,
+
+            debit:
+                receipt.payableAmount,
+
+            credit: 0,
+
+            quickPurchaseId:
+                null,
+
+            goodsReceiptId:
+                receipt.id,
+
+            supplierPaymentId:
+                null,
+
+            description:
+                receipt.internal_notes,
+        });
+    }
 
     for (
         const payment of
@@ -520,6 +694,8 @@ export async function getSupplierStatement(
                 ),
 
             quickPurchaseId:
+                null,
+            goodsReceiptId:
                 null,
 
             supplierPaymentId:
@@ -686,6 +862,9 @@ export async function getSupplierStatement(
             quickPurchaseId:
                 entry.quickPurchaseId,
 
+            goodsReceiptId:
+                entry.goodsReceiptId,
+
             supplierPaymentId:
                 entry.supplierPaymentId,
 
@@ -707,24 +886,58 @@ export async function getSupplierStatement(
      * These are current balances, independent of date filter.
      * ======================================================= */
 
+    const {
+        data: currentPayables,
+        error: currentPayablesError,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "supplier_payable_open_items",
+                ) => any;
+            }
+        )
+            .from(
+                "supplier_payable_open_items",
+            )
+            .select(`
+        outstanding_amount
+      `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            )
+            .gt(
+                "outstanding_amount",
+                0,
+            );
+
+
+    if (currentPayablesError) {
+        throw new Error(
+            `Unable to load current supplier payables: ${currentPayablesError.message}`,
+        );
+    }
+
+
     const totalOutstandingPurchases =
         roundMoney(
             (
-                purchases ??
+                currentPayables ??
                 []
             ).reduce(
                 (
-                    total,
-                    purchase,
+                    total: number,
+                    payable: any,
                 ) =>
                     total +
                     numberValue(
-                        purchase.balance_due,
+                        payable.outstanding_amount,
                     ),
                 0,
             ),
         );
-
 
     const totalUnallocatedAdvance =
         roundMoney(
@@ -832,34 +1045,38 @@ export async function getSupplierFinancialPositions(
     const supabase =
         await createClient();
 
-    /*
-     * -------------------------------------------------------
-     * Outstanding Quick Purchases
-     * -------------------------------------------------------
-     */
+        /* -------------------------------------------------------
+     * Consolidated Outstanding Supplier Payables
+     * ------------------------------------------------------- */
 
     const {
         data: purchases,
         error: purchasesError,
-    } = await supabase
-        .from("quick_purchases")
-        .select(`
-      supplier_id,
-      balance_due,
-      status
-    `)
-        .in(
-            "supplier_id",
-            supplierIds,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "supplier_payable_open_items",
+                ) => any;
+            }
         )
-        .eq(
-            "status",
-            "posted",
-        )
-        .gt(
-            "balance_due",
-            0,
-        );
+            .from(
+                "supplier_payable_open_items",
+            )
+            .select(`
+        supplier_id,
+        outstanding_amount
+      `)
+            .in(
+                "supplier_id",
+                supplierIds,
+            )
+            .gt(
+                "outstanding_amount",
+                0,
+            );
+
 
     if (purchasesError) {
         throw new Error(
@@ -936,7 +1153,7 @@ export async function getSupplierFinancialPositions(
             purchase.supplier_id
         ].payable +=
             Number(
-                purchase.balance_due ??
+                purchase.outstanding_amount ??
                 0,
             );
     }

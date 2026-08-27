@@ -1,5 +1,4 @@
 "use server";
-
 import {
   revalidatePath,
 } from "next/cache";
@@ -51,10 +50,18 @@ export type CreateSupplierPaymentInput = {
 
   notes?: string;
 
-  allocations: Array<{
-    quickPurchaseId: string;
-    amount: number;
-  }>;
+  allocations: Array<
+    | {
+      quickPurchaseId: string;
+      goodsReceiptId?: never;
+      amount: number;
+    }
+    | {
+      quickPurchaseId?: never;
+      goodsReceiptId: string;
+      amount: number;
+    }
+  >;
 };
 
 
@@ -171,11 +178,24 @@ export async function createSupplierPayment(
       const allocation of
       input.allocations
     ) {
+      const hasQuickPurchase =
+        "quickPurchaseId" in allocation &&
+        Boolean(
+          allocation.quickPurchaseId,
+        );
+
+      const hasGoodsReceipt =
+        "goodsReceiptId" in allocation &&
+        Boolean(
+          allocation.goodsReceiptId,
+        );
+
       if (
-        !allocation.quickPurchaseId
+        hasQuickPurchase ===
+        hasGoodsReceipt
       ) {
         throw new Error(
-          "Invalid Quick Purchase allocation.",
+          "Each allocation must belong to exactly one Quick Purchase or Goods Receipt.",
         );
       }
 
