@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   applySupplierReturnCreditAction,
   refundSupplierReturnCreditAction,
+  applySupplierReturnCreditToGoodsReceiptAction,
 } from "@/app/admin/(protected)/purchasing/returns/[id]/actions";
 
 import type {
@@ -23,12 +24,15 @@ import type {
   SupplierReturnCreditEligiblePurchase,
   SupplierReturnCreditRefund,
   SupplierReturnCreditSummary,
+  SupplierReturnCreditEligibleGoodsReceipt,
 } from "@/lib/repositories/supplier-return.repository";
 
 interface SupplierReturnCreditPanelProps {
   credit: SupplierReturnCreditSummary;
 
   eligiblePurchases: SupplierReturnCreditEligiblePurchase[];
+
+  eligibleGoodsReceipts: SupplierReturnCreditEligibleGoodsReceipt[];
 
   applications: SupplierReturnCreditApplication[];
 
@@ -60,6 +64,7 @@ function today(): string {
 export default function SupplierReturnCreditPanel({
   credit,
   eligiblePurchases,
+  eligibleGoodsReceipts,
   applications,
   refunds,
   financialAccounts,
@@ -68,7 +73,13 @@ export default function SupplierReturnCreditPanel({
 
   const [isPending, startTransition] = useTransition();
 
+  const [targetType, setTargetType] = useState<
+    "quick_purchase" | "goods_receipt"
+  >(eligiblePurchases.length > 0 ? "quick_purchase" : "goods_receipt");
+
   const [quickPurchaseId, setQuickPurchaseId] = useState("");
+
+  const [goodsReceiptId, setGoodsReceiptId] = useState("");
 
   const [amount, setAmount] = useState("");
 
@@ -97,14 +108,27 @@ export default function SupplierReturnCreditPanel({
     [eligiblePurchases, quickPurchaseId],
   );
 
-  const maximumApplicable = selectedPurchase
-    ? Math.min(credit.supplierCreditAvailable, selectedPurchase.balanceDue)
+  const selectedGoodsReceipt = useMemo(
+    () =>
+      eligibleGoodsReceipts.find((receipt) => receipt.id === goodsReceiptId) ??
+      null,
+    [eligibleGoodsReceipts, goodsReceiptId],
+  );
+
+  const selectedTarget =
+    targetType === "quick_purchase" ? selectedPurchase : selectedGoodsReceipt;
+
+  const maximumApplicable = selectedTarget
+    ? Math.min(credit.supplierCreditAvailable, selectedTarget.balanceDue)
     : credit.supplierCreditAvailable;
-
   function handleApply() {
-    if (!quickPurchaseId) {
+    if (targetType === "quick_purchase" && !quickPurchaseId) {
       toast.error("Select a Quick Purchase.");
+      return;
+    }
 
+    if (targetType === "goods_receipt" && !goodsReceiptId) {
+      toast.error("Select a Goods Receipt.");
       return;
     }
 
@@ -112,7 +136,6 @@ export default function SupplierReturnCreditPanel({
 
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       toast.error("Enter a valid credit amount.");
-
       return;
     }
 
@@ -122,43 +145,50 @@ export default function SupplierReturnCreditPanel({
           credit.supplierCreditAvailable,
         )}.`,
       );
-
       return;
     }
 
-    if (selectedPurchase && numericAmount > selectedPurchase.balanceDue) {
+    if (selectedTarget && numericAmount > selectedTarget.balanceDue) {
       toast.error(
-        `Amount cannot exceed purchase balance of ${credit.currencyCode} ${money(
-          selectedPurchase.balanceDue,
+        `Amount cannot exceed outstanding balance of ${credit.currencyCode} ${money(
+          selectedTarget.balanceDue,
         )}.`,
       );
-
       return;
     }
 
     if (!applicationDate || !postingDate) {
       toast.error("Application and posting dates are required.");
-
       return;
     }
 
     startTransition(async () => {
       try {
-        await applySupplierReturnCreditAction(
-          credit.supplierReturnId,
-          quickPurchaseId,
-          numericAmount,
-          applicationDate,
-          postingDate,
-          notes.trim() || null,
-        );
+        if (targetType === "quick_purchase") {
+          await applySupplierReturnCreditAction(
+            credit.supplierReturnId,
+            quickPurchaseId,
+            numericAmount,
+            applicationDate,
+            postingDate,
+            notes.trim() || null,
+          );
+        } else {
+          await applySupplierReturnCreditToGoodsReceiptAction({
+            supplierReturnId: credit.supplierReturnId,
+            goodsReceiptId,
+            amount: numericAmount,
+            applicationDate,
+            postingDate,
+            notes: notes.trim() || null,
+          });
+        }
 
         toast.success("Supplier credit applied successfully.");
 
         setQuickPurchaseId("");
-
+        setGoodsReceiptId("");
         setAmount("");
-
         setNotes("");
 
         router.refresh();
@@ -290,61 +320,162 @@ export default function SupplierReturnCreditPanel({
 
           <p className="mt-1 text-sm text-muted-foreground">
             Apply available supplier credit against an outstanding Quick
-            Purchase.
+            Purchase or Goods Receipt.
           </p>
 
-          {eligiblePurchases.length === 0 ? (
+          {eligiblePurchases.length === 0 &&
+          eligibleGoodsReceipts.length === 0 ? (
             <div className="mt-5 rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-              No eligible outstanding Quick Purchases are currently available
-              for this supplier and currency.
+              No eligible outstanding Quick Purchases or Goods Receipts are
+              currently available for this supplier and currency.
             </div>
           ) : (
             <div className="mt-5 space-y-5">
-              <label className="block space-y-2">
-                <span className="text-sm font-medium">Quick Purchase</span>
-
-                <select
-                  value={quickPurchaseId}
-                  onChange={(event) => {
-                    const id = event.target.value;
-
-                    setQuickPurchaseId(id);
-
-                    const purchase = eligiblePurchases.find(
-                      (item) => item.id === id,
-                    );
-
-                    if (purchase) {
-                      setAmount(
-                        String(
-                          Math.min(
-                            credit.supplierCreditAvailable,
-                            purchase.balanceDue,
-                          ),
-                        ),
-                      );
-                    } else {
-                      setAmount("");
-                    }
+              <div className="grid gap-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTargetType("quick_purchase");
+                    setGoodsReceiptId("");
+                    setAmount("");
                   }}
-                  disabled={isPending}
-                  className="h-11 w-full rounded-md border bg-background px-3 text-sm"
+                  disabled={isPending || eligiblePurchases.length === 0}
+                  className={[
+                    "rounded-lg border p-4 text-left transition disabled:opacity-50",
+                    targetType === "quick_purchase"
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "bg-background hover:bg-muted/40",
+                  ].join(" ")}
                 >
-                  <option value="">
-                    Select an outstanding Quick Purchase...
-                  </option>
+                  <div className="font-medium">Quick Purchase</div>
 
-                  {eligiblePurchases.map((purchase) => (
-                    <option key={purchase.id} value={purchase.id}>
-                      {purchase.purchaseNumber}
-                      {" — Balance "}
-                      {purchase.currencyCode} {money(purchase.balanceDue)}
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Apply credit against an outstanding Quick Purchase.
+                  </div>
+
+                  <div className="mt-2 text-xs font-medium">
+                    {eligiblePurchases.length} eligible
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTargetType("goods_receipt");
+                    setQuickPurchaseId("");
+                    setAmount("");
+                  }}
+                  disabled={isPending || eligibleGoodsReceipts.length === 0}
+                  className={[
+                    "rounded-lg border p-4 text-left transition disabled:opacity-50",
+                    targetType === "goods_receipt"
+                      ? "border-emerald-500 bg-emerald-50"
+                      : "bg-background hover:bg-muted/40",
+                  ].join(" ")}
+                >
+                  <div className="font-medium">Goods Receipt</div>
+
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Apply credit against an outstanding Goods Receipt.
+                  </div>
+
+                  <div className="mt-2 text-xs font-medium">
+                    {eligibleGoodsReceipts.length} eligible
+                  </div>
+                </button>
+              </div>
+
+              {targetType === "quick_purchase" ? (
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium">Quick Purchase</span>
+
+                  <select
+                    value={quickPurchaseId}
+                    onChange={(event) => {
+                      const id = event.target.value;
+
+                      setQuickPurchaseId(id);
+
+                      const purchase = eligiblePurchases.find(
+                        (item) => item.id === id,
+                      );
+
+                      if (purchase) {
+                        setAmount(
+                          String(
+                            Math.min(
+                              credit.supplierCreditAvailable,
+                              purchase.balanceDue,
+                            ),
+                          ),
+                        );
+                      } else {
+                        setAmount("");
+                      }
+                    }}
+                    disabled={isPending}
+                    className="h-11 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">
+                      Select an outstanding Quick Purchase...
                     </option>
-                  ))}
-                </select>
-              </label>
 
-              {selectedPurchase ? (
+                    {eligiblePurchases.map((purchase) => (
+                      <option key={purchase.id} value={purchase.id}>
+                        {purchase.purchaseNumber}
+                        {" — Balance "}
+                        {purchase.currencyCode} {money(purchase.balanceDue)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="block space-y-2">
+                  <span className="text-sm font-medium">Goods Receipt</span>
+
+                  <select
+                    value={goodsReceiptId}
+                    onChange={(event) => {
+                      const id = event.target.value;
+
+                      setGoodsReceiptId(id);
+
+                      const receipt = eligibleGoodsReceipts.find(
+                        (item) => item.id === id,
+                      );
+
+                      if (receipt) {
+                        setAmount(
+                          String(
+                            Math.min(
+                              credit.supplierCreditAvailable,
+                              receipt.balanceDue,
+                            ),
+                          ),
+                        );
+                      } else {
+                        setAmount("");
+                      }
+                    }}
+                    disabled={isPending}
+                    className="h-11 w-full rounded-md border bg-background px-3 text-sm"
+                  >
+                    <option value="">
+                      Select an outstanding Goods Receipt...
+                    </option>
+
+                    {eligibleGoodsReceipts.map((receipt) => (
+                      <option key={receipt.id} value={receipt.id}>
+                        {receipt.receiptNumber}
+                        {" — Balance "}
+                        {receipt.currencyCode} {money(receipt.balanceDue)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {targetType === "quick_purchase" && selectedPurchase ? (
                 <div className="grid gap-3 rounded-lg bg-muted/40 p-4 sm:grid-cols-4">
                   <MiniValue
                     label="Purchase"
@@ -374,6 +505,36 @@ export default function SupplierReturnCreditPanel({
                 </div>
               ) : null}
 
+              {targetType === "goods_receipt" && selectedGoodsReceipt ? (
+                <div className="grid gap-3 rounded-lg bg-muted/40 p-4 sm:grid-cols-4">
+                  <MiniValue
+                    label="Goods Receipt"
+                    value={selectedGoodsReceipt.receiptNumber}
+                  />
+
+                  <MiniValue
+                    label="Receipt Total"
+                    value={`${selectedGoodsReceipt.currencyCode} ${money(
+                      selectedGoodsReceipt.grossAmount,
+                    )}`}
+                  />
+
+                  <MiniValue
+                    label="Paid Amount"
+                    value={`${selectedGoodsReceipt.currencyCode} ${money(
+                      selectedGoodsReceipt.paidAmount,
+                    )}`}
+                  />
+
+                  <MiniValue
+                    label="Outstanding"
+                    value={`${selectedGoodsReceipt.currencyCode} ${money(
+                      selectedGoodsReceipt.balanceDue,
+                    )}`}
+                  />
+                </div>
+              ) : null}
+
               <div className="grid gap-5 md:grid-cols-3">
                 <label className="space-y-2">
                   <span className="text-sm font-medium">Amount</span>
@@ -385,7 +546,7 @@ export default function SupplierReturnCreditPanel({
                     max={maximumApplicable}
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
-                    disabled={isPending || !quickPurchaseId}
+                    disabled={isPending || !selectedTarget}
                     className="h-11 w-full rounded-md border bg-background px-3 text-sm"
                   />
 
@@ -435,7 +596,7 @@ export default function SupplierReturnCreditPanel({
               <div className="flex justify-end">
                 <button
                   type="button"
-                  disabled={isPending || !quickPurchaseId || !amount}
+                  disabled={isPending || !selectedTarget || !amount}
                   onClick={handleApply}
                   className="inline-flex h-10 items-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-medium text-white disabled:opacity-50"
                 >
@@ -606,7 +767,7 @@ export default function SupplierReturnCreditPanel({
 
           <p className="mt-1 text-sm text-muted-foreground">
             Immutable history of Supplier Return credit applied to later Quick
-            Purchases.
+            Purchases or Goods Receipts.
           </p>
         </div>
 
@@ -621,7 +782,7 @@ export default function SupplierReturnCreditPanel({
                 <tr>
                   <th className="px-4 py-3">Date</th>
 
-                  <th className="px-4 py-3">Quick Purchase</th>
+                  <th className="px-4 py-3">Applied To</th>
 
                   <th className="px-4 py-3 text-right">Amount</th>
 

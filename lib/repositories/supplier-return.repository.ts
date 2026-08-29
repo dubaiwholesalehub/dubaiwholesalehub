@@ -303,6 +303,23 @@ export type SupplierReturnCreditEligiblePurchase = {
     paymentStatus: string;
 };
 
+export type SupplierReturnCreditEligibleGoodsReceipt = {
+    id: string;
+    receiptNumber: string;
+
+    receiptDate: string;
+
+    supplierId: string;
+    supplierName: string;
+
+    currencyCode: string;
+
+    grossAmount: number;
+    paidAmount: number;
+    balanceDue: number;
+    paymentStatus: string;
+};
+
 
 export type SupplierReturnCreditApplication = {
     id: string;
@@ -950,15 +967,8 @@ export async function getSupplierReturnCreditEligiblePurchases(
         );
     }
 
-    if (!creditState.quickPurchaseId) {
-        return [];
-    }
-
-    const {
-        data,
-        error,
-    } =
-        await supabase
+    let query =
+        supabase
             .from(
                 "quick_purchases",
             )
@@ -973,7 +983,7 @@ export async function getSupplierReturnCreditEligiblePurchases(
                 paid_amount,
                 balance_due,
                 payment_status
-                `,
+            `,
             )
             .eq(
                 "supplier_id",
@@ -987,10 +997,6 @@ export async function getSupplierReturnCreditEligiblePurchases(
                 "balance_due",
                 0,
             )
-            .neq(
-                "id",
-                creditState.quickPurchaseId,
-            )
             .order(
                 "purchase_date",
                 {
@@ -998,6 +1004,22 @@ export async function getSupplierReturnCreditEligiblePurchases(
                         false,
                 },
             );
+
+
+    if (creditState.quickPurchaseId) {
+        query =
+            query.neq(
+                "id",
+                creditState.quickPurchaseId,
+            );
+    }
+
+
+    const {
+        data,
+        error,
+    } =
+        await query;
 
     if (error) {
         throw new Error(
@@ -1123,6 +1145,21 @@ export async function getSupplierReturnCreditApplications(
             ),
         ];
 
+    const goodsReceiptIds = [
+        ...new Set(
+            applications
+                .map(
+                    (application) =>
+                        application.goods_receipt_id,
+                )
+                .filter(
+                    (
+                        value,
+                    ): value is string =>
+                        Boolean(value),
+                ),
+        ),
+    ];
     const journalIds =
         [
             ...new Set(
@@ -1167,6 +1204,33 @@ export async function getSupplierReturnCreditApplications(
         );
     }
 
+    const goodsReceipts =
+        goodsReceiptIds.length > 0
+            ? await supabase
+                .from(
+                    "goods_receipts",
+                )
+                .select(
+                    `
+                id,
+                receipt_number
+                `,
+                )
+                .in(
+                    "id",
+                    goodsReceiptIds,
+                )
+            : {
+                data: [],
+                error: null,
+            };
+
+    if (goodsReceipts.error) {
+        throw new Error(
+            `Unable to load credit application Goods Receipts: ${goodsReceipts.error.message}`,
+        );
+    }
+
     const journals =
         journalIds.length > 0
             ? await supabase
@@ -1203,6 +1267,19 @@ export async function getSupplierReturnCreditApplications(
                 (purchase) => [
                     purchase.id,
                     purchase.purchase_number,
+                ],
+            ),
+        );
+
+    const goodsReceiptNumberById =
+        new Map(
+            (
+                goodsReceipts.data ??
+                []
+            ).map(
+                (receipt) => [
+                    receipt.id,
+                    receipt.receipt_number,
                 ],
             ),
         );
@@ -1246,7 +1323,10 @@ export async function getSupplierReturnCreditApplications(
                     ) ??
                     "Unknown Quick Purchase"
                     : application.goods_receipt_id
-                        ? `GRN-${application.goods_receipt_id.slice(0, 8)}`
+                        ? goodsReceiptNumberById.get(
+                            application.goods_receipt_id,
+                        ) ??
+                        `GRN-${application.goods_receipt_id.slice(0, 8)}`
                         : "Unknown payable",
 
             supplierId:
@@ -1294,6 +1374,164 @@ export async function getSupplierReturnCreditApplications(
                 application.created_at,
         }),
     );
+}
+
+export async function getSupplierReturnCreditEligibleGoodsReceipts(
+    supplierReturnId: string,
+): Promise<SupplierReturnCreditEligibleGoodsReceipt[]> {
+    const supabase =
+        await createClient();
+
+    const creditState =
+        await getSupplierReturnCreditState(
+            supplierReturnId,
+        );
+
+
+    if (
+        !creditState ||
+        creditState.supplierCreditAvailable <= 0
+    ) {
+        return [];
+    }
+
+
+    let query =
+        supabase
+            .from(
+                "supplier_payable_open_items",
+            )
+            .select(
+                `
+                    goods_receipt_id,
+                    document_number,
+                    document_date,
+                    supplier_id,
+                    supplier_name,
+                    currency_code,
+                    gross_amount,
+                    paid_amount,
+                    outstanding_amount,
+                    payment_status
+                `,
+            )
+            .eq(
+                "supplier_id",
+                creditState.supplierId,
+            )
+            .eq(
+                "currency_code",
+                creditState.currencyCode,
+            )
+            .eq(
+                "source_type",
+                "goods_receipt",
+            )
+            .gt(
+                "outstanding_amount",
+                0,
+            )
+            .not(
+                "goods_receipt_id",
+                "is",
+                null,
+            )
+            .order(
+                "document_date",
+                {
+                    ascending:
+                        false,
+                },
+            );
+
+
+    /*
+     * A Supplier Return credit must never be applied
+     * back to the Goods Receipt that generated it.
+     *
+     * QP-origin returns have no GRN to exclude.
+     */
+    if (creditState.goodsReceiptId) {
+        query =
+            query.neq(
+                "goods_receipt_id",
+                creditState.goodsReceiptId,
+            );
+    }
+
+
+    const {
+        data,
+        error,
+    } =
+        await query;
+
+
+    if (error) {
+        throw new Error(
+            `Unable to load eligible Goods Receipts: ${error.message}`,
+        );
+    }
+
+
+    return (
+        data ?? []
+    )
+        .filter(
+            (
+                row,
+            ): row is typeof row & {
+                goods_receipt_id: string;
+            } =>
+                Boolean(
+                    row.goods_receipt_id,
+                ),
+        )
+        .map(
+            (row) => ({
+                id:
+                    row.goods_receipt_id,
+
+                receiptNumber:
+                    row.document_number ??
+                    `GRN-${row.goods_receipt_id.slice(0, 8)}`,
+
+                receiptDate:
+                    row.document_date ??
+                    "",
+
+                supplierId:
+                    row.supplier_id ??
+                    creditState.supplierId,
+
+                supplierName:
+                    row.supplier_name ??
+                    "Unknown supplier",
+
+                currencyCode:
+                    row.currency_code ??
+                    creditState.currencyCode,
+
+                grossAmount:
+                    toNumber(
+                        row.gross_amount,
+                    ),
+
+                paidAmount:
+                    toNumber(
+                        row.paid_amount,
+                    ),
+
+                balanceDue:
+                    toNumber(
+                        row.outstanding_amount,
+                    ),
+
+                paymentStatus:
+                    row.payment_status ??
+                    "unpaid",
+            }),
+        );
 }
 
 export async function getSupplierReturnCreditRefunds(

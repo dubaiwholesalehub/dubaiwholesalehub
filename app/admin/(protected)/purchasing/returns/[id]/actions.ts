@@ -14,6 +14,8 @@ import {
   dispatchSupplierReturn,
   postSupplierReturn,
   refundSupplierReturnCredit,
+  applySupplierReturnCreditToGoodsReceipt,
+  type ApplySupplierReturnCreditToGoodsReceiptInput,
 } from "@/lib/repositories/supplier-return.repository";
 
 export async function approveSupplierReturnAction(
@@ -124,6 +126,81 @@ export async function applySupplierReturnCreditAction(
   revalidatePath(
     "/admin/purchasing/quick-purchases",
   );
+}
+
+export async function applySupplierReturnCreditToGoodsReceiptAction(
+  input: ApplySupplierReturnCreditToGoodsReceiptInput,
+): Promise<string> {
+  await requireAdmin();
+
+  if (!input.supplierReturnId) {
+    throw new Error(
+      "Supplier Return ID is required.",
+    );
+  }
+
+  if (!input.goodsReceiptId) {
+    throw new Error(
+      "Goods Receipt ID is required.",
+    );
+  }
+
+  if (
+    !Number.isFinite(input.amount) ||
+    input.amount <= 0
+  ) {
+    throw new Error(
+      "Credit amount must be greater than zero.",
+    );
+  }
+
+  if (
+    !input.applicationDate ||
+    !input.postingDate
+  ) {
+    throw new Error(
+      "Application and posting dates are required.",
+    );
+  }
+
+  const applicationId =
+    await applySupplierReturnCreditToGoodsReceipt({
+      supplierReturnId:
+        input.supplierReturnId.trim(),
+
+      goodsReceiptId:
+        input.goodsReceiptId.trim(),
+
+      amount:
+        input.amount,
+
+      applicationDate:
+        input.applicationDate,
+
+      postingDate:
+        input.postingDate,
+
+      notes:
+        input.notes?.trim() || null,
+    });
+
+  revalidatePath(
+    `/admin/purchasing/returns/${input.supplierReturnId}`,
+  );
+
+  revalidatePath(
+    "/admin/purchasing/returns",
+  );
+
+  revalidatePath(
+    "/admin/purchasing/supplier-statement",
+  );
+
+  revalidatePath(
+    "/admin/goods-receipts",
+  );
+
+  return applicationId;
 }
 
 export async function refundSupplierReturnCreditAction(

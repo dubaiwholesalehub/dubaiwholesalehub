@@ -12,6 +12,7 @@ import {
   getSupplierReturnCreditEligiblePurchases,
   getSupplierReturnCreditRefunds,
   getSupplierReturnCreditState,
+  getSupplierReturnCreditEligibleGoodsReceipts,
 } from "@/lib/repositories/supplier-return.repository";
 
 import SupplierReturnCreditPanel from "@/components/admin/purchasing/supplier-returns/SupplierReturnCreditPanel";
@@ -85,6 +86,13 @@ export default async function SupplierReturnDetailPage({
     supplierReturn.status === "posted" &&
     supplierCredit.supplierCreditAvailable > 0
       ? await getSupplierReturnCreditEligiblePurchases(supplierReturn.id)
+      : [];
+
+  const eligibleCreditGoodsReceipts =
+    supplierCredit &&
+    supplierReturn.status === "posted" &&
+    supplierCredit.supplierCreditAvailable > 0
+      ? await getSupplierReturnCreditEligibleGoodsReceipts(supplierReturn.id)
       : [];
 
   const eligibleRefundAccounts = financialAccounts
@@ -220,6 +228,7 @@ export default async function SupplierReturnDetailPage({
         <SupplierReturnCreditPanel
           credit={supplierCredit}
           eligiblePurchases={eligibleCreditPurchases}
+          eligibleGoodsReceipts={eligibleCreditGoodsReceipts}
           applications={creditApplications}
           refunds={creditRefunds}
           financialAccounts={eligibleRefundAccounts}
