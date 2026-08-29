@@ -11,6 +11,7 @@ export type SupplierStatementEntryType =
     | "purchase"
     | "goods_receipt"
     | "supplier_return"
+    | "supplier_return_refund"
     | "payment"
     | "legacy_payment";
 
@@ -64,6 +65,8 @@ export type SupplierStatementSummary = {
     periodPayments: number;
 
     periodSupplierReturns: number;
+
+    periodSupplierReturnRefunds: number;
 
     closingBalance: number;
 
@@ -521,6 +524,72 @@ export async function getSupplierStatement(
         );
     }
 
+    /* -------------------------------------------------------
+ * Posted Supplier Return credit refunds
+ *
+ * A Supplier Return originally reduces the supplier
+ * position as a credit.
+ *
+ * When some of that Supplier Return credit is refunded
+ * back to us in cash/bank, that refund increases the
+ * supplier ledger position again and therefore appears
+ * as a historical debit.
+ *
+ * Only refunds with a posted GL journal are included.
+ * ------------------------------------------------------- */
+
+    const {
+        data: supplierReturnRefunds,
+        error: supplierReturnRefundsError,
+    } =
+        await supabase
+            .from(
+                "supplier_return_credit_refunds",
+            )
+            .select(`
+            id,
+            refund_number,
+            supplier_return_id,
+            refund_date,
+            posting_date,
+            reference_number,
+            amount,
+            base_amount,
+            currency_code,
+            exchange_rate,
+            journal_entry_id,
+            notes,
+            created_at
+        `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            )
+            .not(
+                "journal_entry_id",
+                "is",
+                null,
+            )
+            .order(
+                "posting_date",
+                {
+                    ascending: true,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true,
+                },
+            );
+
+
+    if (supplierReturnRefundsError) {
+        throw new Error(
+            `Unable to load Supplier Return credit refunds: ${supplierReturnRefundsError.message}`,
+        );
+    }
+
     /* =======================================================
      * Build Raw Ledger
      * ======================================================= */
@@ -801,6 +870,55 @@ export async function getSupplierStatement(
     }
 
     for (
+        const refund of
+        supplierReturnRefunds ?? []
+    ) {
+        rawEntries.push({
+            id:
+                `supplier-return-refund-${refund.id}`,
+
+            date:
+                refund.posting_date,
+
+            sortTimestamp:
+                refund.created_at,
+
+            sortPriority: 3,
+
+            type:
+                "supplier_return_refund",
+
+            documentNumber:
+                refund.refund_number,
+
+            referenceNumber:
+                refund.reference_number,
+
+            debit:
+                numberValue(
+                    refund.base_amount,
+                ),
+
+            credit: 0,
+
+            quickPurchaseId:
+                null,
+
+            goodsReceiptId:
+                null,
+
+            supplierPaymentId:
+                null,
+
+            supplierReturnId:
+                refund.supplier_return_id,
+
+            description:
+                refund.notes,
+        });
+    }
+
+    for (
         const payment of
         payments ?? []
     ) {
@@ -926,7 +1044,7 @@ export async function getSupplierStatement(
     let periodPurchases = 0;
     let periodPayments = 0;
     let periodSupplierReturns = 0;
-
+    let periodSupplierReturnRefunds = 0;
 
     const entries:
         SupplierStatementEntry[] =
@@ -964,12 +1082,28 @@ export async function getSupplierStatement(
             );
 
 
-        periodPurchases =
-            roundMoney(
-                periodPurchases +
-                entry.debit,
-            );
+        if (
+            entry.type === "purchase" ||
+            entry.type === "goods_receipt"
+        ) {
+            periodPurchases =
+                roundMoney(
+                    periodPurchases +
+                    entry.debit,
+                );
+        }
 
+
+        if (
+            entry.type ===
+            "supplier_return_refund"
+        ) {
+            periodSupplierReturnRefunds =
+                roundMoney(
+                    periodSupplierReturnRefunds +
+                    entry.debit,
+                );
+        }
 
         if (entry.type === "supplier_return") {
             periodSupplierReturns =
@@ -1213,11 +1347,9 @@ export async function getSupplierStatement(
             openingBalance,
 
             periodPurchases,
-
             periodPayments,
-
             periodSupplierReturns,
-
+            periodSupplierReturnRefunds,
             closingBalance,
 
             payableAmount:

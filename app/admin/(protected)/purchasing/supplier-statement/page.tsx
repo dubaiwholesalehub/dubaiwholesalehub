@@ -36,6 +36,7 @@ function typeLabel(
     | "purchase"
     | "goods_receipt"
     | "supplier_return"
+    | "supplier_return_refund"
     | "payment"
     | "legacy_payment",
 ) {
@@ -48,6 +49,9 @@ function typeLabel(
 
     case "supplier_return":
       return "Supplier Return";
+
+    case "supplier_return_refund":
+      return "Return Credit Refund";
 
     case "legacy_payment":
       return "Opening Payment";
@@ -380,7 +384,8 @@ export default async function SupplierStatementPage({
 
                               entry.type === "purchase"
                                 ? "bg-blue-100 text-blue-700"
-                                : entry.type === "supplier_return"
+                                : entry.type === "supplier_return" ||
+                                    entry.type === "supplier_return_refund"
                                   ? "bg-violet-100 text-violet-700"
                                   : entry.type === "payment"
                                     ? "bg-emerald-100 text-emerald-700"
@@ -439,7 +444,11 @@ export default async function SupplierStatementPage({
                       </td>
 
                       <td className="px-4 py-4 text-right font-semibold">
-                        AED {money(statement.summary.periodPurchases)}
+                        AED{" "}
+                        {money(
+                          statement.summary.periodPurchases +
+                            statement.summary.periodSupplierReturnRefunds,
+                        )}
                       </td>
 
                       <td className="px-4 py-4 text-right font-semibold">
