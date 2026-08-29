@@ -27,6 +27,7 @@ export type SupplierReturnListItem = {
     goodsReceiptId: string | null;
 
     purchaseNumber: string;
+    goodsReceiptNumber: string | null;
 
     supplierId: string;
     supplierName: string;
@@ -92,6 +93,9 @@ export type SupplierReturnDetail = {
     goodsReceiptId: string | null;
 
     purchaseNumber: string;
+    goodsReceiptNumber: string | null;
+    purchaseOrderNumber: string | null;
+
     supplierInvoiceNumber: string | null;
 
     supplierId: string;
@@ -259,6 +263,52 @@ export type SupplierReturnEligibleItem = {
     quantityReturnable: number;
 
     purchaseUnitCost: number;
+    originalInventoryUnitCost: number;
+
+    taxPercentage: number;
+
+    lineSubtotal: number;
+    taxAmount: number;
+    lineTotal: number;
+};
+
+export type SupplierReturnEligibleGoodsReceipt = {
+    id: string;
+    receiptNumber: string;
+
+    receiptDate: string;
+
+    purchaseOrderId: string;
+    purchaseOrderNumber: string;
+
+    supplierId: string;
+    supplierName: string;
+
+    warehouseId: string;
+    warehouseName: string;
+
+    currencyCode: string;
+
+    taxTreatment: SupplierReturnTaxTreatment;
+};
+
+
+export type SupplierReturnEligibleGoodsReceiptItem = {
+    goodsReceiptItemId: string;
+
+    lineNumber: number;
+
+    productId: string;
+    productName: string;
+    productSku: string | null;
+
+    orderedQuantity: number;
+    acceptedQuantity: number;
+
+    quantityAlreadyReturned: number;
+    quantityReturnable: number;
+
+    commercialUnitCost: number;
     originalInventoryUnitCost: number;
 
     taxPercentage: number;
@@ -1988,6 +2038,10 @@ export async function getSupplierReturnPage(
                     id,
                     purchase_number
                 ),
+                goods_receipt:goods_receipts (
+                    id,
+                    receipt_number
+                ),
                 supplier:suppliers (
                     id,
                     company_name
@@ -2093,6 +2147,14 @@ export async function getSupplierReturnPage(
                             .quick_purchase[0]
                         : row
                             .quick_purchase;
+                const goodsReceipt =
+                    Array.isArray(
+                        row.goods_receipt,
+                    )
+                        ? row
+                            .goods_receipt[0]
+                        : row
+                            .goods_receipt;
 
                 const supplier =
                     Array.isArray(
@@ -2129,7 +2191,10 @@ export async function getSupplierReturnPage(
                         quickPurchase
                             ?.purchase_number ??
                         "—",
-
+                    goodsReceiptNumber:
+                        goodsReceipt
+                            ?.receipt_number ??
+                        null,
                     supplierId:
                         row.supplier_id,
 
@@ -2247,6 +2312,14 @@ export async function getSupplierReturnById(
                     purchase_number,
                     supplier_invoice_number
                 ),
+                goods_receipt:goods_receipts (
+                    id,
+                    receipt_number,
+                    purchase_order:purchase_orders (
+                        id,
+                        po_number
+                    )
+                ),
                 supplier:suppliers (
                     id,
                     company_name
@@ -2297,6 +2370,26 @@ export async function getSupplierReturnById(
                 .quick_purchase[0]
             : data
                 .quick_purchase;
+
+    const goodsReceipt =
+        Array.isArray(
+            data.goods_receipt,
+        )
+            ? data
+                .goods_receipt[0]
+            : data
+                .goods_receipt;
+
+    const purchaseOrder =
+        goodsReceipt
+            ? Array.isArray(
+                goodsReceipt.purchase_order,
+            )
+                ? goodsReceipt
+                    .purchase_order[0]
+                : goodsReceipt
+                    .purchase_order
+            : null;
 
     const supplier =
         Array.isArray(
@@ -2452,7 +2545,17 @@ export async function getSupplierReturnById(
         purchaseNumber:
             quickPurchase
                 ?.purchase_number ??
-            "—",
+            "â€”",
+
+        goodsReceiptNumber:
+            goodsReceipt
+                ?.receipt_number ??
+            null,
+
+        purchaseOrderNumber:
+            purchaseOrder
+                ?.po_number ??
+            null,
 
         supplierInvoiceNumber:
             quickPurchase
@@ -3153,6 +3256,863 @@ export async function getSupplierReturnEligibleItems(
                         toNumber(
                             item.line_total,
                         ),
+                };
+            },
+        )
+        .filter(
+            (item) =>
+                item
+                    .quantityReturnable >
+                0,
+        );
+}
+
+/* =========================================================
+ * Eligible Goods Receipts for Supplier Return
+ * ========================================================= */
+
+export async function getEligibleSupplierReturnGoodsReceipts(): Promise<
+    SupplierReturnEligibleGoodsReceipt[]
+> {
+    const supabase =
+        await createClient();
+
+    const {
+        data: receipts,
+        error: receiptError,
+    } =
+        await supabase
+            .from(
+                "goods_receipts",
+            )
+            .select(
+                `
+                id,
+                receipt_number,
+                received_date,
+                created_at,
+                purchase_order_id,
+                supplier_id,
+                warehouse_id,
+
+                purchase_order:purchase_orders (
+                    id,
+                    po_number,
+                    currency_code,
+                    vat_recovery_status,
+                    tax_amount
+                ),
+
+                supplier:suppliers (
+                    id,
+                    company_name
+                ),
+
+                warehouse:warehouses (
+                    id,
+                    name
+                ),
+
+                goods_receipt_items (
+                    id,
+                    accepted_quantity
+                )
+                `,
+            )
+            .eq(
+                "status",
+                "completed",
+            )
+            .not(
+                "supplier_id",
+                "is",
+                null,
+            )
+            .order(
+                "received_date",
+                {
+                    ascending:
+                        false,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending:
+                        false,
+                },
+            );
+
+    if (receiptError) {
+        throw new Error(
+            `Unable to load Supplier Return eligible Goods Receipts: ${receiptError.message}`,
+        );
+    }
+
+    const receiptItems =
+        (
+            receipts ??
+            []
+        ).flatMap(
+            (receipt) =>
+                receipt
+                    .goods_receipt_items ??
+                [],
+        );
+
+    const receiptItemIds =
+        receiptItems.map(
+            (item) =>
+                item.id,
+        );
+
+    const returnedByItemId =
+        new Map<
+            string,
+            number
+        >();
+
+    if (
+        receiptItemIds.length >
+        0
+    ) {
+        const {
+            data: returnItems,
+            error: returnItemError,
+        } =
+            await supabase
+                .from(
+                    "supplier_return_items",
+                )
+                .select(
+                    `
+                    goods_receipt_item_id,
+                    quantity_returned,
+
+                    supplier_return:supplier_returns (
+                        status
+                    )
+                    `,
+                )
+                .in(
+                    "goods_receipt_item_id",
+                    receiptItemIds,
+                );
+
+        if (returnItemError) {
+            throw new Error(
+                `Unable to load Goods Receipt Supplier Return history: ${returnItemError.message}`,
+            );
+        }
+
+        for (
+            const returnItem of
+            returnItems ??
+            []
+        ) {
+            if (
+                !returnItem
+                    .goods_receipt_item_id
+            ) {
+                continue;
+            }
+
+            const supplierReturn =
+                Array.isArray(
+                    returnItem
+                        .supplier_return,
+                )
+                    ? returnItem
+                        .supplier_return[0]
+                    : returnItem
+                        .supplier_return;
+
+            if (
+                supplierReturn
+                    ?.status ===
+                "cancelled"
+            ) {
+                continue;
+            }
+
+            const previous =
+                returnedByItemId.get(
+                    returnItem
+                        .goods_receipt_item_id,
+                ) ??
+                0;
+
+            returnedByItemId.set(
+                returnItem
+                    .goods_receipt_item_id,
+                previous +
+                toNumber(
+                    returnItem
+                        .quantity_returned,
+                ),
+            );
+        }
+    }
+
+    return (
+        receipts ??
+        []
+    )
+        .filter(
+            (receipt) =>
+                (
+                    receipt
+                        .goods_receipt_items ??
+                    []
+                ).some(
+                    (item) =>
+                        toNumber(
+                            item
+                                .accepted_quantity,
+                        ) -
+                        (
+                            returnedByItemId.get(
+                                item.id,
+                            ) ??
+                            0
+                        ) >
+                        0,
+                ),
+        )
+        .map(
+            (receipt) => {
+                const purchaseOrder =
+                    Array.isArray(
+                        receipt
+                            .purchase_order,
+                    )
+                        ? receipt
+                            .purchase_order[0]
+                        : receipt
+                            .purchase_order;
+
+                const supplier =
+                    Array.isArray(
+                        receipt.supplier,
+                    )
+                        ? receipt
+                            .supplier[0]
+                        : receipt
+                            .supplier;
+
+                const warehouse =
+                    Array.isArray(
+                        receipt.warehouse,
+                    )
+                        ? receipt
+                            .warehouse[0]
+                        : receipt
+                            .warehouse;
+
+                if (
+                    !purchaseOrder
+                ) {
+                    throw new Error(
+                        `Goods Receipt ${receipt.receipt_number} does not have a Purchase Order.`,
+                    );
+                }
+
+                if (
+                    !receipt.supplier_id
+                ) {
+                    throw new Error(
+                        `Goods Receipt ${receipt.receipt_number} does not have a registered supplier.`,
+                    );
+                }
+
+                const purchaseTaxAmount =
+                    toNumber(
+                        purchaseOrder
+                            .tax_amount,
+                    );
+
+                const taxTreatment:
+                    SupplierReturnTaxTreatment =
+                    purchaseOrder
+                        .vat_recovery_status ===
+                        "recoverable" &&
+                        purchaseTaxAmount >
+                        0
+                        ? "standard_vat"
+                        : purchaseOrder
+                            .vat_recovery_status ===
+                            "pending" &&
+                            purchaseTaxAmount >
+                            0
+                            ? "vat_pending"
+                            : "no_vat";
+
+                return {
+                    id:
+                        receipt.id,
+
+                    receiptNumber:
+                        receipt
+                            .receipt_number,
+
+                    receiptDate:
+                        receipt
+                            .received_date ??
+                        receipt
+                            .created_at
+                            .slice(
+                                0,
+                                10,
+                            ),
+
+                    purchaseOrderId:
+                        receipt
+                            .purchase_order_id,
+
+                    purchaseOrderNumber:
+                        purchaseOrder
+                            .po_number,
+
+                    supplierId:
+                        receipt
+                            .supplier_id,
+
+                    supplierName:
+                        supplier
+                            ?.company_name ??
+                        "—",
+
+                    warehouseId:
+                        receipt
+                            .warehouse_id,
+
+                    warehouseName:
+                        warehouse
+                            ?.name ??
+                        "—",
+
+                    currencyCode:
+                        purchaseOrder
+                            .currency_code,
+
+                    taxTreatment,
+                };
+            },
+        );
+}
+
+/* =========================================================
+ * Eligible Items for One Goods Receipt
+ * ========================================================= */
+
+export async function getGoodsReceiptSupplierReturnEligibleItems(
+    goodsReceiptId: string,
+): Promise<
+    SupplierReturnEligibleGoodsReceiptItem[]
+> {
+    const supabase =
+        await createClient();
+
+    const {
+        data: receipt,
+        error: receiptError,
+    } =
+        await supabase
+            .from(
+                "goods_receipts",
+            )
+            .select(
+                `
+                id,
+                receipt_number,
+                status,
+                purchase_order_id,
+                supplier_id,
+                warehouse_id,
+
+                purchase_order:purchase_orders (
+                    id,
+                    po_number,
+                    supplier_id
+                )
+                `,
+            )
+            .eq(
+                "id",
+                goodsReceiptId,
+            )
+            .maybeSingle();
+
+    if (receiptError) {
+        throw new Error(
+            `Unable to load Goods Receipt: ${receiptError.message}`,
+        );
+    }
+
+    if (!receipt) {
+        throw new Error(
+            "Goods Receipt was not found.",
+        );
+    }
+
+    if (
+        receipt.status !==
+        "completed"
+    ) {
+        throw new Error(
+            `Goods Receipt ${receipt.receipt_number} must be completed before a Supplier Return can be created.`,
+        );
+    }
+
+    if (
+        !receipt.supplier_id
+    ) {
+        throw new Error(
+            `Goods Receipt ${receipt.receipt_number} does not have a registered supplier.`,
+        );
+    }
+
+    const purchaseOrder =
+        Array.isArray(
+            receipt.purchase_order,
+        )
+            ? receipt
+                .purchase_order[0]
+            : receipt
+                .purchase_order;
+
+    if (!purchaseOrder) {
+        throw new Error(
+            `Purchase Order for Goods Receipt ${receipt.receipt_number} was not found.`,
+        );
+    }
+
+    if (
+        purchaseOrder
+            .supplier_id !==
+        receipt.supplier_id
+    ) {
+        throw new Error(
+            `Goods Receipt ${receipt.receipt_number} and Purchase Order ${purchaseOrder.po_number} do not belong to the same supplier.`,
+        );
+    }
+
+    const {
+        data: items,
+        error: itemError,
+    } =
+        await supabase
+            .from(
+                "goods_receipt_items",
+            )
+            .select(
+                `
+                id,
+                line_number,
+                purchase_order_item_id,
+                product_id,
+                accepted_quantity,
+
+                product:products (
+                    id,
+                    sku,
+                    name
+                ),
+
+                purchase_order_item:purchase_order_items!goods_receipt_items_purchase_order_item_id_fkey (
+                    id,
+                    line_number,
+                    ordered_quantity,
+                    line_subtotal,
+                    tax_amount
+                )
+                `,
+            )
+            .eq(
+                "goods_receipt_id",
+                goodsReceiptId,
+            )
+            .order(
+                "line_number",
+                {
+                    ascending:
+                        true,
+                },
+            );
+
+    if (itemError) {
+        throw new Error(
+            `Unable to load Goods Receipt items: ${itemError.message}`,
+        );
+    }
+
+    const goodsReceiptItemIds =
+        (
+            items ??
+            []
+        ).map(
+            (item) =>
+                item.id,
+        );
+
+    const returnedByItemId =
+        new Map<
+            string,
+            number
+        >();
+
+    if (
+        goodsReceiptItemIds.length >
+        0
+    ) {
+        const {
+            data: returnItems,
+            error: returnItemError,
+        } =
+            await supabase
+                .from(
+                    "supplier_return_items",
+                )
+                .select(
+                    `
+                    goods_receipt_item_id,
+                    quantity_returned,
+
+                    supplier_return:supplier_returns (
+                        status
+                    )
+                    `,
+                )
+                .in(
+                    "goods_receipt_item_id",
+                    goodsReceiptItemIds,
+                );
+
+        if (returnItemError) {
+            throw new Error(
+                `Unable to load Goods Receipt Supplier Return history: ${returnItemError.message}`,
+            );
+        }
+
+        for (
+            const returnItem of
+            returnItems ??
+            []
+        ) {
+            const itemId =
+                returnItem
+                    .goods_receipt_item_id;
+
+            if (!itemId) {
+                continue;
+            }
+
+            const supplierReturn =
+                Array.isArray(
+                    returnItem
+                        .supplier_return,
+                )
+                    ? returnItem
+                        .supplier_return[0]
+                    : returnItem
+                        .supplier_return;
+
+            if (
+                supplierReturn
+                    ?.status ===
+                "cancelled"
+            ) {
+                continue;
+            }
+
+            returnedByItemId.set(
+                itemId,
+                (
+                    returnedByItemId.get(
+                        itemId,
+                    ) ??
+                    0
+                ) +
+                toNumber(
+                    returnItem
+                        .quantity_returned,
+                ),
+            );
+        }
+    }
+
+    const {
+        data: inventoryTransactions,
+        error: inventoryTransactionError,
+    } =
+        await supabase
+            .from(
+                "inventory_transactions",
+            )
+            .select(
+                "id",
+            )
+            .eq(
+                "reference_type",
+                "goods_receipt",
+            )
+            .eq(
+                "reference_id",
+                goodsReceiptId,
+            )
+            .eq(
+                "status",
+                "posted",
+            );
+
+    if (
+        inventoryTransactionError
+    ) {
+        throw new Error(
+            `Unable to load Goods Receipt inventory transaction: ${inventoryTransactionError.message}`,
+        );
+    }
+
+    const inventoryTransactionIds =
+        (
+            inventoryTransactions ??
+            []
+        ).map(
+            (transaction) =>
+                transaction.id,
+        );
+
+    if (
+        inventoryTransactionIds.length ===
+        0
+    ) {
+        throw new Error(
+            `Goods Receipt ${receipt.receipt_number} does not have valid posted inventory lineage.`,
+        );
+    }
+
+    const {
+        data: inventoryItems,
+        error: inventoryItemError,
+    } =
+        await supabase
+            .from(
+                "inventory_transaction_items",
+            )
+            .select(
+                `
+                source_document_item_id,
+                product_id,
+                warehouse_id,
+                quantity_change,
+                unit_cost
+                `,
+            )
+            .in(
+                "inventory_transaction_id",
+                inventoryTransactionIds,
+            );
+
+    if (inventoryItemError) {
+        throw new Error(
+            `Unable to load Goods Receipt inventory lineage: ${inventoryItemError.message}`,
+        );
+    }
+
+    const inventoryByReceiptItemId =
+        new Map(
+            (
+                inventoryItems ??
+                []
+            )
+                .filter(
+                    (inventoryItem) =>
+                        Boolean(
+                            inventoryItem
+                                .source_document_item_id,
+                        ) &&
+                        toNumber(
+                            inventoryItem
+                                .quantity_change,
+                        ) >
+                        0,
+                )
+                .map(
+                    (inventoryItem) => [
+                        inventoryItem
+                            .source_document_item_id!,
+                        inventoryItem,
+                    ],
+                ),
+        );
+
+    return (
+        items ??
+        []
+    )
+        .map(
+            (item) => {
+                const acceptedQuantity =
+                    toNumber(
+                        item
+                            .accepted_quantity,
+                    );
+
+                const alreadyReturned =
+                    returnedByItemId.get(
+                        item.id,
+                    ) ??
+                    0;
+
+                const returnableQuantity =
+                    Math.max(
+                        acceptedQuantity -
+                        alreadyReturned,
+                        0,
+                    );
+
+                const product =
+                    Array.isArray(
+                        item.product,
+                    )
+                        ? item
+                            .product[0]
+                        : item
+                            .product;
+
+                const purchaseItem =
+                    Array.isArray(
+                        item
+                            .purchase_order_item,
+                    )
+                        ? item
+                            .purchase_order_item[0]
+                        : item
+                            .purchase_order_item;
+
+                if (!purchaseItem) {
+                    throw new Error(
+                        `Purchase Order item for Goods Receipt ${receipt.receipt_number} line ${item.line_number} was not found.`,
+                    );
+                }
+
+                const orderedQuantity =
+                    toNumber(
+                        purchaseItem
+                            .ordered_quantity,
+                    );
+
+                if (
+                    orderedQuantity <=
+                    0
+                ) {
+                    throw new Error(
+                        `Purchase Order line ${purchaseItem.line_number} has an invalid ordered quantity.`,
+                    );
+                }
+
+                const inventoryItem =
+                    inventoryByReceiptItemId.get(
+                        item.id,
+                    );
+
+                if (!inventoryItem) {
+                    throw new Error(
+                        `Goods Receipt ${receipt.receipt_number} line ${item.line_number} does not have valid posted inventory lineage.`,
+                    );
+                }
+
+                if (
+                    inventoryItem
+                        .product_id !==
+                    item.product_id
+                ) {
+                    throw new Error(
+                        `Goods Receipt ${receipt.receipt_number} line ${item.line_number} inventory lineage points to a different product.`,
+                    );
+                }
+
+                if (
+                    inventoryItem
+                        .warehouse_id !==
+                    receipt.warehouse_id
+                ) {
+                    throw new Error(
+                        `Goods Receipt ${receipt.receipt_number} line ${item.line_number} inventory warehouse does not match the receipt warehouse.`,
+                    );
+                }
+
+                const lineSubtotal =
+                    toNumber(
+                        purchaseItem
+                            .line_subtotal,
+                    );
+
+                const taxAmount =
+                    toNumber(
+                        purchaseItem
+                            .tax_amount,
+                    );
+
+                const taxPercentage =
+                    lineSubtotal >
+                        0
+                        ? (
+                            taxAmount /
+                            lineSubtotal
+                        ) *
+                        100
+                        : 0;
+
+                return {
+                    goodsReceiptItemId:
+                        item.id,
+
+                    lineNumber:
+                        item.line_number,
+
+                    productId:
+                        item.product_id,
+
+                    productName:
+                        product
+                            ?.name ??
+                        "Unknown product",
+
+                    productSku:
+                        product
+                            ?.sku ??
+                        null,
+
+                    orderedQuantity,
+
+                    acceptedQuantity,
+
+                    quantityAlreadyReturned:
+                        alreadyReturned,
+
+                    quantityReturnable:
+                        returnableQuantity,
+
+                    commercialUnitCost:
+                        lineSubtotal /
+                        orderedQuantity,
+
+                    originalInventoryUnitCost:
+                        toNumber(
+                            inventoryItem
+                                .unit_cost,
+                        ),
+
+                    taxPercentage,
+
+                    lineSubtotal,
+
+                    taxAmount,
+
+                    lineTotal:
+                        lineSubtotal +
+                        taxAmount,
                 };
             },
         )

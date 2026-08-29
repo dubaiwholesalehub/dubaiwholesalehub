@@ -149,8 +149,11 @@ export default async function SupplierReturnDetailPage({
               </div>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Supplier Return against {supplierReturn.purchaseNumber} for{" "}
-                {supplierReturn.supplierName}.
+                Supplier Return against{" "}
+                {supplierReturn.goodsReceiptId
+                  ? (supplierReturn.goodsReceiptNumber ?? "Goods Receipt")
+                  : supplierReturn.purchaseNumber}{" "}
+                for {supplierReturn.supplierName}.
               </p>
             </div>
           </div>
@@ -165,10 +168,24 @@ export default async function SupplierReturnDetailPage({
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <InfoCard label="Supplier" value={supplierReturn.supplierName} />
 
-        <InfoCard
-          label="Quick Purchase"
-          value={supplierReturn.purchaseNumber}
-        />
+        {supplierReturn.goodsReceiptId ? (
+          <InfoCard
+            label="Goods Receipt"
+            value={supplierReturn.goodsReceiptNumber ?? "—"}
+          />
+        ) : (
+          <InfoCard
+            label="Quick Purchase"
+            value={supplierReturn.purchaseNumber}
+          />
+        )}
+
+        {supplierReturn.goodsReceiptId ? (
+          <InfoCard
+            label="Purchase Order"
+            value={supplierReturn.purchaseOrderNumber ?? "—"}
+          />
+        ) : null}
 
         <InfoCard label="Warehouse" value={supplierReturn.warehouseName} />
 

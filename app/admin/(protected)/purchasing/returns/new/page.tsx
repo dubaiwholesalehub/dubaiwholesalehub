@@ -1,26 +1,23 @@
-import {
-  ArrowLeft,
-  RotateCcw,
-} from "lucide-react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 
 import Link from "next/link";
 
-import {
-  requireAdmin,
-} from "@/lib/auth/require-admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
+  getEligibleSupplierReturnGoodsReceipts,
   getEligibleSupplierReturnPurchases,
 } from "@/lib/repositories/supplier-return.repository";
 
 import SupplierReturnForm from "@/components/admin/purchasing/supplier-returns/SupplierReturnForm";
 
-
 export default async function NewSupplierReturnPage() {
   await requireAdmin();
 
-  const purchases =
-  await getEligibleSupplierReturnPurchases();
+  const [purchases, goodsReceipts] = await Promise.all([
+    getEligibleSupplierReturnPurchases(),
+    getEligibleSupplierReturnGoodsReceipts(),
+  ]);
   return (
     <div className="mx-auto max-w-[1600px] space-y-6">
       <header className="space-y-4">
@@ -29,7 +26,6 @@ export default async function NewSupplierReturnPage() {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-
           Supplier Returns
         </Link>
 
@@ -44,17 +40,15 @@ export default async function NewSupplierReturnPage() {
             </h1>
 
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Create a controlled supplier return from an
-              existing Quick Purchase. Only quantities that
-              remain returnable can be selected.
+              Create a controlled supplier return from an existing Quick
+              Purchase or Goods Receipt. Only quantities that remain returnable
+              can be selected.
             </p>
           </div>
         </div>
       </header>
 
-      <SupplierReturnForm
-        purchases={purchases}
-      />
+      <SupplierReturnForm purchases={purchases} goodsReceipts={goodsReceipts} />
     </div>
   );
 }

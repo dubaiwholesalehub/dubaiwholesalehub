@@ -12,10 +12,12 @@ import {
   applySupplierReturnCreditToGoodsReceipt,
   createGoodsReceiptSupplierReturn,
   createSupplierReturn,
+  getGoodsReceiptSupplierReturnEligibleItems,
   getSupplierReturnEligibleItems,
   type ApplySupplierReturnCreditToGoodsReceiptInput,
   type CreateGoodsReceiptSupplierReturnInput,
   type CreateSupplierReturnInput,
+  type SupplierReturnEligibleGoodsReceiptItem,
   type SupplierReturnEligibleItem,
 } from "@/lib/repositories/supplier-return.repository";
 
@@ -34,6 +36,25 @@ export async function loadSupplierReturnItemsAction(
   }
 
   return getSupplierReturnEligibleItems(
+    id,
+  );
+}
+
+export async function loadGoodsReceiptSupplierReturnItemsAction(
+  goodsReceiptId: string,
+): Promise<SupplierReturnEligibleGoodsReceiptItem[]> {
+  await requireAdmin();
+
+  const id =
+    goodsReceiptId.trim();
+
+  if (!id) {
+    throw new Error(
+      "Goods Receipt is required.",
+    );
+  }
+
+  return getGoodsReceiptSupplierReturnEligibleItems(
     id,
   );
 }

@@ -1,7 +1,4 @@
-import {
-  RotateCcw,
-  Plus,
-} from "lucide-react";
+import { RotateCcw, Plus } from "lucide-react";
 
 import PageHeader from "@/components/admin/shared/PageHeader";
 
@@ -10,98 +7,55 @@ import {
   type SupplierReturnStatus,
 } from "@/lib/repositories/supplier-return.repository";
 
-
 interface SupplierReturnsPageProps {
-  searchParams: Promise<
-    Record<
-      string,
-      string | string[] | undefined
-    >
-  >;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
-
 
 function getStringParam(
-  value:
-    | string
-    | string[]
-    | undefined,
+  value: string | string[] | undefined,
 ): string | undefined {
-  return typeof value === "string"
-    ? value
-    : undefined;
+  return typeof value === "string" ? value : undefined;
 }
-
 
 function getPositiveInteger(
   value: string | undefined,
   fallback: number,
 ): number {
-  const parsed =
-    Number(value);
+  const parsed = Number(value);
 
-  return Number.isInteger(parsed) &&
-    parsed > 0
-    ? parsed
-    : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
-
 
 function normalizeStatus(
   value: string | undefined,
 ): SupplierReturnStatus | "all" {
-  const statuses:
-    SupplierReturnStatus[] = [
-      "draft",
-      "approved",
-      "dispatched",
-      "posted",
-      "cancelled",
-    ];
+  const statuses: SupplierReturnStatus[] = [
+    "draft",
+    "approved",
+    "dispatched",
+    "posted",
+    "cancelled",
+  ];
 
-  return statuses.includes(
-    value as SupplierReturnStatus,
-  )
-    ? (
-        value as
-          SupplierReturnStatus
-      )
+  return statuses.includes(value as SupplierReturnStatus)
+    ? (value as SupplierReturnStatus)
     : "all";
 }
 
-
-function money(
-  value: number,
-): string {
-  return new Intl.NumberFormat(
-    "en-AE",
-    {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    },
-  ).format(value);
+function money(value: number): string {
+  return new Intl.NumberFormat("en-AE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
-
-function statusLabel(
-  status: string,
-): string {
+function statusLabel(status: string): string {
   return status
-    .replace(
-      /_/g,
-      " ",
-    )
-    .replace(
-      /\b\w/g,
-      (letter) =>
-        letter.toUpperCase(),
-    );
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-
-function statusClassName(
-  status: string,
-): string {
+function statusClassName(status: string): string {
   switch (status) {
     case "posted":
       return "bg-emerald-100 text-emerald-700";
@@ -121,77 +75,41 @@ function statusClassName(
   }
 }
 
-
 export default async function SupplierReturnsPage({
   searchParams,
 }: SupplierReturnsPageProps) {
-  const params =
-    await searchParams;
+  const params = await searchParams;
 
-  const search =
-    getStringParam(
-      params.search,
-    )?.trim() ?? "";
+  const search = getStringParam(params.search)?.trim() ?? "";
 
-  const status =
-    normalizeStatus(
-      getStringParam(
-        params.status,
-      ),
-    );
+  const status = normalizeStatus(getStringParam(params.status));
 
-  const dateFrom =
-    getStringParam(
-      params.dateFrom,
-    ) ?? "";
+  const dateFrom = getStringParam(params.dateFrom) ?? "";
 
-  const dateTo =
-    getStringParam(
-      params.dateTo,
-    ) ?? "";
+  const dateTo = getStringParam(params.dateTo) ?? "";
 
-  const page =
-    getPositiveInteger(
-      getStringParam(
-        params.page,
-      ),
-      1,
-    );
+  const page = getPositiveInteger(getStringParam(params.page), 1);
 
-  const pageSize =
-    Math.min(
-      getPositiveInteger(
-        getStringParam(
-          params.pageSize,
-        ),
-        25,
-      ),
-      100,
-    );
+  const pageSize = Math.min(
+    getPositiveInteger(getStringParam(params.pageSize), 25),
+    100,
+  );
 
-  const result =
-    await getSupplierReturnPage({
-      search:
-        search ||
-        undefined,
+  const result = await getSupplierReturnPage({
+    search: search || undefined,
 
-      status,
+    status,
 
-      dateFrom:
-        dateFrom ||
-        undefined,
+    dateFrom: dateFrom || undefined,
 
-      dateTo:
-        dateTo ||
-        undefined,
+    dateTo: dateTo || undefined,
 
-      page,
+    page,
 
-      pageSize,
-    });
+    pageSize,
+  });
 
-  const summary =
-    result.summary;
+  const summary = result.summary;
 
   return (
     <div className="space-y-6">
@@ -200,51 +118,32 @@ export default async function SupplierReturnsPage({
         description="Manage supplier debit notes, returned inventory, VAT reversals and supplier credits."
         icon={RotateCcw}
         action={{
-          href:
-            "/admin/purchasing/returns/new",
+          href: "/admin/purchasing/returns/new",
 
-          label:
-            "New Supplier Return",
+          label: "New Supplier Return",
 
-          icon:
-            Plus,
+          icon: Plus,
         }}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard
           label="Total Returns"
-          value={String(
-            summary.totalReturns,
-          )}
+          value={String(summary.totalReturns)}
         />
 
-        <SummaryCard
-          label="Draft"
-          value={String(
-            summary.draftReturns,
-          )}
-        />
+        <SummaryCard label="Draft" value={String(summary.draftReturns)} />
 
-        <SummaryCard
-          label="Approved"
-          value={String(
-            summary.approvedReturns,
-          )}
-        />
+        <SummaryCard label="Approved" value={String(summary.approvedReturns)} />
 
         <SummaryCard
           label="Dispatched"
-          value={String(
-            summary.dispatchedReturns,
-          )}
+          value={String(summary.dispatchedReturns)}
         />
 
         <SummaryCard
           label="Posted Value"
-          value={`AED ${money(
-            summary.totalPostedValue,
-          )}`}
+          value={`AED ${money(summary.totalPostedValue)}`}
         />
       </div>
 
@@ -265,29 +164,17 @@ export default async function SupplierReturnsPage({
           defaultValue={status}
           className="h-10 rounded-md border bg-background px-3 text-sm"
         >
-          <option value="all">
-            All statuses
-          </option>
+          <option value="all">All statuses</option>
 
-          <option value="draft">
-            Draft
-          </option>
+          <option value="draft">Draft</option>
 
-          <option value="approved">
-            Approved
-          </option>
+          <option value="approved">Approved</option>
 
-          <option value="dispatched">
-            Dispatched
-          </option>
+          <option value="dispatched">Dispatched</option>
 
-          <option value="posted">
-            Posted
-          </option>
+          <option value="posted">Posted</option>
 
-          <option value="cancelled">
-            Cancelled
-          </option>
+          <option value="cancelled">Cancelled</option>
         </select>
 
         <input
@@ -316,20 +203,17 @@ export default async function SupplierReturnsPage({
         <div className="border-b px-4 py-3">
           <p className="text-sm text-muted-foreground">
             {result.total} matching Supplier Return
-            {result.total === 1
-              ? ""
-              : "s"}
+            {result.total === 1 ? "" : "s"}
           </p>
         </div>
 
         {result.rows.length === 0 ? (
           <div className="px-6 py-16 text-center">
-            <p className="font-medium">
-              No Supplier Returns found.
-            </p>
+            <p className="font-medium">No Supplier Returns found.</p>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Create a Supplier Return from a posted Quick Purchase.
+              Create a Supplier Return from a posted Quick Purchase or completed
+              Goods Receipt.
             </p>
           </div>
         ) : (
@@ -337,125 +221,90 @@ export default async function SupplierReturnsPage({
             <table className="w-full min-w-[1100px] text-sm">
               <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">
-                    Return
-                  </th>
+                  <th className="px-4 py-3">Return</th>
 
-                  <th className="px-4 py-3">
-                    Date
-                  </th>
+                  <th className="px-4 py-3">Date</th>
 
-                  <th className="px-4 py-3">
-                    Supplier
-                  </th>
+                  <th className="px-4 py-3">Supplier</th>
 
-                  <th className="px-4 py-3">
-                    Quick Purchase
-                  </th>
+                  <th className="px-4 py-3">Source</th>
 
-                  <th className="px-4 py-3">
-                    Warehouse
-                  </th>
+                  <th className="px-4 py-3">Warehouse</th>
 
-                  <th className="px-4 py-3">
-                    Status
-                  </th>
+                  <th className="px-4 py-3">Status</th>
 
-                  <th className="px-4 py-3 text-right">
-                    Return Value
-                  </th>
+                  <th className="px-4 py-3 text-right">Return Value</th>
 
-                  <th className="px-4 py-3 text-right">
-                    Inventory Cost
-                  </th>
+                  <th className="px-4 py-3 text-right">Inventory Cost</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y">
-                {result.rows.map(
-                  (supplierReturn) => (
-                    <tr
-                      key={
-                        supplierReturn.id
-                      }
-                      className="transition hover:bg-muted/30"
-                    >
-                      <td className="px-4 py-4">
-                        <a
-                          href={`/admin/purchasing/returns/${supplierReturn.id}`}
-                          className="font-semibold hover:underline"
-                        >
-                          {
-                            supplierReturn.returnNumber
-                          }
-                        </a>
+                {result.rows.map((supplierReturn) => (
+                  <tr
+                    key={supplierReturn.id}
+                    className="transition hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-4">
+                      <a
+                        href={`/admin/purchasing/returns/${supplierReturn.id}`}
+                        className="font-semibold hover:underline"
+                      >
+                        {supplierReturn.returnNumber}
+                      </a>
 
-                        <p className="mt-1 max-w-[260px] truncate text-xs text-muted-foreground">
-                          {
-                            supplierReturn.reason
-                          }
-                        </p>
-                      </td>
+                      <p className="mt-1 max-w-[260px] truncate text-xs text-muted-foreground">
+                        {supplierReturn.reason}
+                      </p>
+                    </td>
 
-                      <td className="px-4 py-4 text-muted-foreground">
-                        {
-                          supplierReturn.returnDate
-                        }
-                      </td>
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {supplierReturn.returnDate}
+                    </td>
 
-                      <td className="px-4 py-4 font-medium">
-                        {
-                          supplierReturn.supplierName
-                        }
-                      </td>
+                    <td className="px-4 py-4 font-medium">
+                      {supplierReturn.supplierName}
+                    </td>
 
-                      <td className="px-4 py-4">
-                        {
-                          supplierReturn.purchaseNumber
-                        }
-                      </td>
+                    <td className="px-4 py-4">
+                      <div className="font-medium">
+                        {supplierReturn.goodsReceiptId
+                          ? (supplierReturn.goodsReceiptNumber ?? "—")
+                          : supplierReturn.purchaseNumber}
+                      </div>
 
-                      <td className="px-4 py-4 text-muted-foreground">
-                        {
-                          supplierReturn.warehouseName
-                        }
-                      </td>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {supplierReturn.goodsReceiptId
+                          ? "Goods Receipt"
+                          : "Quick Purchase"}
+                      </div>
+                    </td>
 
-                      <td className="px-4 py-4">
-                        <span
-                          className={[
-                            "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
-                            statusClassName(
-                              supplierReturn.status,
-                            ),
-                          ].join(
-                            " ",
-                          )}
-                        >
-                          {statusLabel(
-                            supplierReturn.status,
-                          )}
-                        </span>
-                      </td>
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {supplierReturn.warehouseName}
+                    </td>
 
-                      <td className="px-4 py-4 text-right font-semibold">
-                        {
-                          supplierReturn.currencyCode
-                        }{" "}
-                        {money(
-                          supplierReturn.grandTotal,
-                        )}
-                      </td>
+                    <td className="px-4 py-4">
+                      <span
+                        className={[
+                          "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold",
+                          statusClassName(supplierReturn.status),
+                        ].join(" ")}
+                      >
+                        {statusLabel(supplierReturn.status)}
+                      </span>
+                    </td>
 
-                      <td className="px-4 py-4 text-right text-muted-foreground">
-                        AED{" "}
-                        {money(
-                          supplierReturn.inventoryCost,
-                        )}
-                      </td>
-                    </tr>
-                  ),
-                )}
+                    <td className="px-4 py-4 text-right font-semibold">
+                      {supplierReturn.currencyCode}{" "}
+                      {money(supplierReturn.grandTotal)}
+                    </td>
+
+                    <td className="px-4 py-4 text-right text-muted-foreground">
+                      AED {money(supplierReturn.inventoryCost)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -463,8 +312,7 @@ export default async function SupplierReturnsPage({
 
         <div className="flex items-center justify-between gap-4 border-t px-4 py-3">
           <p className="text-sm text-muted-foreground">
-            Page {result.page} of{" "}
-            {result.totalPages}
+            Page {result.page} of {result.totalPages}
           </p>
 
           <div className="flex gap-2">
@@ -479,8 +327,7 @@ export default async function SupplierReturnsPage({
               </a>
             ) : null}
 
-            {result.page <
-            result.totalPages ? (
+            {result.page < result.totalPages ? (
               <a
                 href={`?page=${result.page + 1}&pageSize=${result.pageSize}&status=${status}&search=${encodeURIComponent(
                   search,
@@ -497,23 +344,12 @@ export default async function SupplierReturnsPage({
   );
 }
 
-
-function SummaryCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border bg-card p-5">
-      <p className="text-sm text-muted-foreground">
-        {label}
-      </p>
+      <p className="text-sm text-muted-foreground">{label}</p>
 
-      <p className="mt-2 text-xl font-semibold">
-        {value}
-      </p>
+      <p className="mt-2 text-xl font-semibold">{value}</p>
     </div>
   );
 }
