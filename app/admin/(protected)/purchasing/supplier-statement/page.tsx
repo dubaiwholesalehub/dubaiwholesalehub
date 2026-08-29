@@ -32,7 +32,12 @@ function money(value: number) {
 }
 
 function typeLabel(
-  type: "purchase" | "goods_receipt" | "payment" | "legacy_payment",
+  type:
+    | "purchase"
+    | "goods_receipt"
+    | "supplier_return"
+    | "payment"
+    | "legacy_payment",
 ) {
   switch (type) {
     case "purchase":
@@ -40,6 +45,9 @@ function typeLabel(
 
     case "goods_receipt":
       return "Goods Receipt";
+
+    case "supplier_return":
+      return "Supplier Return";
 
     case "legacy_payment":
       return "Opening Payment";
@@ -212,6 +220,12 @@ export default async function SupplierStatementPage({
             />
 
             <SummaryCard
+              label="Supplier Returns"
+              value={statement.summary.periodSupplierReturns}
+              icon={ArrowUpFromLine}
+            />
+
+            <SummaryCard
               label={
                 statement.summary.closingBalance >= 0
                   ? "Closing Payable"
@@ -238,7 +252,7 @@ export default async function SupplierStatementPage({
                 </h2>
 
                 <p className="mt-1 text-sm text-slate-600">
-                  Current outstanding purchases, supplier advance and net
+                  Current outstanding purchases, supplier credits and net
                   payable position.
                 </p>
               </div>
@@ -251,26 +265,26 @@ export default async function SupplierStatementPage({
                 />
 
                 <SupplierPositionCard
-                  label="Supplier Advance"
-                  value={statement.summary.totalUnallocatedAdvance}
+                  label="Supplier Credit"
+                  value={statement.summary.totalSupplierCredit}
                   tone="advance"
                 />
 
                 <SupplierPositionCard
                   label="Net Position"
-                  value={Math.abs(statement.summary.closingBalance)}
+                  value={Math.abs(statement.summary.currentNetPosition)}
                   tone={
-                    statement.summary.closingBalance > 0
+                    statement.summary.currentNetPosition > 0
                       ? "payable"
-                      : statement.summary.closingBalance < 0
+                      : statement.summary.currentNetPosition < 0
                         ? "advance"
                         : "settled"
                   }
                   suffix={
-                    statement.summary.closingBalance > 0
+                    statement.summary.currentNetPosition > 0
                       ? "Payable"
-                      : statement.summary.closingBalance < 0
-                        ? "Advance"
+                      : statement.summary.currentNetPosition < 0
+                        ? "Credit"
                         : "Settled"
                   }
                 />
@@ -286,7 +300,8 @@ export default async function SupplierStatementPage({
                 <h2 className="font-semibold">Payables Ledger</h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Purchases increase the balance; payments reduce it.
+                  Purchases increase the balance; payments and supplier returns
+                  reduce it.
                 </p>
               </div>
 
@@ -331,10 +346,13 @@ export default async function SupplierStatementPage({
                         </td>
 
                         <td className="px-4 py-4">
-                          {entry.quickPurchaseId ? (
-                            <span className="font-semibold">
+                          {entry.supplierReturnId ? (
+                            <Link
+                              href={`/admin/purchasing/returns/${entry.supplierReturnId}`}
+                              className="font-semibold text-primary hover:underline"
+                            >
                               {entry.documentNumber}
-                            </span>
+                            </Link>
                           ) : entry.supplierPaymentId ? (
                             <Link
                               href={`/admin/purchasing/supplier-payments/${entry.supplierPaymentId}`}
@@ -362,9 +380,11 @@ export default async function SupplierStatementPage({
 
                               entry.type === "purchase"
                                 ? "bg-blue-100 text-blue-700"
-                                : entry.type === "payment"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-amber-100 text-amber-700",
+                                : entry.type === "supplier_return"
+                                  ? "bg-violet-100 text-violet-700"
+                                  : entry.type === "payment"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-amber-100 text-amber-700",
                             ].join(" ")}
                           >
                             {typeLabel(entry.type)}
@@ -423,7 +443,11 @@ export default async function SupplierStatementPage({
                       </td>
 
                       <td className="px-4 py-4 text-right font-semibold">
-                        AED {money(statement.summary.periodPayments)}
+                        AED{" "}
+                        {money(
+                          statement.summary.periodPayments +
+                            statement.summary.periodSupplierReturns,
+                        )}
                       </td>
 
                       <td className="px-4 py-4 text-right text-base font-bold">

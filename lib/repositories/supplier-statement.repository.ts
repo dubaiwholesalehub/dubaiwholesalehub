@@ -1,4 +1,4 @@
-import {
+﻿import {
     createClient,
 } from "@/lib/supabase/server";
 
@@ -10,6 +10,7 @@ import {
 export type SupplierStatementEntryType =
     | "purchase"
     | "goods_receipt"
+    | "supplier_return"
     | "payment"
     | "legacy_payment";
 
@@ -45,6 +46,10 @@ export type SupplierStatementEntry = {
     | string
     | null;
 
+    supplierReturnId:
+    | string
+    | null;
+
     description:
     | string
     | null;
@@ -58,6 +63,8 @@ export type SupplierStatementSummary = {
 
     periodPayments: number;
 
+    periodSupplierReturns: number;
+
     closingBalance: number;
 
     payableAmount: number;
@@ -67,6 +74,12 @@ export type SupplierStatementSummary = {
     totalOutstandingPurchases: number;
 
     totalUnallocatedAdvance: number;
+
+    totalSupplierReturnCredit: number;
+
+    totalSupplierCredit: number;
+
+    currentNetPosition: number;
 };
 
 
@@ -444,6 +457,70 @@ export async function getSupplierStatement(
     }
 
 
+    /* -------------------------------------------------------
+     * Posted Supplier Returns
+     *
+     * Supplier Returns reduce the supplier account position.
+     * The full return value is a historical ledger credit:
+     *
+     *   AP reduction + resulting Supplier Credit.
+     *
+     * Available credit is handled separately below when
+     * calculating the current operational position.
+     * ------------------------------------------------------- */
+
+    const {
+        data: supplierReturns,
+        error: supplierReturnsError,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "supplier_returns",
+                ) => any;
+            }
+        )
+            .from(
+                "supplier_returns",
+            )
+            .select(`
+        id,
+        return_number,
+        posting_date,
+        grand_total,
+        supplier_credit_amount,
+        notes,
+        created_at
+      `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            )
+            .eq(
+                "status",
+                "posted",
+            )
+            .order(
+                "posting_date",
+                {
+                    ascending: true,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true,
+                },
+            );
+
+
+    if (supplierReturnsError) {
+        throw new Error(
+            `Unable to load Supplier Returns: ${supplierReturnsError.message}`,
+        );
+    }
+
     /* =======================================================
      * Build Raw Ledger
      * ======================================================= */
@@ -479,6 +556,10 @@ export async function getSupplierStatement(
         | null;
 
         supplierPaymentId:
+        | string
+        | null;
+
+        supplierReturnId:
         | string
         | null;
 
@@ -546,6 +627,9 @@ export async function getSupplierStatement(
             supplierPaymentId:
                 null,
 
+            supplierReturnId:
+                null,
+
             description:
                 purchase.notes,
         });
@@ -593,6 +677,9 @@ export async function getSupplierStatement(
                 goodsReceiptId:
                     null,
                 supplierPaymentId:
+                    null,
+
+                supplierReturnId:
                     null,
 
                 description:
@@ -656,8 +743,60 @@ export async function getSupplierStatement(
             supplierPaymentId:
                 null,
 
+            supplierReturnId:
+                null,
+
             description:
                 receipt.internal_notes,
+        });
+    }
+
+    for (
+        const supplierReturn of
+        supplierReturns ?? []
+    ) {
+        rawEntries.push({
+            id:
+                `supplier-return-${supplierReturn.id}`,
+
+            date:
+                supplierReturn.posting_date,
+
+            sortTimestamp:
+                supplierReturn.created_at,
+
+            sortPriority: 2,
+
+            type:
+                "supplier_return",
+
+            documentNumber:
+                supplierReturn.return_number,
+
+            referenceNumber:
+                null,
+
+            debit: 0,
+
+            credit:
+                numberValue(
+                    supplierReturn.grand_total,
+                ),
+
+            quickPurchaseId:
+                null,
+
+            goodsReceiptId:
+                null,
+
+            supplierPaymentId:
+                null,
+
+            supplierReturnId:
+                supplierReturn.id,
+
+            description:
+                supplierReturn.notes,
         });
     }
 
@@ -700,6 +839,9 @@ export async function getSupplierStatement(
 
             supplierPaymentId:
                 payment.id,
+
+            supplierReturnId:
+                null,
 
             description:
                 payment.notes,
@@ -783,6 +925,7 @@ export async function getSupplierStatement(
 
     let periodPurchases = 0;
     let periodPayments = 0;
+    let periodSupplierReturns = 0;
 
 
     const entries:
@@ -828,11 +971,19 @@ export async function getSupplierStatement(
             );
 
 
-        periodPayments =
-            roundMoney(
-                periodPayments +
-                entry.credit,
-            );
+        if (entry.type === "supplier_return") {
+            periodSupplierReturns =
+                roundMoney(
+                    periodSupplierReturns +
+                    entry.credit,
+                );
+        } else {
+            periodPayments =
+                roundMoney(
+                    periodPayments +
+                    entry.credit,
+                );
+        }
 
 
         entries.push({
@@ -867,6 +1018,9 @@ export async function getSupplierStatement(
 
             supplierPaymentId:
                 entry.supplierPaymentId,
+
+            supplierReturnId:
+                entry.supplierReturnId,
 
             description:
                 entry.description,
@@ -939,6 +1093,61 @@ export async function getSupplierStatement(
             ),
         );
 
+    const {
+        data: availableReturnCredits,
+        error: availableReturnCreditsError,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "available_supplier_return_credits",
+                ) => any;
+            }
+        )
+            .from(
+                "available_supplier_return_credits",
+            )
+            .select(`
+        supplier_credit_available,
+        exchange_rate
+      `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            );
+
+
+    if (availableReturnCreditsError) {
+        throw new Error(
+            `Unable to load available Supplier Return credits: ${availableReturnCreditsError.message}`,
+        );
+    }
+
+
+    const totalSupplierReturnCredit =
+        roundMoney(
+            (
+                availableReturnCredits ??
+                []
+            ).reduce(
+                (
+                    total: number,
+                    credit: any,
+                ) =>
+                    total +
+                    roundMoney(
+                        numberValue(
+                            credit.supplier_credit_available,
+                        ) *
+                        numberValue(
+                            credit.exchange_rate,
+                        ),
+                    ),
+                0,
+            ),
+        );
+
     const totalUnallocatedAdvance =
         roundMoney(
             (
@@ -957,6 +1166,19 @@ export async function getSupplierStatement(
             ),
         );
 
+
+    const totalSupplierCredit =
+        roundMoney(
+            totalUnallocatedAdvance +
+            totalSupplierReturnCredit,
+        );
+
+
+    const currentNetPosition =
+        roundMoney(
+            totalOutstandingPurchases -
+            totalSupplierCredit,
+        );
 
     return {
         supplier: {
@@ -994,6 +1216,8 @@ export async function getSupplierStatement(
 
             periodPayments,
 
+            periodSupplierReturns,
+
             closingBalance,
 
             payableAmount:
@@ -1011,6 +1235,12 @@ export async function getSupplierStatement(
             totalOutstandingPurchases,
 
             totalUnallocatedAdvance,
+
+            totalSupplierReturnCredit,
+
+            totalSupplierCredit,
+
+            currentNetPosition,
         },
 
         entries,
@@ -1045,9 +1275,9 @@ export async function getSupplierFinancialPositions(
     const supabase =
         await createClient();
 
-        /* -------------------------------------------------------
-     * Consolidated Outstanding Supplier Payables
-     * ------------------------------------------------------- */
+    /* -------------------------------------------------------
+ * Consolidated Outstanding Supplier Payables
+ * ------------------------------------------------------- */
 
     const {
         data: purchases,
@@ -1121,6 +1351,42 @@ export async function getSupplierFinancialPositions(
         );
     }
 
+    const {
+        data: returnCredits,
+        error: returnCreditsError,
+    } =
+        await (
+            supabase as unknown as {
+                from: (
+                    relation:
+                        "available_supplier_return_credits",
+                ) => any;
+            }
+        )
+            .from(
+                "available_supplier_return_credits",
+            )
+            .select(`
+        supplier_id,
+        supplier_credit_available,
+        exchange_rate
+      `)
+            .in(
+                "supplier_id",
+                supplierIds,
+            )
+            .gt(
+                "supplier_credit_available",
+                0,
+            );
+
+
+    if (returnCreditsError) {
+        throw new Error(
+            `Unable to load Supplier Return credits: ${returnCreditsError.message}`,
+        );
+    }
+
     const positions: Record<
         string,
         SupplierFinancialPosition
@@ -1178,6 +1444,34 @@ export async function getSupplierFinancialPositions(
             Number(
                 payment.unallocated_amount ??
                 0,
+            );
+    }
+
+    /*
+     * Available Supplier Return credits are also supplier
+     * credits / advances and therefore reduce the net payable.
+     */
+
+    for (const credit of returnCredits ?? []) {
+        if (
+            !credit.supplier_id ||
+            !positions[
+            credit.supplier_id
+            ]
+        ) {
+            continue;
+        }
+
+        positions[
+            credit.supplier_id
+        ].advance +=
+            Number(
+                credit.supplier_credit_available ??
+                0,
+            ) *
+            Number(
+                credit.exchange_rate ??
+                1,
             );
     }
 

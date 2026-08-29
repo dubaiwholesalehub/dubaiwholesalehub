@@ -637,7 +637,7 @@ export default function SupplierReturnCreditPanel({
                     <td className="px-4 py-4">{application.applicationDate}</td>
 
                     <td className="px-4 py-4 font-medium">
-                      {application.purchaseNumber}
+                      {application.targetReference}
                     </td>
 
                     <td className="px-4 py-4 text-right font-semibold">

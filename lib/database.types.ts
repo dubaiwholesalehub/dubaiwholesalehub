@@ -10,7 +10,32 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -2158,6 +2183,7 @@ export type Database = {
       }
       goods_receipts: {
         Row: {
+          balance_due: number
           cancelled_at: string | null
           cancelled_by: string | null
           carrier_name: string | null
@@ -2169,6 +2195,9 @@ export type Database = {
           inspected_at: string | null
           inspected_by: string | null
           internal_notes: string | null
+          paid_amount: number
+          payment_status: string
+          payment_terms_days: number
           purchase_order_id: string
           receipt_number: string
           received_at: string | null
@@ -2185,6 +2214,7 @@ export type Database = {
           warehouse_id: string
         }
         Insert: {
+          balance_due?: number
           cancelled_at?: string | null
           cancelled_by?: string | null
           carrier_name?: string | null
@@ -2196,6 +2226,9 @@ export type Database = {
           inspected_at?: string | null
           inspected_by?: string | null
           internal_notes?: string | null
+          paid_amount?: number
+          payment_status?: string
+          payment_terms_days?: number
           purchase_order_id: string
           receipt_number: string
           received_at?: string | null
@@ -2212,6 +2245,7 @@ export type Database = {
           warehouse_id: string
         }
         Update: {
+          balance_due?: number
           cancelled_at?: string | null
           cancelled_by?: string | null
           carrier_name?: string | null
@@ -2223,6 +2257,9 @@ export type Database = {
           inspected_at?: string | null
           inspected_by?: string | null
           internal_notes?: string | null
+          paid_amount?: number
+          payment_status?: string
+          payment_terms_days?: number
           purchase_order_id?: string
           receipt_number?: string
           received_at?: string | null
@@ -3121,6 +3158,7 @@ export type Database = {
           delivery_location: string | null
           delivery_terms: string | null
           discount_amount: number
+          exchange_rate: number
           expected_delivery_date: string | null
           id: string
           incoterm: string | null
@@ -3148,6 +3186,7 @@ export type Database = {
           total_amount: number
           updated_at: string
           updated_by: string | null
+          vat_recovery_status: string
           warranty: string | null
         }
         Insert: {
@@ -3162,6 +3201,7 @@ export type Database = {
           delivery_location?: string | null
           delivery_terms?: string | null
           discount_amount?: number
+          exchange_rate?: number
           expected_delivery_date?: string | null
           id?: string
           incoterm?: string | null
@@ -3189,6 +3229,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string
           updated_by?: string | null
+          vat_recovery_status?: string
           warranty?: string | null
         }
         Update: {
@@ -3203,6 +3244,7 @@ export type Database = {
           delivery_location?: string | null
           delivery_terms?: string | null
           discount_amount?: number
+          exchange_rate?: number
           expected_delivery_date?: string | null
           id?: string
           incoterm?: string | null
@@ -3230,6 +3272,7 @@ export type Database = {
           total_amount?: number
           updated_at?: string
           updated_by?: string | null
+          vat_recovery_status?: string
           warranty?: string | null
         }
         Relationships: [
@@ -5043,27 +5086,37 @@ export type Database = {
           allocation_source: string
           amount: number
           created_at: string
+          goods_receipt_id: string | null
           id: string
-          quick_purchase_id: string
+          quick_purchase_id: string | null
           supplier_payment_id: string
         }
         Insert: {
           allocation_source?: string
           amount: number
           created_at?: string
+          goods_receipt_id?: string | null
           id?: string
-          quick_purchase_id: string
+          quick_purchase_id?: string | null
           supplier_payment_id: string
         }
         Update: {
           allocation_source?: string
           amount?: number
           created_at?: string
+          goods_receipt_id?: string | null
           id?: string
-          quick_purchase_id?: string
+          quick_purchase_id?: string | null
           supplier_payment_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_payment_allocations_goods_receipt_id_fkey"
+            columns: ["goods_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_payment_allocations_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
@@ -5469,11 +5522,12 @@ export type Database = {
           created_by: string | null
           currency_code: string
           exchange_rate: number
+          goods_receipt_id: string | null
           id: string
           journal_entry_id: string | null
           notes: string | null
           posting_date: string
-          quick_purchase_id: string
+          quick_purchase_id: string | null
           supplier_id: string
           supplier_return_id: string
           updated_at: string
@@ -5486,11 +5540,12 @@ export type Database = {
           created_by?: string | null
           currency_code: string
           exchange_rate?: number
+          goods_receipt_id?: string | null
           id?: string
           journal_entry_id?: string | null
           notes?: string | null
           posting_date?: string
-          quick_purchase_id: string
+          quick_purchase_id?: string | null
           supplier_id: string
           supplier_return_id: string
           updated_at?: string
@@ -5503,16 +5558,24 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           exchange_rate?: number
+          goods_receipt_id?: string | null
           id?: string
           journal_entry_id?: string | null
           notes?: string | null
           posting_date?: string
-          quick_purchase_id?: string
+          quick_purchase_id?: string | null
           supplier_id?: string
           supplier_return_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_return_credit_applications_goods_receipt_id_fkey"
+            columns: ["goods_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_return_credit_applications_journal_entry_id_fkey"
             columns: ["journal_entry_id"]
@@ -5708,6 +5771,7 @@ export type Database = {
       supplier_return_items: {
         Row: {
           created_at: string
+          goods_receipt_item_id: string | null
           id: string
           line_number: number
           line_subtotal: number
@@ -5717,7 +5781,7 @@ export type Database = {
           original_unit_cost: number
           product_id: string
           quantity_returned: number
-          quick_purchase_item_id: string
+          quick_purchase_item_id: string | null
           reason: string | null
           return_cost: number
           supplier_return_id: string
@@ -5728,6 +5792,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          goods_receipt_item_id?: string | null
           id?: string
           line_number: number
           line_subtotal: number
@@ -5737,7 +5802,7 @@ export type Database = {
           original_unit_cost: number
           product_id: string
           quantity_returned: number
-          quick_purchase_item_id: string
+          quick_purchase_item_id?: string | null
           reason?: string | null
           return_cost: number
           supplier_return_id: string
@@ -5748,6 +5813,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          goods_receipt_item_id?: string | null
           id?: string
           line_number?: number
           line_subtotal?: number
@@ -5757,7 +5823,7 @@ export type Database = {
           original_unit_cost?: number
           product_id?: string
           quantity_returned?: number
-          quick_purchase_item_id?: string
+          quick_purchase_item_id?: string | null
           reason?: string | null
           return_cost?: number
           supplier_return_id?: string
@@ -5767,6 +5833,13 @@ export type Database = {
           warehouse_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_return_items_goods_receipt_item_id_fkey"
+            columns: ["goods_receipt_item_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipt_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_return_items_original_inventory_item_id_fkey"
             columns: ["original_inventory_item_id"]
@@ -5854,6 +5927,7 @@ export type Database = {
           dispatched_at: string | null
           dispatched_by: string | null
           exchange_rate: number
+          goods_receipt_id: string | null
           grand_total: number
           id: string
           inventory_cost: number
@@ -5864,7 +5938,7 @@ export type Database = {
           posted_at: string | null
           posted_by: string | null
           posting_date: string
-          quick_purchase_id: string
+          quick_purchase_id: string | null
           reason: string
           recoverable_tax_amount: number
           return_date: string
@@ -5894,6 +5968,7 @@ export type Database = {
           dispatched_at?: string | null
           dispatched_by?: string | null
           exchange_rate?: number
+          goods_receipt_id?: string | null
           grand_total?: number
           id?: string
           inventory_cost?: number
@@ -5904,7 +5979,7 @@ export type Database = {
           posted_at?: string | null
           posted_by?: string | null
           posting_date: string
-          quick_purchase_id: string
+          quick_purchase_id?: string | null
           reason: string
           recoverable_tax_amount?: number
           return_date: string
@@ -5934,6 +6009,7 @@ export type Database = {
           dispatched_at?: string | null
           dispatched_by?: string | null
           exchange_rate?: number
+          goods_receipt_id?: string | null
           grand_total?: number
           id?: string
           inventory_cost?: number
@@ -5944,7 +6020,7 @@ export type Database = {
           posted_at?: string | null
           posted_by?: string | null
           posting_date?: string
-          quick_purchase_id?: string
+          quick_purchase_id?: string | null
           reason?: string
           recoverable_tax_amount?: number
           return_date?: string
@@ -5987,6 +6063,13 @@ export type Database = {
             columns: ["dispatched_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_returns_goods_receipt_id_fkey"
+            columns: ["goods_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
             referencedColumns: ["id"]
           },
           {
@@ -6294,6 +6377,7 @@ export type Database = {
         Row: {
           currency_code: string | null
           exchange_rate: number | null
+          goods_receipt_id: string | null
           posting_date: string | null
           quick_purchase_id: string | null
           return_number: string | null
@@ -6305,6 +6389,13 @@ export type Database = {
           supplier_return_id: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_returns_goods_receipt_id_fkey"
+            columns: ["goods_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_returns_quick_purchase_id_fkey"
             columns: ["quick_purchase_id"]
@@ -6948,6 +7039,35 @@ export type Database = {
           },
         ]
       }
+      supplier_payable_open_items: {
+        Row: {
+          aging_bucket: string | null
+          base_outstanding_amount: number | null
+          currency_code: string | null
+          days_overdue: number | null
+          document_date: string | null
+          document_number: string | null
+          due_date: string | null
+          exchange_rate: number | null
+          goods_receipt_id: string | null
+          gross_amount: number | null
+          outstanding_amount: number | null
+          paid_amount: number | null
+          payment_status: string | null
+          payment_terms_days: number | null
+          quick_purchase_id: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          store_name: string | null
+          supplier_id: string | null
+          supplier_invoice_date: string | null
+          supplier_invoice_number: string | null
+          supplier_name: string | null
+          warehouse_id: string | null
+        }
+        Relationships: []
+      }
       supplier_payable_summary: {
         Row: {
           contact_name: string | null
@@ -7056,6 +7176,10 @@ export type Database = {
         Args: { p_sales_order_id: string }
         Returns: number
       }
+      apply_supplier_advance_to_goods_receipt: {
+        Args: { p_goods_receipt_id: string }
+        Returns: number
+      }
       apply_supplier_advance_to_quick_purchase: {
         Args: { p_quick_purchase_id: string }
         Returns: number
@@ -7067,6 +7191,17 @@ export type Database = {
           p_notes?: string
           p_posting_date?: string
           p_quick_purchase_id: string
+          p_supplier_return_id: string
+        }
+        Returns: string
+      }
+      apply_supplier_return_credit_to_goods_receipt: {
+        Args: {
+          p_amount: number
+          p_application_date?: string
+          p_goods_receipt_id: string
+          p_notes?: string
+          p_posting_date?: string
           p_supplier_return_id: string
         }
         Returns: string
@@ -7127,6 +7262,7 @@ export type Database = {
       backfill_historical_inventory_gl: { Args: never; Returns: Json }
       backfill_historical_receipt_payment_gl: { Args: never; Returns: Json }
       backfill_legacy_local_purchase_gl: { Args: never; Returns: Json }
+      backfill_missing_supplier_payment_gl: { Args: never; Returns: Json }
       can_approve_rfqs: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }
@@ -7349,6 +7485,7 @@ export type Database = {
           delivery_location: string | null
           delivery_terms: string | null
           discount_amount: number
+          exchange_rate: number
           expected_delivery_date: string | null
           id: string
           incoterm: string | null
@@ -7376,6 +7513,7 @@ export type Database = {
           total_amount: number
           updated_at: string
           updated_by: string | null
+          vat_recovery_status: string
           warranty: string | null
         }
         SetofOptions: {
@@ -7399,6 +7537,7 @@ export type Database = {
           delivery_location: string | null
           delivery_terms: string | null
           discount_amount: number
+          exchange_rate: number
           expected_delivery_date: string | null
           id: string
           incoterm: string | null
@@ -7426,6 +7565,7 @@ export type Database = {
           total_amount: number
           updated_at: string
           updated_by: string | null
+          vat_recovery_status: string
           warranty: string | null
         }
         SetofOptions: {
@@ -7449,6 +7589,7 @@ export type Database = {
           delivery_location: string | null
           delivery_terms: string | null
           discount_amount: number
+          exchange_rate: number
           expected_delivery_date: string | null
           id: string
           incoterm: string | null
@@ -7476,6 +7617,7 @@ export type Database = {
           total_amount: number
           updated_at: string
           updated_by: string | null
+          vat_recovery_status: string
           warranty: string | null
         }
         SetofOptions: {
@@ -7534,6 +7676,17 @@ export type Database = {
           p_notes?: string
           p_posting_date: string
           p_quick_purchase_id: string
+          p_reason: string
+          p_return_date: string
+        }
+        Returns: string
+      }
+      create_supplier_return_from_goods_receipt: {
+        Args: {
+          p_goods_receipt_id: string
+          p_items: Json
+          p_notes?: string
+          p_posting_date: string
           p_reason: string
           p_return_date: string
         }
@@ -7638,6 +7791,10 @@ export type Database = {
       get_gl_accounting_period: {
         Args: { p_posting_date: string; p_require_open?: boolean }
         Returns: string
+      }
+      get_goods_receipt_payable_amount: {
+        Args: { p_goods_receipt_id: string }
+        Returns: number
       }
       get_inventory_dashboard_summary: { Args: never; Returns: Json }
       get_inventory_product_health: {
@@ -7842,6 +7999,10 @@ export type Database = {
         Returns: string
       }
       post_gl_journal: { Args: { p_journal_entry_id: string }; Returns: string }
+      post_goods_receipt_gl: {
+        Args: { p_goods_receipt_id: string }
+        Returns: string
+      }
       post_inventory_cogs_gl: {
         Args: { p_inventory_transaction_id: string }
         Returns: string
@@ -8222,6 +8383,10 @@ export type Database = {
         Args: { p_account_id: string }
         Returns: number
       }
+      sync_goods_receipt_paid_amount: {
+        Args: { p_goods_receipt_id: string }
+        Returns: undefined
+      }
       sync_quick_purchase_paid_amount: {
         Args: { p_quick_purchase_id: string }
         Returns: undefined
@@ -8441,6 +8606,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],

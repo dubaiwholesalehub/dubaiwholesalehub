@@ -23,7 +23,9 @@ export type SupplierReturnListItem = {
     id: string;
     returnNumber: string;
 
-    quickPurchaseId: string;
+    quickPurchaseId: string | null;
+    goodsReceiptId: string | null;
+
     purchaseNumber: string;
 
     supplierId: string;
@@ -56,7 +58,9 @@ export type SupplierReturnItem = {
 
     lineNumber: number;
 
-    quickPurchaseItemId: string;
+    quickPurchaseItemId: string | null;
+    goodsReceiptItemId: string | null;
+
     originalInventoryItemId: string;
 
     productId: string;
@@ -84,7 +88,9 @@ export type SupplierReturnDetail = {
     id: string;
     returnNumber: string;
 
-    quickPurchaseId: string;
+    quickPurchaseId: string | null;
+    goodsReceiptId: string | null;
+
     purchaseNumber: string;
     supplierInvoiceNumber: string | null;
 
@@ -162,6 +168,25 @@ export type CreateSupplierReturnInput = {
     items: SupplierReturnCreateItem[];
 };
 
+export type GoodsReceiptSupplierReturnCreateItem = {
+    goodsReceiptItemId: string;
+    quantityReturned: number;
+    reason?: string | null;
+    notes?: string | null;
+};
+
+
+export type CreateGoodsReceiptSupplierReturnInput = {
+    goodsReceiptId: string;
+
+    returnDate: string;
+    postingDate: string;
+
+    reason: string;
+    notes?: string | null;
+
+    items: GoodsReceiptSupplierReturnCreateItem[];
+};
 
 export type SupplierReturnSummary = {
     totalReturns: number;
@@ -247,7 +272,8 @@ export type SupplierReturnCreditSummary = {
     supplierReturnId: string;
     returnNumber: string;
 
-    quickPurchaseId: string;
+    quickPurchaseId: string | null;
+    goodsReceiptId: string | null;
 
     supplierId: string;
 
@@ -282,9 +308,12 @@ export type SupplierReturnCreditApplication = {
     id: string;
 
     supplierReturnId: string;
-    quickPurchaseId: string;
 
-    purchaseNumber: string;
+    quickPurchaseId: string | null;
+    goodsReceiptId: string | null;
+
+    targetType: "quick_purchase" | "goods_receipt";
+    targetReference: string;
 
     supplierId: string;
 
@@ -309,6 +338,18 @@ export type SupplierReturnCreditApplication = {
 export type ApplySupplierReturnCreditInput = {
     supplierReturnId: string;
     quickPurchaseId: string;
+
+    amount: number;
+
+    applicationDate: string;
+    postingDate: string;
+
+    notes?: string | null;
+};
+
+export type ApplySupplierReturnCreditToGoodsReceiptInput = {
+    supplierReturnId: string;
+    goodsReceiptId: string;
 
     amount: number;
 
@@ -440,6 +481,67 @@ export async function createSupplierReturn(
     return String(data);
 }
 
+export async function createGoodsReceiptSupplierReturn(
+    input: CreateGoodsReceiptSupplierReturnInput,
+): Promise<string> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "create_supplier_return_from_goods_receipt",
+            {
+                p_goods_receipt_id:
+                    input.goodsReceiptId,
+
+                p_return_date:
+                    input.returnDate,
+
+                p_posting_date:
+                    input.postingDate,
+
+                p_reason:
+                    input.reason,
+
+                p_items:
+                    input.items.map(
+                        (item) => ({
+                            goodsReceiptItemId:
+                                item.goodsReceiptItemId,
+
+                            quantityReturned:
+                                item.quantityReturned,
+
+                            reason:
+                                item.reason ?? null,
+
+                            notes:
+                                item.notes ?? null,
+                        }),
+                    ),
+
+                p_notes:
+                    input.notes ?? undefined,
+            },
+        );
+
+    if (error) {
+        throw new Error(
+            `Unable to create Goods Receipt Supplier Return: ${error.message}`,
+        );
+    }
+
+    if (!data) {
+        throw new Error(
+            "Goods Receipt Supplier Return was created without an ID.",
+        );
+    }
+
+    return String(data);
+}
 
 export async function approveSupplierReturn(
     supplierReturnId: string,
@@ -563,6 +665,54 @@ export async function applySupplierReturnCredit(
     return String(data);
 }
 
+export async function applySupplierReturnCreditToGoodsReceipt(
+    input: ApplySupplierReturnCreditToGoodsReceiptInput,
+): Promise<string> {
+    const supabase =
+        await createClient();
+
+    const {
+        data,
+        error,
+    } =
+        await supabase.rpc(
+            "apply_supplier_return_credit_to_goods_receipt",
+            {
+                p_supplier_return_id:
+                    input.supplierReturnId,
+
+                p_goods_receipt_id:
+                    input.goodsReceiptId,
+
+                p_amount:
+                    input.amount,
+
+                p_application_date:
+                    input.applicationDate,
+
+                p_posting_date:
+                    input.postingDate,
+
+                p_notes:
+                    input.notes ?? undefined,
+            },
+        );
+
+    if (error) {
+        throw new Error(
+            `Unable to apply Supplier Return credit to Goods Receipt: ${error.message}`,
+        );
+    }
+
+    if (!data) {
+        throw new Error(
+            "Supplier Return credit was applied to the Goods Receipt without an application ID.",
+        );
+    }
+
+    return String(data);
+}
+
 export async function refundSupplierReturnCredit(
     input: RefundSupplierReturnCreditInput,
 ): Promise<string> {
@@ -637,14 +787,15 @@ export async function getSupplierReturnCreditState(
             )
             .select(
                 `
-                id,
-                return_number,
-                quick_purchase_id,
-                supplier_id,
-                currency_code,
-                supplier_credit_amount,
-                supplier_credit_applied_amount
-                `,
+            id,
+            return_number,
+            quick_purchase_id,
+            goods_receipt_id,
+            supplier_id,
+            currency_code,
+            supplier_credit_amount,
+            supplier_credit_applied_amount
+            `,
             )
             .eq(
                 "id",
@@ -727,6 +878,9 @@ export async function getSupplierReturnCreditState(
         quickPurchaseId:
             data.quick_purchase_id,
 
+        goodsReceiptId:
+            data.goods_receipt_id,
+
         supplierId:
             data.supplier_id,
 
@@ -794,6 +948,10 @@ export async function getSupplierReturnCreditEligiblePurchases(
         throw new Error(
             `Unable to load supplier: ${supplierError.message}`,
         );
+    }
+
+    if (!creditState.quickPurchaseId) {
+        return [];
     }
 
     const {
@@ -910,6 +1068,7 @@ export async function getSupplierReturnCreditApplications(
                 id,
                 supplier_return_id,
                 quick_purchase_id,
+                goods_receipt_id,
                 supplier_id,
                 application_date,
                 posting_date,
@@ -950,10 +1109,17 @@ export async function getSupplierReturnCreditApplications(
     const purchaseIds =
         [
             ...new Set(
-                applications.map(
-                    (application) =>
-                        application.quick_purchase_id,
-                ),
+                applications
+                    .map(
+                        (application) =>
+                            application.quick_purchase_id,
+                    )
+                    .filter(
+                        (
+                            value,
+                        ): value is string =>
+                            Boolean(value),
+                    ),
             ),
         ];
 
@@ -974,28 +1140,30 @@ export async function getSupplierReturnCreditApplications(
             ),
         ];
 
-    const {
-        data: purchases,
-        error: purchaseError,
-    } =
-        await supabase
-            .from(
-                "quick_purchases",
-            )
-            .select(
-                `
+    const purchases =
+        purchaseIds.length > 0
+            ? await supabase
+                .from(
+                    "quick_purchases",
+                )
+                .select(
+                    `
                 id,
                 purchase_number
                 `,
-            )
-            .in(
-                "id",
-                purchaseIds,
-            );
+                )
+                .in(
+                    "id",
+                    purchaseIds,
+                )
+            : {
+                data: [],
+                error: null,
+            };
 
-    if (purchaseError) {
+    if (purchases.error) {
         throw new Error(
-            `Unable to load credit application purchases: ${purchaseError.message}`,
+            `Unable to load credit application purchases: ${purchases.error.message}`,
         );
     }
 
@@ -1029,7 +1197,7 @@ export async function getSupplierReturnCreditApplications(
     const purchaseNumberById =
         new Map(
             (
-                purchases ??
+                purchases.data ??
                 []
             ).map(
                 (purchase) => [
@@ -1063,11 +1231,23 @@ export async function getSupplierReturnCreditApplications(
             quickPurchaseId:
                 application.quick_purchase_id,
 
-            purchaseNumber:
-                purchaseNumberById.get(
-                    application.quick_purchase_id,
-                ) ??
-                "Unknown purchase",
+            goodsReceiptId:
+                application.goods_receipt_id,
+
+            targetType:
+                application.quick_purchase_id
+                    ? "quick_purchase"
+                    : "goods_receipt",
+
+            targetReference:
+                application.quick_purchase_id
+                    ? purchaseNumberById.get(
+                        application.quick_purchase_id,
+                    ) ??
+                    "Unknown Quick Purchase"
+                    : application.goods_receipt_id
+                        ? `GRN-${application.goods_receipt_id.slice(0, 8)}`
+                        : "Unknown payable",
 
             supplierId:
                 application.supplier_id,
@@ -1704,6 +1884,9 @@ export async function getSupplierReturnPage(
                     quickPurchaseId:
                         row.quick_purchase_id,
 
+                    goodsReceiptId:
+                        row.goods_receipt_id,
+
                     purchaseNumber:
                         quickPurchase
                             ?.purchase_number ??
@@ -1949,6 +2132,9 @@ export async function getSupplierReturnById(
                         quickPurchaseItemId:
                             item.quick_purchase_item_id,
 
+                        goodsReceiptItemId:
+                            item.goods_receipt_item_id,
+
                         originalInventoryItemId:
                             item.original_inventory_item_id,
 
@@ -2021,6 +2207,9 @@ export async function getSupplierReturnById(
 
         quickPurchaseId:
             data.quick_purchase_id,
+
+        goodsReceiptId:
+            data.goods_receipt_id,
 
         purchaseNumber:
             quickPurchase
