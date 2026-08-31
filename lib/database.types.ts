@@ -503,6 +503,42 @@ export type Database = {
           },
         ]
       }
+      customer_receipt_allocation_repair_audit: {
+        Row: {
+          allocation_id: string
+          allocation_snapshot: Json
+          receipt_id: string
+          receipt_snapshot: Json
+          repair_reason: string
+          repaired_at: string
+          repaired_by: string | null
+          sales_order_id: string
+          sales_order_snapshot: Json
+        }
+        Insert: {
+          allocation_id: string
+          allocation_snapshot: Json
+          receipt_id: string
+          receipt_snapshot: Json
+          repair_reason: string
+          repaired_at?: string
+          repaired_by?: string | null
+          sales_order_id: string
+          sales_order_snapshot: Json
+        }
+        Update: {
+          allocation_id?: string
+          allocation_snapshot?: Json
+          receipt_id?: string
+          receipt_snapshot?: Json
+          repair_reason?: string
+          repaired_at?: string
+          repaired_by?: string | null
+          sales_order_id?: string
+          sales_order_snapshot?: Json
+        }
+        Relationships: []
+      }
       customer_receipt_allocations: {
         Row: {
           amount: number
@@ -7176,6 +7212,10 @@ export type Database = {
         Args: { p_sales_order_id: string }
         Returns: number
       }
+      apply_customer_advance_to_sales_order_internal_161: {
+        Args: { p_sales_order_id: string }
+        Returns: number
+      }
       apply_supplier_advance_to_goods_receipt: {
         Args: { p_goods_receipt_id: string }
         Returns: number
@@ -7279,6 +7319,10 @@ export type Database = {
         Returns: string
       }
       cancel_customer_receipt_with_gl: {
+        Args: { p_reason: string; p_receipt_id: string }
+        Returns: string
+      }
+      cancel_customer_receipt_with_gl_internal_161: {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: string
       }
@@ -7912,6 +7956,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_customer_advance_application_gl: {
+        Args: { p_customer_receipt_allocation_id: string }
+        Returns: string
+      }
       post_customer_receipt: {
         Args: {
           p_allocations: Json
@@ -7934,6 +7982,24 @@ export type Database = {
         Returns: string
       }
       post_customer_receipt_with_account: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_customer_id: string
+          p_exchange_rate: number
+          p_financial_account_id: string
+          p_notes: string
+          p_payment_method: string
+          p_receipt_date: string
+          p_reference_number: string
+        }
+        Returns: string
+      }
+      post_customer_receipt_with_account_internal_161: {
         Args: {
           p_allocations: Json
           p_amount: number
@@ -8130,6 +8196,7 @@ export type Database = {
         Args: { p_customer_receipt_id: string }
         Returns: string
       }
+      reconcile_historical_customer_receipts_162: { Args: never; Returns: Json }
       reconcile_targeted_sales_cogs_gl: { Args: never; Returns: Json }
       refund_supplier_return_credit: {
         Args: {
