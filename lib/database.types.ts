@@ -8197,6 +8197,10 @@ export type Database = {
         Returns: string
       }
       reconcile_historical_customer_receipts_162: { Args: never; Returns: Json }
+      reconcile_historical_sales_order_revenue_163: {
+        Args: never
+        Returns: Json
+      }
       reconcile_targeted_sales_cogs_gl: { Args: never; Returns: Json }
       refund_supplier_return_credit: {
         Args: {
