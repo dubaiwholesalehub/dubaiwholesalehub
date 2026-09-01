@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -13,7 +14,7 @@ import {
   Tags,
   Users,
   X,
-  Warehouse,
+  ChevronDown,
   Ruler,
   ClipboardCheck,
   ArrowLeftRight,
@@ -29,12 +30,12 @@ import {
   ShoppingBag,
   BookOpenText,
   HandCoins,
-  BarChart3,
   Landmark,
 } from "lucide-react";
 
 interface AdminSidebarProps {
   mobileOpen: boolean;
+  desktopOpen: boolean;
   onClose: () => void;
 }
 
@@ -250,11 +251,39 @@ function isActiveRoute(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
+function isGroupActive(
+  pathname: string,
+  group: (typeof navigationGroups)[number],
+) {
+  return group.items.some((item) => isActiveRoute(pathname, item.href));
+}
+
 export default function AdminSidebar({
   mobileOpen,
+  desktopOpen,
   onClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  function isGroupOpen(group: (typeof navigationGroups)[number]) {
+    if (group.label === "Overview") {
+      return true;
+    }
+
+    if (isGroupActive(pathname, group)) {
+      return true;
+    }
+
+    return openGroups[group.label] ?? group.label === "Sales";
+  }
+
+  function toggleGroup(label: string) {
+    setOpenGroups((current) => ({
+      ...current,
+      [label]: !(current[label] ?? label === "Sales"),
+    }));
+  }
 
   return (
     <>
@@ -269,8 +298,9 @@ export default function AdminSidebar({
 
       <aside
         className={[
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300 lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-800 bg-slate-950 text-white transition-transform duration-300",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
+          desktopOpen ? "lg:translate-x-0" : "lg:-translate-x-full",
         ].join(" ")}
       >
         <div className="flex h-20 items-center justify-between border-b border-slate-800 px-6">
@@ -298,33 +328,53 @@ export default function AdminSidebar({
           <div className="space-y-7">
             {navigationGroups.map((group) => (
               <div key={group.label}>
-                <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  {group.label}
-                </p>
+                {group.label === "Overview" ? (
+                  <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                    {group.label}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.label)}
+                    className="mb-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500 transition hover:bg-slate-900 hover:text-slate-300"
+                    aria-expanded={isGroupOpen(group)}
+                  >
+                    <span>{group.label}</span>
 
-                <div className="space-y-1">
-                  {(group.items ?? []).map((item) => {
-                    const Icon = item.icon;
-                    const active = isActiveRoute(pathname, item.href);
+                    <ChevronDown
+                      className={[
+                        "h-4 w-4 transition-transform duration-200",
+                        isGroupOpen(group) ? "rotate-180" : "",
+                      ].join(" ")}
+                    />
+                  </button>
+                )}
 
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={onClose}
-                        className={[
-                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
-                          active
-                            ? "bg-amber-500 text-slate-950"
-                            : "text-slate-300 hover:bg-slate-900 hover:text-white",
-                        ].join(" ")}
-                      >
-                        <Icon className="h-5 w-5 shrink-0" />
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
+                {isGroupOpen(group) && (
+                  <div className="space-y-1">
+                    {(group.items ?? []).map((item) => {
+                      const Icon = item.icon;
+                      const active = isActiveRoute(pathname, item.href);
+
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={onClose}
+                          className={[
+                            "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition",
+                            active
+                              ? "bg-amber-500 text-slate-950"
+                              : "text-slate-300 hover:bg-slate-900 hover:text-white",
+                          ].join(" ")}
+                        >
+                          <Icon className="h-5 w-5 shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>

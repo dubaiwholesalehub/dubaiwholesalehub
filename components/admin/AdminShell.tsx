@@ -20,25 +20,34 @@ export default function AdminShell({
   logoutAction,
 }: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
 
   return (
     <div className="min-h-screen bg-slate-100">
       <AdminSidebar
         mobileOpen={mobileOpen}
+        desktopOpen={desktopSidebarOpen}
         onClose={() => setMobileOpen(false)}
       />
 
-      <div className="lg:pl-72">
+      <div
+        className={[
+          "transition-[padding] duration-300",
+          desktopSidebarOpen ? "lg:pl-72" : "lg:pl-0",
+        ].join(" ")}
+      >
         <AdminHeader
           userName={userName}
           userEmail={userEmail}
           onMenuClick={() => setMobileOpen(true)}
+          desktopSidebarOpen={desktopSidebarOpen}
+          onDesktopMenuClick={() =>
+            setDesktopSidebarOpen((current) => !current)
+          }
           logoutAction={logoutAction}
         />
 
-        <main className="min-h-[calc(100vh-5rem)] p-5 lg:p-8">
-          {children}
-        </main>
+        <main className="min-h-[calc(100vh-5rem)] p-5 lg:p-8">{children}</main>
       </div>
     </div>
   );

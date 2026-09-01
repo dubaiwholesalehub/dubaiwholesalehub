@@ -6,6 +6,8 @@ interface AdminHeaderProps {
   userName: string;
   userEmail: string;
   onMenuClick: () => void;
+  desktopSidebarOpen: boolean;
+  onDesktopMenuClick: () => void;
   logoutAction: () => Promise<void>;
 }
 
@@ -13,6 +15,8 @@ export default function AdminHeader({
   userName,
   userEmail,
   onMenuClick,
+  desktopSidebarOpen,
+  onDesktopMenuClick,
   logoutAction,
 }: AdminHeaderProps) {
   const initial =
@@ -27,6 +31,15 @@ export default function AdminHeader({
         onClick={onMenuClick}
         className="mr-4 rounded-xl border border-slate-200 p-2.5 text-slate-700 transition hover:bg-slate-100 lg:hidden"
         aria-label="Open navigation"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+      <button
+        type="button"
+        onClick={onDesktopMenuClick}
+        className="mr-4 hidden rounded-xl border border-slate-200 p-2.5 text-slate-700 transition hover:bg-slate-100 lg:inline-flex"
+        aria-label={desktopSidebarOpen ? "Hide navigation" : "Show navigation"}
+        title={desktopSidebarOpen ? "Hide menu" : "Show menu"}
       >
         <Menu className="h-5 w-5" />
       </button>
