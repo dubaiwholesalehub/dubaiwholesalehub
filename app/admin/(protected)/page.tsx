@@ -116,7 +116,7 @@ export default async function AdminDashboardPage() {
           />
 
           <MetricCard
-            title="Customer Outstanding"
+            title="Gross Receivables"
             value={money(trade.summary.totalReceivables)}
             description={`${trade.summary.openReceivableCount} open receivable${
               trade.summary.openReceivableCount === 1 ? "" : "s"
@@ -127,7 +127,7 @@ export default async function AdminDashboardPage() {
           />
 
           <MetricCard
-            title="Supplier Outstanding"
+            title="Gross Payables"
             value={money(trade.summary.totalPayables)}
             description={`${trade.summary.openPayableCount} open payable${
               trade.summary.openPayableCount === 1 ? "" : "s"

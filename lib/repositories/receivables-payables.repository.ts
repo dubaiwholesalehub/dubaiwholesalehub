@@ -225,8 +225,16 @@ export interface OverdueReceivableRow {
 
 
 export interface OverduePayableRow {
-  quickPurchaseId: string;
-  purchaseNumber: string;
+  sourceType:
+  "quick_purchase" | "goods_receipt";
+
+  sourceId: string;
+
+  quickPurchaseId: string | null;
+  goodsReceiptId: string | null;
+
+  documentNumber: string;
+  documentDate: string;
 
   supplierId: string | null;
   supplierName: string;
@@ -234,7 +242,6 @@ export interface OverduePayableRow {
   supplierInvoiceNumber:
   string | null;
 
-  purchaseDate: string;
   dueDate: string;
 
   daysOverdue: number;
@@ -757,14 +764,36 @@ export async function getReceivablesPayablesDashboard():
           objectValue(value);
 
         return {
-          quickPurchaseId:
+          sourceType:
             stringValue(
+              row.sourceType,
+            ) as
+            | "quick_purchase"
+            | "goods_receipt",
+
+          sourceId:
+            stringValue(
+              row.sourceId,
+            ),
+
+          quickPurchaseId:
+            nullableString(
               row.quickPurchaseId,
             ),
 
-          purchaseNumber:
+          goodsReceiptId:
+            nullableString(
+              row.goodsReceiptId,
+            ),
+
+          documentNumber:
             stringValue(
-              row.purchaseNumber,
+              row.documentNumber,
+            ),
+
+          documentDate:
+            stringValue(
+              row.documentDate,
             ),
 
           supplierId:
@@ -780,11 +809,6 @@ export async function getReceivablesPayablesDashboard():
           supplierInvoiceNumber:
             nullableString(
               row.supplierInvoiceNumber,
-            ),
-
-          purchaseDate:
-            stringValue(
-              row.purchaseDate,
             ),
 
           dueDate:

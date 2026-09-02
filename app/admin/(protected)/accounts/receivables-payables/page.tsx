@@ -538,7 +538,7 @@ export default async function ReceivablesPayablesPage() {
           <SectionHeader
             icon={TrendingUp}
             title="Payment Priority"
-            description="Most overdue supplier Quick Purchases."
+            description="Most overdue supplier payables."
           />
 
           {overduePayables.length === 0 ? (
@@ -546,10 +546,20 @@ export default async function ReceivablesPayablesPage() {
           ) : (
             <div className="divide-y">
               {overduePayables.slice(0, 10).map((purchase) => (
-                <div key={purchase.quickPurchaseId} className="px-5 py-4">
+                <div key={purchase.sourceId} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-semibold">{purchase.purchaseNumber}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">
+                          {purchase.documentNumber}
+                        </p>
+
+                        <span className="rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          {purchase.sourceType === "goods_receipt"
+                            ? "Goods Receipt"
+                            : "Quick Purchase"}
+                        </span>
+                      </div>
 
                       <p className="mt-1 text-xs text-muted-foreground">
                         {purchase.supplierName} · Due{" "}
