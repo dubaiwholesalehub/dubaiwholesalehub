@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
   Calculator,
@@ -27,6 +27,11 @@ import {
   completeQuickPurchase,
   loadSupplierAvailableAdvance,
 } from "@/app/admin/(protected)/purchasing/quick-purchase/actions";
+
+import {
+  QuickPurchaseProductPicker,
+  type QuickPurchaseProductPickerHandle,
+} from "./QuickPurchaseProductPicker";
 interface SupplierOption {
   id: string;
   company_name: string;
@@ -128,6 +133,14 @@ export default function QuickPurchaseForm({
 
   const [lines, setLines] = useState<PurchaseLine[]>([createEmptyLine()]);
 
+  const productPickerRefs = useRef<
+    Record<string, QuickPurchaseProductPickerHandle | null>
+  >({});
+
+  const [pendingProductFocusId, setPendingProductFocusId] = useState<
+    string | null
+  >(null);
+
   const [availableSupplierAdvance, setAvailableSupplierAdvance] = useState(0);
 
   const [isLoadingAdvance, startLoadingAdvance] = useTransition();
@@ -159,8 +172,26 @@ export default function QuickPurchaseForm({
   );
 
   function addLine() {
-    setLines((current) => [...current, createEmptyLine()]);
+    const newLine = createEmptyLine();
+
+    setLines((current) => [...current, newLine]);
+    setPendingProductFocusId(newLine.id);
   }
+
+  useEffect(() => {
+    if (!pendingProductFocusId) {
+      return;
+    }
+
+    const picker = productPickerRefs.current[pendingProductFocusId];
+
+    if (!picker) {
+      return;
+    }
+
+    picker.focus();
+    setPendingProductFocusId(null);
+  }, [lines, pendingProductFocusId]);
 
   function removeLine(id: string) {
     setLines((current) =>
@@ -377,51 +408,22 @@ export default function QuickPurchaseForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_390px]">
+    <div>
       <div className="space-y-6">
-        <section className="rounded-xl border bg-card p-6">
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-              <ReceiptText className="size-5" />
-            </div>
+        <section className="overflow-hidden rounded-xl border bg-card">
+          <div className="flex items-center gap-2 border-b bg-muted/20 px-4 py-3">
+            <ReceiptText className="size-4 text-muted-foreground" />
 
             <div>
-              <h2 className="font-semibold">Purchase Details</h2>
+              <h2 className="text-sm font-semibold">Purchase Details</h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Supplier, warehouse, invoice and VAT information.
+              <p className="text-xs text-muted-foreground">
+                Supplier, warehouse and purchase document details
               </p>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <Field label="Warehouse" required>
-              <select
-                value={warehouseId}
-                onChange={(event) => setWarehouseId(event.target.value)}
-                className={inputClass}
-              >
-                <option value="">Select warehouse</option>
-
-                {options.warehouses.map((warehouse) => (
-                  <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.name}
-
-                    {warehouse.is_default ? " (Default)" : ""}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <Field label="Purchase Date" required>
-              <input
-                type="date"
-                value={purchaseDate}
-                onChange={(event) => setPurchaseDate(event.target.value)}
-                className={inputClass}
-              />
-            </Field>
-
+          <div className="grid gap-x-4 gap-y-3 p-4 md:grid-cols-2 xl:grid-cols-4">
             <Field label="Supplier">
               <select
                 value={supplierId}
@@ -438,11 +440,28 @@ export default function QuickPurchaseForm({
               </select>
             </Field>
 
-            <Field label="Store / Shop Name">
+            <Field label="Warehouse" required>
+              <select
+                value={warehouseId}
+                onChange={(event) => setWarehouseId(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select warehouse</option>
+
+                {options.warehouses.map((warehouse) => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.name}
+                    {warehouse.is_default ? " (Default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Purchase Date" required>
               <input
-                value={storeName}
-                onChange={(event) => setStoreName(event.target.value)}
-                placeholder="Optional"
+                type="date"
+                value={purchaseDate}
+                onChange={(event) => setPurchaseDate(event.target.value)}
                 className={inputClass}
               />
             </Field>
@@ -453,7 +472,16 @@ export default function QuickPurchaseForm({
                 onChange={(event) =>
                   setSupplierInvoiceNumber(event.target.value)
                 }
-                placeholder="Optional unless VAT verified"
+                placeholder="Optional"
+                className={inputClass}
+              />
+            </Field>
+
+            <Field label="Store / Shop Name">
+              <input
+                value={storeName}
+                onChange={(event) => setStoreName(event.target.value)}
+                placeholder="Optional"
                 className={inputClass}
               />
             </Field>
@@ -475,119 +503,134 @@ export default function QuickPurchaseForm({
                 className={inputClass}
               />
             </Field>
+
+            <Field label="VAT Treatment">
+              <select
+                value={taxTreatment}
+                onChange={(event) =>
+                  setTaxTreatment(
+                    event.target.value as QuickPurchaseTaxTreatment,
+                  )
+                }
+                className={inputClass}
+              >
+                <option value="no_vat">No VAT Charged</option>
+
+                <option value="standard_vat">VAT 5% - Valid Tax Invoice</option>
+
+                <option value="vat_pending">VAT Evidence Pending</option>
+
+                <option value="reverse_charge">Import / Reverse Charge</option>
+
+                <option value="review_required">Review Required</option>
+              </select>
+            </Field>
           </div>
-        </section>
 
-        <section className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">Purchase VAT Treatment</h2>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t bg-muted/10 px-4 py-2 text-[11px] text-muted-foreground">
+            {taxTreatment === "standard_vat" ? (
+              <span>
+                <span className="font-semibold text-foreground">VAT 5%</span>{" "}
+                Recoverable input VAT - valid supplier tax invoice and TRN
+                required.
+              </span>
+            ) : null}
 
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose the tax treatment based on the supplier document you actually
-            have.
-          </p>
+            {taxTreatment === "no_vat" ? (
+              <span>
+                <span className="font-semibold text-foreground">No VAT</span>{" "}
+                Supplier VAT will not be added.
+              </span>
+            ) : null}
 
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <ChoiceCard
-              active={taxTreatment === "standard_vat"}
-              title="VAT 5% — Valid Tax Invoice"
-              subtitle="VAT treated as recoverable input tax"
-              onClick={() => setTaxTreatment("standard_vat")}
-            />
+            {taxTreatment === "vat_pending" ? (
+              <span>
+                <span className="font-semibold text-foreground">
+                  VAT Pending
+                </span>{" "}
+                VAT evidence still requires verification.
+              </span>
+            ) : null}
 
-            <ChoiceCard
-              active={taxTreatment === "no_vat"}
-              title="No VAT Charged"
-              subtitle="Supplier did not charge VAT"
-              onClick={() => setTaxTreatment("no_vat")}
-            />
+            {taxTreatment === "reverse_charge" ? (
+              <span>
+                <span className="font-semibold text-foreground">
+                  Reverse Charge
+                </span>{" "}
+                Purchase kept under separate VAT treatment.
+              </span>
+            ) : null}
 
-            <ChoiceCard
-              active={taxTreatment === "vat_pending"}
-              title="VAT Evidence Pending"
-              subtitle="VAT charged but document still needs verification"
-              onClick={() => setTaxTreatment("vat_pending")}
-            />
-
-            <ChoiceCard
-              active={taxTreatment === "reverse_charge"}
-              title="Import / Reverse Charge"
-              subtitle="Keep for separate VAT accounting treatment"
-              onClick={() => setTaxTreatment("reverse_charge")}
-            />
-
-            <ChoiceCard
-              active={taxTreatment === "review_required"}
-              title="Review Required"
-              subtitle="Tax treatment not yet determined"
-              onClick={() => setTaxTreatment("review_required")}
-            />
+            {taxTreatment === "review_required" ? (
+              <span>
+                <span className="font-semibold text-foreground">
+                  Review Required
+                </span>{" "}
+                VAT treatment must be reviewed before final accounting.
+              </span>
+            ) : null}
           </div>
         </section>
 
         <section className="overflow-hidden rounded-xl border bg-card">
-          <div className="flex items-center justify-between border-b p-5">
+          <div className="flex items-center justify-between border-b bg-muted/20 px-4 py-3">
             <div>
-              <h2 className="font-semibold">Purchased Products</h2>
+              <h2 className="text-sm font-semibold">Purchased Products</h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">
-                Add multiple products with quantity and purchase cost.
+              <p className="text-xs text-muted-foreground">
+                Enter product, quantity and purchase cost
               </p>
             </div>
 
             <button
               type="button"
               onClick={addLine}
-              className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold hover:bg-muted"
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-semibold hover:bg-muted"
             >
               <Plus className="size-4" />
-              Add Product
+              Add Row
             </button>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1000px] text-sm">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Product</th>
+                  <th className="px-3 py-2">Product</th>
 
-                  <th className="px-4 py-3 text-right">Qty</th>
+                  <th className="px-3 py-2 text-right">Qty</th>
 
-                  <th className="px-4 py-3 text-right">Cost</th>
+                  <th className="px-3 py-2 text-right">Cost</th>
 
-                  <th className="px-4 py-3 text-right">VAT</th>
+                  <th className="px-3 py-2 text-right">VAT</th>
 
-                  <th className="px-4 py-3 text-right">Total</th>
+                  <th className="px-3 py-2 text-right">Total</th>
 
-                  <th className="px-4 py-3">Notes</th>
+                  <th className="px-3 py-2">Notes</th>
 
-                  <th className="w-14 px-4 py-3" />
+                  <th className="w-14 px-3 py-2" />
                 </tr>
               </thead>
 
               <tbody className="divide-y">
                 {calculatedLines.map((line) => (
                   <tr key={line.id}>
-                    <td className="px-4 py-3">
-                      <select
+                    <td className="px-3 py-2">
+                      <QuickPurchaseProductPicker
+                        ref={(picker) => {
+                          productPickerRefs.current[line.id] = picker;
+                        }}
+                        products={options.products}
                         value={line.productId}
-                        onChange={(event) =>
+                        onChange={(productId) =>
                           updateLine(line.id, {
-                            productId: event.target.value,
+                            productId,
                           })
                         }
-                        className={inputClass}
-                      >
-                        <option value="">Select product</option>
-
-                        {options.products.map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <input
                         type="number"
                         min={0.0001}
@@ -598,11 +641,11 @@ export default function QuickPurchaseForm({
                             quantity: Number(event.target.value) || 0,
                           })
                         }
-                        className="h-10 w-24 rounded-md border bg-background px-2 text-right"
+                        className="h-9 w-20 rounded-md border bg-background px-2 text-right text-xs"
                       />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <input
                         type="number"
                         min={0}
@@ -613,17 +656,17 @@ export default function QuickPurchaseForm({
                             unitCost: Number(event.target.value) || 0,
                           })
                         }
-                        className="h-10 w-28 rounded-md border bg-background px-2 text-right"
+                        className="h-9 w-24 rounded-md border bg-background px-2 text-right text-xs"
                       />
                     </td>
 
-                    <td className="px-4 py-3 text-right">{vatPercentage}%</td>
+                    <td className="px-3 py-2 text-right">{vatPercentage}%</td>
 
-                    <td className="px-4 py-3 text-right font-semibold">
+                    <td className="px-3 py-2 text-right font-semibold">
                       AED {money(line.total)}
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <input
                         value={line.notes}
                         onChange={(event) =>
@@ -631,11 +674,11 @@ export default function QuickPurchaseForm({
                             notes: event.target.value,
                           })
                         }
-                        className={inputClass}
+                        className="h-9 w-full min-w-[160px] rounded-md border bg-background px-2.5 text-xs"
                       />
                     </td>
 
-                    <td className="px-4 py-3">
+                    <td className="px-3 py-2">
                       <button
                         type="button"
                         onClick={() => removeLine(line.id)}
@@ -651,204 +694,237 @@ export default function QuickPurchaseForm({
           </div>
         </section>
 
-        <section className="rounded-xl border bg-card p-6">
-          <h2 className="font-semibold">Supplier Payment</h2>
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <section className="overflow-hidden rounded-xl border bg-card">
+            <div className="border-b bg-muted/20 px-4 py-3">
+              <h2 className="text-sm font-semibold">Supplier Payment</h2>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <ChoiceCard
-              active={paymentStatus === "paid"}
-              title="Paid Now"
-              subtitle="Full purchase paid now"
-              onClick={() => setPaymentStatus("paid")}
-            />
+              <p className="text-xs text-muted-foreground">
+                Choose how this purchase is being settled
+              </p>
+            </div>
 
-            <ChoiceCard
-              active={paymentStatus === "partial"}
-              title="Partial Payment"
-              subtitle="Part paid, balance due"
-              onClick={() => setPaymentStatus("partial")}
-            />
-
-            <ChoiceCard
-              active={paymentStatus === "credit"}
-              title="Credit"
-              subtitle="Nothing paid now"
-              onClick={() => {
-                setPaymentStatus("credit");
-
-                setPaidAmount(0);
-              }}
-            />
-          </div>
-
-          {paymentStatus !== "credit" ? (
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <Field label="Payment Method">
-                <select
-                  value={paymentMethod}
-                  onChange={(event) => {
-                    setPaymentMethod(
-                      event.target.value as QuickPurchasePaymentMethod,
-                    );
-
-                    setFinancialAccountId("");
-                  }}
-                  className={inputClass}
+            <div className="p-3.5">
+              <div className="inline-flex w-full rounded-lg border bg-muted/30 p-1 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setPaymentStatus("paid")}
+                  className={`h-8 min-w-[110px] rounded-md px-3 text-xs font-semibold transition ${
+                    paymentStatus === "paid"
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-amber-400"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  <option value="cash">Cash</option>
+                  Paid Now
+                </button>
 
-                  <option value="bank">Bank Transfer</option>
+                <button
+                  type="button"
+                  onClick={() => setPaymentStatus("partial")}
+                  className={`h-8 min-w-[110px] rounded-md px-3 text-xs font-semibold transition ${
+                    paymentStatus === "partial"
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-amber-400"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Partial
+                </button>
 
-                  <option value="card">Card</option>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPaymentStatus("credit");
+                    setPaidAmount(0);
+                  }}
+                  className={`h-8 min-w-[110px] rounded-md px-3 text-xs font-semibold transition ${
+                    paymentStatus === "credit"
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-amber-400"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Credit
+                </button>
+              </div>
 
-                  <option value="cheque">Cheque</option>
+              {paymentStatus !== "credit" ? (
+                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <Field label="Payment Method">
+                    <select
+                      value={paymentMethod}
+                      onChange={(event) => {
+                        setPaymentMethod(
+                          event.target.value as QuickPurchasePaymentMethod,
+                        );
 
-                  <option value="other">Other</option>
-                </select>
-              </Field>
+                        setFinancialAccountId("");
+                      }}
+                      className={inputClass}
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="bank">Bank Transfer</option>
+                      <option value="card">Card</option>
+                      <option value="cheque">Cheque</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </Field>
 
-              {effectivePaidAmount > 0 ? (
-                <Field label="Financial Account" required>
-                  <select
-                    value={financialAccountId}
-                    onChange={(event) =>
-                      setFinancialAccountId(event.target.value)
-                    }
-                    className={inputClass}
-                  >
-                    <option value="">Select account</option>
+                  {effectivePaidAmount > 0 ? (
+                    <Field label="Financial Account" required>
+                      <select
+                        value={financialAccountId}
+                        onChange={(event) =>
+                          setFinancialAccountId(event.target.value)
+                        }
+                        className={inputClass}
+                      >
+                        <option value="">Select account</option>
 
-                    {compatibleFinancialAccounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.accountName}
-                        {" — "}
-                        {account.accountCode}
-                        {" — "}
-                        {account.currencyCode} {money(account.currentBalance)}
-                      </option>
-                    ))}
-                  </select>
+                        {compatibleFinancialAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.accountName}
+                            {" - "}
+                            {account.accountCode}
+                            {" - "}
+                            {account.currencyCode}{" "}
+                            {money(account.currentBalance)}
+                          </option>
+                        ))}
+                      </select>
 
-                  {compatibleFinancialAccounts.length === 0 ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      No compatible financial account is available for this
-                      payment method.
-                    </p>
+                      {compatibleFinancialAccounts.length === 0 ? (
+                        <p className="mt-1 text-xs text-red-600">
+                          No compatible financial account is available for this
+                          payment method.
+                        </p>
+                      ) : null}
+                    </Field>
                   ) : null}
-                </Field>
-              ) : null}
 
-              {paymentStatus === "partial" ? (
-                <Field label="Paid Amount">
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={paidAmount}
-                    onChange={(event) =>
-                      setPaidAmount(Number(event.target.value) || 0)
-                    }
-                    className={inputClass}
+                  {paymentStatus === "partial" ? (
+                    <Field label="Pay Now">
+                      <input
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={paidAmount}
+                        onChange={(event) =>
+                          setPaidAmount(Number(event.target.value) || 0)
+                        }
+                        className={inputClass}
+                      />
+                    </Field>
+                  ) : null}
+
+                  <Field label="Payment Reference">
+                    <input
+                      value={paymentReference}
+                      onChange={(event) =>
+                        setPaymentReference(event.target.value)
+                      }
+                      placeholder="Optional"
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  No payment will be recorded now. The full balance remains
+                  payable to the supplier.
+                </p>
+              )}
+
+              <div className="mt-2.5">
+                <Field label="Internal Notes">
+                  <textarea
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    rows={1}
+                    placeholder="Optional internal note"
+                    className={`${inputClass} h-auto min-h-[42px] resize-y py-2`}
                   />
                 </Field>
+              </div>
+            </div>
+          </section>
+
+          <aside className="overflow-hidden rounded-xl bg-slate-950 text-white">
+            <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
+              <Calculator className="size-4 text-amber-400" />
+
+              <h2 className="text-sm font-semibold">Purchase Summary</h2>
+            </div>
+
+            <div className="space-y-2.5 px-4 py-4 text-sm">
+              <SummaryRow label="Subtotal" value={subtotal} />
+
+              <SummaryRow label="VAT" value={taxAmount} />
+
+              <div className="border-t border-slate-700 pt-2.5">
+                <SummaryRow label="Grand Total" value={grandTotal} strong />
+              </div>
+
+              {supplierId ? (
+                <>
+                  <SummaryRow
+                    label="Available Supplier Advance"
+                    value={availableSupplierAdvance}
+                  />
+
+                  <SummaryRow
+                    label="Advance To Apply"
+                    value={supplierAdvanceToApply}
+                  />
+                </>
               ) : null}
 
-              <Field label="Payment Reference">
-                <input
-                  value={paymentReference}
-                  onChange={(event) => setPaymentReference(event.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <SummaryRow label="Pay Now" value={effectivePaidAmount} />
+
+              <SummaryRow label="Total Settled" value={projectedTotalPaid} />
+
+              <SummaryRow
+                label="Balance Due"
+                value={balanceDue}
+                strong={balanceDue > 0}
+              />
+
+              {isLoadingAdvance ? (
+                <p className="text-xs text-slate-400">
+                  Checking supplier advance...
+                </p>
+              ) : null}
+
+              {taxTreatment === "standard_vat" ? (
+                <div className="rounded-md bg-emerald-500/10 px-2.5 py-2 text-xs text-emerald-200">
+                  Recoverable input VAT: AED {money(taxAmount)}
+                </div>
+              ) : null}
+
+              {taxTreatment === "vat_pending" ? (
+                <div className="rounded-md bg-amber-500/10 px-2.5 py-2 text-xs text-amber-200">
+                  VAT pending documentation: AED {money(taxAmount)}
+                </div>
+              ) : null}
             </div>
-          ) : null}
 
-          <div className="mt-5">
-            <Field label="Internal Notes">
-              <textarea
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-                rows={3}
-                className={`${inputClass} h-auto py-3`}
-              />
-            </Field>
-          </div>
-        </section>
+            <div className="border-t border-slate-800 p-3">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isPosting}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 text-sm font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPosting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <ShoppingBag className="size-4" />
+                )}
+
+                {isPosting ? "Posting Purchase..." : "Post Quick Purchase"}
+              </button>
+            </div>
+          </aside>
+        </div>
       </div>
-
-      <aside className="h-fit rounded-xl bg-slate-950 p-6 text-white xl:sticky xl:top-24">
-        <div className="flex items-center gap-3">
-          <Calculator className="size-5 text-amber-400" />
-
-          <h2 className="font-semibold">Purchase Summary</h2>
-        </div>
-
-        <div className="mt-6 space-y-4 text-sm">
-          <SummaryRow label="Subtotal" value={subtotal} />
-
-          <SummaryRow label="VAT" value={taxAmount} />
-
-          <div className="border-t border-slate-700 pt-4">
-            <SummaryRow label="Grand Total" value={grandTotal} strong />
-          </div>
-
-          {supplierId ? (
-            <>
-              <SummaryRow
-                label="Available Supplier Advance"
-                value={availableSupplierAdvance}
-              />
-
-              <SummaryRow
-                label="Advance To Apply"
-                value={supplierAdvanceToApply}
-              />
-            </>
-          ) : null}
-
-          <SummaryRow label="Pay Now" value={effectivePaidAmount} />
-
-          <SummaryRow label="Total Settled" value={projectedTotalPaid} />
-
-          <SummaryRow
-            label="Balance Due"
-            value={balanceDue}
-            strong={balanceDue > 0}
-          />
-          {isLoadingAdvance ? (
-            <p className="text-xs text-slate-400">
-              Checking supplier advance...
-            </p>
-          ) : null}
-        </div>
-
-        {taxTreatment === "standard_vat" ? (
-          <div className="mt-5 rounded-lg bg-emerald-500/10 p-3 text-xs leading-5 text-emerald-200">
-            Recoverable input VAT: AED {money(taxAmount)}
-          </div>
-        ) : null}
-
-        {taxTreatment === "vat_pending" ? (
-          <div className="mt-5 rounded-lg bg-amber-500/10 p-3 text-xs leading-5 text-amber-200">
-            VAT pending documentation: AED {money(taxAmount)}
-          </div>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isPosting}
-          className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isPosting ? (
-            <Loader2 className="size-5 animate-spin" />
-          ) : (
-            <ShoppingBag className="size-5" />
-          )}
-
-          {isPosting ? "Posting Purchase..." : "Post Quick Purchase"}
-        </button>
-      </aside>
     </div>
   );
 }
