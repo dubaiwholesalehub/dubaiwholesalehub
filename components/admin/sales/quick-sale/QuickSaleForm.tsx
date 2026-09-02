@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import {
   Banknote,
@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 
 import type { QuickSaleOptions } from "./quick-sale-types";
+
+import {
+  QuickSaleProductPicker,
+  type QuickSaleProductPickerHandle,
+} from "./QuickSaleProductPicker";
 
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -110,6 +115,9 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("now");
 
   const [items, setItems] = useState<QuickSaleItem[]>([createEmptyItem()]);
+
+  const newProductPickerRef =
+    useRef<QuickSaleProductPickerHandle | null>(null);
 
   const [marginApprovalReason, setMarginApprovalReason] = useState("");
 
@@ -325,7 +333,13 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
   }
 
   function addItem() {
-    setItems((current) => [...current, createEmptyItem()]);
+    const newItem = createEmptyItem();
+
+    setItems((current) => [...current, newItem]);
+
+    window.requestAnimationFrame(() => {
+      newProductPickerRef.current?.focus();
+    });
   }
 
   function removeItem(id: string) {
@@ -527,545 +541,596 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionHeader
-          icon={ReceiptText}
-          title="Sale Information"
-          description="Choose customer, warehouse and sale date."
-        />
+    <div className="space-y-4">
+      {/* ---------------------------------------------------------
+          QUICK SALE V2 - COMPACT TRANSACTION HEADER
+          --------------------------------------------------------- */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <ReceiptText className="h-5 w-5 text-amber-600" />
+              <h2 className="text-base font-bold text-slate-950">
+                Quick Sale
+              </h2>
+            </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-3">
-          <Field label="Customer">
-            <select
-              value={customerId}
-              onChange={(event) => {
-                const nextCustomerId = event.target.value;
+            <p className="mt-1 text-xs text-slate-500">
+              Fast transaction entry
+            </p>
+          </div>
 
-                setCustomerId(nextCustomerId);
-
-                setCustomerAdvance(0);
-
-                /*
-                 * Reset manually entered payment whenever customer
-                 * changes. This prevents payment from the previous
-                 * customer remaining in the form.
-                 */
-                setAmountReceived(0);
-
-                if (!nextCustomerId) {
-                  return;
-                }
-
-                startLoadingAdvance(async () => {
-                  try {
-                    const available =
-                      await loadCustomerAvailableAdvance(nextCustomerId);
-
-                    setCustomerAdvance(Number(available ?? 0));
-                  } catch (error) {
-                    console.error(error);
-
-                    setCustomerAdvance(0);
-
-                    toast.error("Unable to load customer advance.");
-                  }
-                });
-              }}
-              className={inputClass}
-            >
-              <option value="">Select customer</option>
-
-              {options.customers.map((customer) => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.displayName}
-                  {customer.customerNumber
-                    ? ` — ${customer.customerNumber}`
-                    : ""}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Warehouse" required>
-            <select
-              value={warehouseId}
-              onChange={(event) => setWarehouseId(event.target.value)}
-              className={inputClass}
-            >
-              <option value="">Select warehouse</option>
-
-              {options.warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.code} — {warehouse.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Sale Date">
-            <input
-              type="date"
-              value={saleDate}
-              onChange={(event) => setSaleDate(event.target.value)}
-              className={inputClass}
-            />
-          </Field>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <SectionHeader
-          icon={Globe2}
-          title="Tax / Export Treatment"
-          description="Choose the legal VAT treatment for this sale."
-        />
-
-        <div className="mt-6 grid gap-3 lg:grid-cols-4">
-          <TaxCard
-            active={taxTreatment === "local_5"}
-            title="UAE Local"
-            subtitle="5% VAT"
-            onClick={() => setTaxTreatment("local_5")}
-          />
-
-          <TaxCard
-            active={taxTreatment === "export_verified"}
-            title="Export"
-            subtitle="Evidence Available · 0%"
-            onClick={() => setTaxTreatment("export_verified")}
-          />
-
-          <TaxCard
-            active={taxTreatment === "export_pending"}
-            title="Export"
-            subtitle="Evidence Pending"
-            onClick={() => setTaxTreatment("export_pending")}
-          />
-
-          <TaxCard
-            active={taxTreatment === "review"}
-            title="Other"
-            subtitle="Review Required"
-            onClick={() => setTaxTreatment("review")}
-          />
+          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {items.filter((item) => item.productId).length} item
+            {items.filter((item) => item.productId).length === 1 ? "" : "s"}
+          </div>
         </div>
 
-        {isExport ? (
-          <div className="mt-6 grid gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 lg:grid-cols-3">
-            <Field label="Destination Country">
+        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-12">
+          <div className="xl:col-span-4">
+            <Field label="Customer">
               <select
-                value={destinationCountryId}
-                onChange={(event) =>
-                  setDestinationCountryId(event.target.value)
-                }
+                value={customerId}
+                onChange={(event) => {
+                  const nextCustomerId = event.target.value;
+
+                  setCustomerId(nextCustomerId);
+                  setCustomerAdvance(0);
+                  setAmountReceived(0);
+
+                  if (!nextCustomerId) {
+                    return;
+                  }
+
+                  startLoadingAdvance(async () => {
+                    try {
+                      const available =
+                        await loadCustomerAvailableAdvance(nextCustomerId);
+
+                      setCustomerAdvance(Number(available ?? 0));
+                    } catch (error) {
+                      console.error(error);
+
+                      setCustomerAdvance(0);
+                      toast.error("Unable to load customer advance.");
+                    }
+                  });
+                }}
                 className={inputClass}
               >
-                <option value="">Select country</option>
+                <option value="">Select customer</option>
 
-                {options.countries.map((country) => (
-                  <option key={country.id} value={country.id}>
-                    {country.name}
+                {options.customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.displayName}
+                    {customer.customerNumber
+                      ? ` — ${customer.customerNumber}`
+                      : ""}
                   </option>
                 ))}
               </select>
             </Field>
 
-            <Field label="Cargo / Freight Company">
-              <input
-                value={cargoCompany}
-                onChange={(event) => setCargoCompany(event.target.value)}
-                placeholder="Example: ABC Cargo"
-                className={inputClass}
-              />
-            </Field>
+            {isLoadingAdvance ? (
+              <p className="mt-1 text-[11px] text-slate-400">
+                Checking customer advance...
+              </p>
+            ) : customerAdvance > 0 ? (
+              <p className="mt-1 text-[11px] font-semibold text-emerald-700">
+                Available advance: AED {customerAdvance.toFixed(2)}
+              </p>
+            ) : null}
+          </div>
 
-            <Field label="Cargo Reference">
+          <div className="xl:col-span-3">
+            <Field label="Warehouse" required>
+              <select
+                value={warehouseId}
+                onChange={(event) => setWarehouseId(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select warehouse</option>
+
+                {options.warehouses.map((warehouse) => (
+                  <option key={warehouse.id} value={warehouse.id}>
+                    {warehouse.code} — {warehouse.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <div className="xl:col-span-2">
+            <Field label="Sale Date">
               <input
-                value={cargoReference}
-                onChange={(event) => setCargoReference(event.target.value)}
-                placeholder="Receipt / AWB / reference"
+                type="date"
+                value={saleDate}
+                onChange={(event) => setSaleDate(event.target.value)}
                 className={inputClass}
               />
             </Field>
+          </div>
+
+          <div className="xl:col-span-3">
+            <Field label="VAT Treatment">
+              <select
+                value={taxTreatment}
+                onChange={(event) =>
+                  setTaxTreatment(event.target.value as TaxTreatment)
+                }
+                className={inputClass}
+              >
+                <option value="local_5">UAE Local — 5% VAT</option>
+                <option value="export_verified">
+                  Export — Evidence Verified — 0%
+                </option>
+                <option value="export_pending">
+                  Export — Evidence Pending
+                </option>
+                <option value="review">Other — Review Required</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+
+        {isExport ? (
+          <div className="border-t border-blue-100 bg-blue-50/70 px-4 py-3">
+            <div className="grid gap-3 lg:grid-cols-3">
+              <Field label="Destination Country">
+                <select
+                  value={destinationCountryId}
+                  onChange={(event) =>
+                    setDestinationCountryId(event.target.value)
+                  }
+                  className={inputClass}
+                >
+                  <option value="">Select country</option>
+
+                  {options.countries.map((country) => (
+                    <option key={country.id} value={country.id}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Cargo / Freight Company">
+                <input
+                  value={cargoCompany}
+                  onChange={(event) => setCargoCompany(event.target.value)}
+                  placeholder="Example: ABC Cargo"
+                  className={inputClass}
+                />
+              </Field>
+
+              <Field label="Cargo Reference">
+                <input
+                  value={cargoReference}
+                  onChange={(event) => setCargoReference(event.target.value)}
+                  placeholder="Receipt / AWB / reference"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
 
             {taxTreatment === "export_pending" ? (
-              <div className="lg:col-span-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                Export evidence is currently pending. The final posting engine
-                will flag this transaction for follow-up instead of silently
-                treating it as a verified export.
-              </div>
+              <p className="mt-2 text-xs font-medium text-amber-800">
+                Export evidence is pending and will remain flagged for
+                follow-up.
+              </p>
             ) : null}
           </div>
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-200 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <SectionHeader
-            icon={PackagePlus}
-            title="Sale Items"
-            description="Mix warehouse stock and local purchases in one sale."
-          />
+      {/* ---------------------------------------------------------
+          QUICK SALE V2 - COMPACT ITEM GRID
+          --------------------------------------------------------- */}
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <PackagePlus className="h-5 w-5 text-amber-600" />
+
+            <div>
+              <h2 className="text-sm font-bold text-slate-950">
+                Sale Items
+              </h2>
+
+              <p className="text-xs text-slate-500">
+                Stock and local-purchase items can be mixed in one sale.
+              </p>
+            </div>
+          </div>
 
           <button
             type="button"
             onClick={addItem}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-amber-600"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-xs font-semibold text-white transition hover:bg-amber-600"
           >
             <Plus className="h-4 w-4" />
-            Add Item
+            Add Row
           </button>
         </div>
 
-        <div className="space-y-4 p-6">
-          {items.map((item, index) => {
-            const product = getProduct(item.productId);
+        <div className="overflow-x-auto">
+          <div className="min-w-[1180px]">
+            <div className="grid grid-cols-[42px_minmax(250px,1fr)_72px_140px_190px_105px_105px_110px_115px_42px] items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <div className="text-center">#</div>
+              <div>Product</div>
+              <div>Qty</div>
+              <div>Fulfilment</div>
+              <div>Supplier</div>
+              <div className="text-right">Cost</div>
+              <div className="text-right">Sell Price</div>
+              <div className="text-right">Total</div>
+              <div className="text-center">Margin</div>
+              <div />
+            </div>
 
-            const stock = getStock(item.productId);
-            const purchaseInfo = getPurchaseInfo(item.productId);
-            const lineTotal = item.quantity * item.sellingPrice;
-            const lineMargin = marginAnalysis.lines.find(
-              (line) => line.itemId === item.id,
-            );
+            {items.map((item, index) => {
+              const product = getProduct(item.productId);
+              const stock = getStock(item.productId);
+              const purchaseInfo = getPurchaseInfo(item.productId);
 
-            return (
-              <div
-                key={item.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-5"
-              >
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="font-bold text-slate-900">Item {index + 1}</p>
+              const lineTotal =
+                item.quantity * item.sellingPrice;
+
+              const lineMargin =
+                marginAnalysis.lines.find(
+                  (line) => line.itemId === item.id,
+                );
+
+              const displayedCost =
+                item.fulfilment === "stock"
+                  ? stock?.averageUnitCost ?? 0
+                  : item.purchaseCost;
+
+              const marginLabel =
+                !lineMargin
+                  ? "—"
+                  : lineMargin.margin === null
+                    ? "—"
+                    : `${lineMargin.margin.toFixed(1)}%`;
+
+              const marginClass =
+                !lineMargin
+                  ? "bg-slate-100 text-slate-500"
+                  : lineMargin.status === "healthy"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : lineMargin.status === "warning"
+                      ? "bg-amber-100 text-amber-800"
+                      : lineMargin.status === "at_cost"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-red-100 text-red-800";
+
+              return (
+                <div
+                  key={item.id}
+                  className="grid grid-cols-[42px_minmax(250px,1fr)_72px_140px_190px_105px_105px_110px_115px_42px] items-start gap-2 border-b border-slate-100 px-3 py-2.5 last:border-b-0 hover:bg-slate-50/70"
+                >
+                  <div className="flex h-10 items-center justify-center text-xs font-bold text-slate-400">
+                    {index + 1}
+                  </div>
+
+                  <div>
+                    <QuickSaleProductPicker
+                      ref={
+                        index === items.length - 1
+                          ? newProductPickerRef
+                          : undefined
+                      }
+                      products={options.products}
+                      value={item.productId}
+                      onChange={(productId) => {
+                        const selectedProduct =
+                          getProduct(productId);
+
+                        const selectedPurchaseInfo =
+                          getPurchaseInfo(productId);
+
+                        const nextFulfilment =
+                          selectedProduct?.defaultFulfilmentMethod ===
+                          "local_purchase"
+                            ? "local_purchase"
+                            : "stock";
+
+                        updateItem(item.id, {
+                          productId,
+
+                          fulfilment: nextFulfilment,
+
+                          supplierId:
+                            nextFulfilment === "local_purchase"
+                              ? selectedPurchaseInfo?.supplierId ?? ""
+                              : "",
+
+                          purchaseCost:
+                            nextFulfilment === "local_purchase"
+                              ? selectedPurchaseInfo
+                                  ?.suggestedPurchasePrice ?? 0
+                              : 0,
+                        });
+                      }}
+                    />
+
+                    {product ? (
+                      <div className="mt-1 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-[10px] text-slate-500">
+                        {product.sku ? (
+                          <span>SKU: {product.sku}</span>
+                        ) : null}
+
+                        <span>
+                          Unit:{" "}
+                          {product.unitShortName ??
+                            product.unitName ??
+                            "PCS"}
+                        </span>
+
+                        {item.fulfilment === "stock" ? (
+                          <span
+                            className={
+                              (stock?.quantityAvailable ?? 0) <
+                              item.quantity
+                                ? "font-bold text-red-600"
+                                : "font-semibold text-emerald-700"
+                            }
+                          >
+                            Avail: {stock?.quantityAvailable ?? 0}
+                          </span>
+                        ) : purchaseInfo?.supplierName ? (
+                          <span className="font-medium text-blue-700">
+                            Preferred: {purchaseInfo.supplierName}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="mt-1 h-4" />
+                    )}
+                  </div>
+
+                  <input
+                    type="number"
+                    min={1}
+                    step="1"
+                    value={item.quantity}
+                    onChange={(event) =>
+                      updateItem(item.id, {
+                        quantity: Math.max(
+                          Number(event.target.value) || 1,
+                          1,
+                        ),
+                      })
+                    }
+                    className={compactInputClass}
+                    aria-label={`Quantity for item ${index + 1}`}
+                  />
+
+                  <select
+                    value={item.fulfilment}
+                    onChange={(event) => {
+                      const nextFulfilment =
+                        event.target.value as ItemFulfilment;
+
+                      updateItem(item.id, {
+                        fulfilment: nextFulfilment,
+
+                        supplierId:
+                          nextFulfilment === "local_purchase"
+                            ? item.supplierId ||
+                              purchaseInfo?.supplierId ||
+                              ""
+                            : "",
+
+                        purchaseCost:
+                          nextFulfilment === "local_purchase"
+                            ? item.purchaseCost ||
+                              purchaseInfo?.suggestedPurchasePrice ||
+                              0
+                            : item.purchaseCost,
+                      });
+                    }}
+                    className={compactInputClass}
+                    aria-label={`Fulfilment for item ${index + 1}`}
+                  >
+                    <option value="stock">Stock</option>
+                    <option value="local_purchase">Local Buy</option>
+                  </select>
+
+                  {item.fulfilment === "local_purchase" ? (
+                    <select
+                      value={item.supplierId}
+                      onChange={(event) =>
+                        updateItem(item.id, {
+                          supplierId: event.target.value,
+                        })
+                      }
+                      className={compactInputClass}
+                      aria-label={`Supplier for item ${index + 1}`}
+                    >
+                      <option value="">Supplier optional</option>
+
+                      {options.suppliers.map((supplier) => (
+                        <option key={supplier.id} value={supplier.id}>
+                          {supplier.companyName}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="flex h-9 items-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 text-xs text-slate-400">
+                      —
+                    </div>
+                  )}
+
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={displayedCost}
+                    readOnly={item.fulfilment === "stock"}
+                    onChange={(event) =>
+                      updateItem(item.id, {
+                        purchaseCost:
+                          Number(event.target.value) || 0,
+                      })
+                    }
+                    className={`${compactInputClass} text-right ${
+                      item.fulfilment === "stock"
+                        ? "bg-slate-50 text-slate-500"
+                        : ""
+                    }`}
+                    aria-label={`Cost for item ${index + 1}`}
+                  />
+
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={item.sellingPrice}
+                    onChange={(event) =>
+                      updateItem(item.id, {
+                        sellingPrice:
+                          Number(event.target.value) || 0,
+                      })
+                    }
+                    className={`${compactInputClass} text-right font-semibold`}
+                    aria-label={`Selling price for item ${index + 1}`}
+                  />
+
+                  <div className="flex h-9 items-center justify-end rounded-lg bg-slate-50 px-2 text-sm font-bold tabular-nums text-slate-900">
+                    {lineTotal.toFixed(2)}
+                  </div>
+
+                  <div className="flex h-9 items-center justify-center">
+                    <span
+                      className={`inline-flex min-w-[72px] justify-center rounded-full px-2 py-1 text-[10px] font-bold ${marginClass}`}
+                      title={
+                        lineMargin
+                          ? `Estimated cost AED ${lineMargin.cost.toFixed(
+                              2,
+                            )}; gross profit AED ${lineMargin.profit.toFixed(
+                              2,
+                            )}`
+                          : "Select a product to calculate margin"
+                      }
+                    >
+                      {marginLabel}
+                    </span>
+                  </div>
 
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="rounded-lg p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                    aria-label="Remove item"
+                    className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Remove item ${index + 1}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="grid gap-4 xl:grid-cols-12">
-                  <div className="xl:col-span-4">
-                    <Field label="Product">
-                      <select
-                        value={item.productId}
-                        onChange={(event) => {
-                          const selectedProduct = getProduct(
-                            event.target.value,
-                          );
-                          const selectedPurchaseInfo = getPurchaseInfo(
-                            event.target.value,
-                          );
-                          const nextFulfilment =
-                            selectedProduct?.defaultFulfilmentMethod ===
-                            "local_purchase"
-                              ? "local_purchase"
-                              : "stock";
+        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={addItem}
+            className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:border-amber-400 hover:text-amber-700"
+          >
+            <Plus className="h-4 w-4" />
+            Add Row
+          </button>
 
-                          updateItem(item.id, {
-                            productId: event.target.value,
-
-                            fulfilment: nextFulfilment,
-
-                            supplierId:
-                              nextFulfilment === "local_purchase"
-                                ? (selectedPurchaseInfo?.supplierId ?? "")
-                                : "",
-
-                            purchaseCost:
-                              nextFulfilment === "local_purchase"
-                                ? (selectedPurchaseInfo?.suggestedPurchasePrice ??
-                                  0)
-                                : 0,
-                          });
-                        }}
-                        className={inputClass}
-                      >
-                        <option value="">Select product</option>
-
-                        {options.products.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.name}
-                            {option.sku ? ` — ${option.sku}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
-
-                    {product ? (
-                      <p className="mt-2 text-xs text-slate-500">
-                        Unit:{" "}
-                        {product.unitShortName ?? product.unitName ?? "PCS"}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="xl:col-span-1">
-                    <Field label="Qty">
-                      <input
-                        type="number"
-                        min={1}
-                        step="1"
-                        value={item.quantity}
-                        onChange={(event) =>
-                          updateItem(item.id, {
-                            quantity: Math.max(
-                              Number(event.target.value) || 1,
-                              1,
-                            ),
-                          })
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-2">
-                    <Field label="Fulfilment">
-                      <select
-                        value={item.fulfilment}
-                        onChange={(event) => {
-                          const nextFulfilment = event.target
-                            .value as ItemFulfilment;
-
-                          updateItem(item.id, {
-                            fulfilment: nextFulfilment,
-
-                            supplierId:
-                              nextFulfilment === "local_purchase"
-                                ? item.supplierId ||
-                                  purchaseInfo?.supplierId ||
-                                  ""
-                                : item.supplierId,
-
-                            purchaseCost:
-                              nextFulfilment === "local_purchase"
-                                ? item.purchaseCost ||
-                                  purchaseInfo?.suggestedPurchasePrice ||
-                                  0
-                                : item.purchaseCost,
-                          });
-                        }}
-                        className={inputClass}
-                      >
-                        <option value="stock">From Stock</option>
-
-                        <option value="local_purchase">Local Purchase</option>
-                      </select>
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-2">
-                    <Field label="Purchase Cost">
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={
-                          item.fulfilment === "stock"
-                            ? (stock?.averageUnitCost ?? 0)
-                            : item.purchaseCost
-                        }
-                        readOnly={item.fulfilment === "stock"}
-                        onChange={(event) =>
-                          updateItem(item.id, {
-                            purchaseCost: Number(event.target.value) || 0,
-                          })
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-2">
-                    <Field label="Selling Price">
-                      <input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={item.sellingPrice}
-                        onChange={(event) =>
-                          updateItem(item.id, {
-                            sellingPrice: Number(event.target.value) || 0,
-                          })
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-1">
-                    <Field label="Total">
-                      <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900">
-                        {lineTotal.toFixed(2)}
-                      </div>
-                    </Field>
-                  </div>
-                </div>
-
-                {lineMargin ? (
-                  <div className="mt-4 grid gap-3 sm:grid-cols-4">
-                    <MarginInfo
-                      label="Estimated Cost"
-                      value={`AED ${lineMargin.cost.toFixed(2)}`}
-                    />
-
-                    <MarginInfo
-                      label="Gross Profit"
-                      value={`AED ${lineMargin.profit.toFixed(2)}`}
-                      negative={lineMargin.profit < 0}
-                    />
-
-                    <MarginInfo
-                      label="Margin"
-                      value={
-                        lineMargin.margin === null
-                          ? "—"
-                          : `${lineMargin.margin.toFixed(2)}%`
-                      }
-                      negative={(lineMargin.margin ?? 0) < 0}
-                    />
-
-                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                      <p className="text-xs font-medium text-slate-500">
-                        Margin Status
-                      </p>
-
-                      <div className="mt-2">
-                        <span
-                          className={
-                            lineMargin.status === "healthy"
-                              ? "rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800"
-                              : lineMargin.status === "warning"
-                                ? "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800"
-                                : lineMargin.status === "at_cost"
-                                  ? "rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-800"
-                                  : "rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800"
-                          }
-                        >
-                          {lineMargin.status === "healthy"
-                            ? "Healthy"
-                            : lineMargin.status === "warning"
-                              ? "Low Margin"
-                              : lineMargin.status === "at_cost"
-                                ? "At Cost"
-                                : lineMargin.status === "approval_required"
-                                  ? "Approval Required"
-                                  : "Cost Review"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                  {item.fulfilment === "stock" ? (
-                    <div className="grid gap-4 lg:col-span-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
-                        <p className="font-semibold text-slate-900">
-                          Warehouse Stock
-                        </p>
-
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-600">
-                          <span>
-                            On Hand:{" "}
-                            <strong>{stock?.quantityOnHand ?? 0}</strong>
-                          </span>
-
-                          <span>
-                            Reserved:{" "}
-                            <strong>{stock?.quantityReserved ?? 0}</strong>
-                          </span>
-
-                          <span>
-                            Available:{" "}
-                            <strong
-                              className={
-                                (stock?.quantityAvailable ?? 0) < item.quantity
-                                  ? "text-red-600"
-                                  : "text-emerald-700"
-                              }
-                            >
-                              {stock?.quantityAvailable ?? 0}
-                            </strong>
-                          </span>
-                        </div>
-
-                        <p className="mt-3 text-xs text-slate-500">
-                          Average Stock Cost:{" "}
-                          <strong className="text-slate-800">
-                            AED {(stock?.averageUnitCost ?? 0).toFixed(2)}
-                          </strong>
-                        </p>
-                      </div>
-
-                      <PurchaseReference purchaseInfo={purchaseInfo} />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="lg:col-span-2">
-                        <Field label="Purchase Supplier">
-                          <select
-                            value={item.supplierId}
-                            onChange={(event) =>
-                              updateItem(item.id, {
-                                supplierId: event.target.value,
-                              })
-                            }
-                            className={inputClass}
-                          >
-                            <option value="">Supplier / Shop optional</option>
-
-                            {options.suppliers.map((supplier) => (
-                              <option key={supplier.id} value={supplier.id}>
-                                {supplier.companyName}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-                      </div>
-
-                      <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                        This item will be received through the existing Local
-                        Purchase inventory engine before sale fulfilment.
-                      </div>
-                    </>
+          <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
+            <span>
+              Qty:{" "}
+              <strong className="text-slate-900">
+                {items
+                  .filter((item) => item.productId)
+                  .reduce(
+                    (total, item) => total + item.quantity,
+                    0,
                   )}
-                </div>
-              </div>
-            );
-          })}
+              </strong>
+            </span>
+
+            <span>
+              Estimated Cost:{" "}
+              <strong className="text-slate-900">
+                AED {marginAnalysis.estimatedCost.toFixed(2)}
+              </strong>
+            </span>
+
+            <span>
+              Gross Profit:{" "}
+              <strong
+                className={
+                  marginAnalysis.estimatedGrossProfit < 0
+                    ? "text-red-600"
+                    : "text-emerald-700"
+                }
+              >
+                AED {marginAnalysis.estimatedGrossProfit.toFixed(2)}
+              </strong>
+            </span>
+
+            <span>
+              Margin:{" "}
+              <strong
+                className={
+                  marginAnalysis.requiresApproval
+                    ? "text-red-600"
+                    : marginAnalysis.hasWarning
+                      ? "text-amber-700"
+                      : "text-slate-900"
+                }
+              >
+                {marginAnalysis.estimatedMargin.toFixed(1)}%
+              </strong>
+            </span>
+          </div>
         </div>
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_420px]">
-        <div className="space-y-6">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <SectionHeader
-              icon={WalletCards}
-              title="Payment"
-              description="Record how much the customer paid now."
-            />
+      <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
+        <div className="space-y-4">
+          {/* ---------------------------------------------------------
+              QUICK SALE V2 - COMPACT PAYMENT
+              --------------------------------------------------------- */}
+          <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <WalletCards className="h-4.5 w-4.5 text-amber-600" />
 
-            <div className="mt-6 space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <TaxCard
-                  active={paymentStatus === "paid"}
-                  title="Paid Now"
-                  subtitle="Pay the remaining balance after advance"
+                <div>
+                  <h2 className="text-sm font-bold text-slate-950">
+                    Payment
+                  </h2>
+
+                  <p className="text-[11px] text-slate-500">
+                    Record customer payment for this sale.
+                  </p>
+                </div>
+              </div>
+
+              <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 p-1">
+                <button
+                  type="button"
                   onClick={() => {
                     setPaymentStatus("paid");
-
                     setAmountReceived(remainingAfterAdvance);
                   }}
-                />
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                    paymentStatus === "paid"
+                      ? "bg-slate-950 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
+                  }`}
+                >
+                  Paid
+                </button>
 
-                <TaxCard
-                  active={paymentStatus === "partial"}
-                  title="Partial Payment"
-                  subtitle="Pay part of the remaining balance"
+                <button
+                  type="button"
                   onClick={() => {
                     setPaymentStatus("partial");
 
@@ -1073,30 +1138,46 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                       setAmountReceived(0);
                     }
                   }}
-                />
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                    paymentStatus === "partial"
+                      ? "bg-slate-950 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
+                  }`}
+                >
+                  Partial
+                </button>
 
-                <TaxCard
-                  active={paymentStatus === "credit"}
-                  title="Credit"
-                  subtitle="No new payment received now"
+                <button
+                  type="button"
                   onClick={() => {
                     setPaymentStatus("credit");
                     setAmountReceived(0);
                   }}
-                />
+                  className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                    paymentStatus === "credit"
+                      ? "bg-slate-950 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
+                  }`}
+                >
+                  Credit
+                </button>
               </div>
+            </div>
 
-              {paymentStatus !== "credit" ? (
-                <div className="grid gap-4 md:grid-cols-2">
+            {paymentStatus !== "credit" ? (
+              <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-12">
+                <div className="xl:col-span-3">
                   <Field label="Payment Method">
                     <select
                       value={paymentMethod}
                       onChange={(event) => {
-                        setPaymentMethod(event.target.value as PaymentMethod);
+                        setPaymentMethod(
+                          event.target.value as PaymentMethod,
+                        );
 
                         setFinancialAccountId("");
                       }}
-                      className={inputClass}
+                      className={compactInputClass}
                     >
                       <option value="cash">Cash</option>
                       <option value="bank">Bank Transfer</option>
@@ -1105,20 +1186,25 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                       <option value="other">Other</option>
                     </select>
                   </Field>
+                </div>
 
-                  {effectiveAmountReceived > 0 ? (
+                {effectiveAmountReceived > 0 ? (
+                  <div className="xl:col-span-3">
                     <Field label="Financial Account">
                       <select
                         value={financialAccountId}
                         onChange={(event) =>
                           setFinancialAccountId(event.target.value)
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100"
+                        className={compactInputClass}
                       >
                         <option value="">Select account</option>
 
                         {compatibleFinancialAccounts.map((account) => (
-                          <option key={account.id} value={account.id}>
+                          <option
+                            key={account.id}
+                            value={account.id}
+                          >
                             {account.accountName}
                             {" — "}
                             {account.accountCode}
@@ -1130,14 +1216,15 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                       </select>
 
                       {compatibleFinancialAccounts.length === 0 ? (
-                        <p className="mt-1 text-xs text-red-600">
-                          No compatible financial account is available for this
-                          payment method.
+                        <p className="mt-1 text-[11px] font-medium text-red-600">
+                          No compatible financial account available.
                         </p>
                       ) : null}
                     </Field>
-                  ) : null}
+                  </div>
+                ) : null}
 
+                <div className="xl:col-span-2">
                   <Field label="Pay Now">
                     <input
                       type="number"
@@ -1149,37 +1236,54 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                           : amountReceived
                       }
                       onChange={(event) =>
-                        setAmountReceived(Number(event.target.value) || 0)
+                        setAmountReceived(
+                          Number(event.target.value) || 0,
+                        )
                       }
                       disabled={paymentStatus === "paid"}
-                      className={inputClass}
+                      className={compactInputClass}
                     />
                   </Field>
+                </div>
 
+                <div
+                  className={
+                    paymentMethod === "bank" ||
+                    paymentMethod === "cheque"
+                      ? "xl:col-span-2"
+                      : "xl:col-span-4"
+                  }
+                >
                   <Field label="Payment Reference">
                     <input
                       value={paymentReference}
                       onChange={(event) =>
                         setPaymentReference(event.target.value)
                       }
-                      placeholder="Transfer / POS / receipt reference"
-                      className={inputClass}
+                      placeholder="Reference"
+                      className={compactInputClass}
                     />
                   </Field>
+                </div>
 
-                  {paymentMethod === "bank" ? (
+                {paymentMethod === "bank" ? (
+                  <div className="xl:col-span-2">
                     <Field label="Bank Name">
                       <input
                         value={bankName}
-                        onChange={(event) => setBankName(event.target.value)}
+                        onChange={(event) =>
+                          setBankName(event.target.value)
+                        }
                         placeholder="Bank name"
-                        className={inputClass}
+                        className={compactInputClass}
                       />
                     </Field>
-                  ) : null}
+                  </div>
+                ) : null}
 
-                  {paymentMethod === "cheque" ? (
-                    <>
+                {paymentMethod === "cheque" ? (
+                  <>
+                    <div className="xl:col-span-2">
                       <Field label="Cheque Number">
                         <input
                           value={chequeNumber}
@@ -1187,10 +1291,12 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                             setChequeNumber(event.target.value)
                           }
                           placeholder="Cheque number"
-                          className={inputClass}
+                          className={compactInputClass}
                         />
                       </Field>
+                    </div>
 
+                    <div className="xl:col-span-2">
                       <Field label="Cheque Date">
                         <input
                           type="date"
@@ -1198,42 +1304,67 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                           onChange={(event) =>
                             setChequeDate(event.target.value)
                           }
-                          className={inputClass}
+                          className={compactInputClass}
                         />
                       </Field>
-                    </>
-                  ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <div className="px-4 py-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  Credit sale — no customer receipt will be created now.
+                  The full sale amount will remain outstanding.
                 </div>
-              ) : (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Credit sale — no customer receipt will be created now. The
-                  full invoice amount will remain outstanding.
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <SectionHeader
-              icon={Truck}
-              title="Delivery"
-              description="Complete delivery immediately or keep it pending."
-            />
+          {/* ---------------------------------------------------------
+              QUICK SALE V2 - COMPACT DELIVERY
+              --------------------------------------------------------- */}
+          <section className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4.5 w-4.5 text-amber-600" />
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <TaxCard
-                active={deliveryMode === "now"}
-                title="Deliver Now"
-                subtitle="Complete fulfilment immediately"
-                onClick={() => setDeliveryMode("now")}
-              />
+                <div>
+                  <h2 className="text-sm font-bold text-slate-950">
+                    Delivery
+                  </h2>
 
-              <TaxCard
-                active={deliveryMode === "later"}
-                title="Deliver Later"
-                subtitle="Create pending delivery"
-                onClick={() => setDeliveryMode("later")}
-              />
+                  <p className="text-[11px] text-slate-500">
+                    Complete now or keep delivery pending.
+                  </p>
+                </div>
+              </div>
+
+              <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 p-1">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode("now")}
+                  className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${
+                    deliveryMode === "now"
+                      ? "bg-amber-500 text-slate-950 shadow-sm"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
+                  }`}
+                >
+                  Deliver Now
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode("later")}
+                  className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${
+                    deliveryMode === "later"
+                      ? "bg-amber-500 text-slate-950 shadow-sm"
+                      : "text-slate-600 hover:bg-white hover:text-slate-950"
+                  }`}
+                >
+                  Deliver Later
+                </button>
+              </div>
             </div>
           </section>
         </div>
@@ -1576,3 +1707,6 @@ function PurchaseReference({
 
 const inputClass =
   "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
+
+const compactInputClass =
+  "h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100";
