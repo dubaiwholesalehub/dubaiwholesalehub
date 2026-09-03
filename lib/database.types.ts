@@ -3997,6 +3997,7 @@ export type Database = {
       }
       sales_invoice_documents: {
         Row: {
+          buyer_snapshot: Json | null
           created_at: string
           created_by: string | null
           customer_display_name: string | null
@@ -4006,12 +4007,14 @@ export type Database = {
           invoice_date: string
           invoice_number: string
           sales_order_id: string
+          seller_snapshot: Json | null
           status: string
           template_type: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          buyer_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           customer_display_name?: string | null
@@ -4021,12 +4024,14 @@ export type Database = {
           invoice_date?: string
           invoice_number: string
           sales_order_id: string
+          seller_snapshot?: Json | null
           status?: string
           template_type?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          buyer_snapshot?: Json | null
           created_at?: string
           created_by?: string | null
           customer_display_name?: string | null
@@ -4036,6 +4041,7 @@ export type Database = {
           invoice_date?: string
           invoice_number?: string
           sales_order_id?: string
+          seller_snapshot?: Json | null
           status?: string
           template_type?: string
           updated_at?: string

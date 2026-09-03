@@ -1,4 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
+import type { CompanyProfile } from "@/lib/repositories/company-profile.repository";
+import type { SalesOrderDetails } from "@/lib/repositories/sales-order.repository";
+import type { Json } from "@/lib/database.types";
 
 export type SalesInvoiceTemplateType =
     | "uae_tax"
@@ -11,7 +14,8 @@ export type SalesInvoiceStatus =
 
 export type SalesInvoiceDisplaySettings =
     Record<string, boolean>;
-
+export type SalesInvoiceSnapshot =
+    Record<string, Json | undefined>;
 export interface SalesInvoiceDocument {
     id: string;
     sales_order_id: string;
@@ -21,6 +25,8 @@ export interface SalesInvoiceDocument {
     status: SalesInvoiceStatus;
     customer_display_name: string | null;
     customer_mark: string | null;
+    seller_snapshot: SalesInvoiceSnapshot | null;
+    buyer_snapshot: SalesInvoiceSnapshot | null;
     display_settings: SalesInvoiceDisplaySettings;
     created_at: string;
     updated_at: string;
@@ -48,6 +54,8 @@ function mapSalesInvoiceDocument(
         status: string;
         customer_display_name: string | null;
         customer_mark: string | null;
+        seller_snapshot: unknown;
+        buyer_snapshot: unknown;
         display_settings: unknown;
         created_at: string;
         updated_at: string;
@@ -74,6 +82,21 @@ function mapSalesInvoiceDocument(
 
         customer_mark:
             row.customer_mark,
+
+        seller_snapshot:
+            row.seller_snapshot &&
+                typeof row.seller_snapshot === "object" &&
+                !Array.isArray(row.seller_snapshot)
+                ? (row.seller_snapshot as SalesInvoiceSnapshot)
+                : null,
+
+        buyer_snapshot:
+            row.buyer_snapshot &&
+                typeof row.buyer_snapshot === "object" &&
+                !Array.isArray(row.buyer_snapshot)
+                ? (row.buyer_snapshot as SalesInvoiceSnapshot)
+                : null,
+
         display_settings: displaySettings,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -98,8 +121,10 @@ export async function getSalesInvoiceBySalesOrderId(
             invoice_date,
             template_type,
             status,
-            customer_display_name,
+                        customer_display_name,
             customer_mark,
+            seller_snapshot,
+            buyer_snapshot,
             display_settings,
             created_at,
             updated_at
@@ -138,8 +163,10 @@ export async function getSalesInvoiceById(
             invoice_date,
             template_type,
             status,
-            customer_display_name,
+                        customer_display_name,
             customer_mark,
+            seller_snapshot,
+            buyer_snapshot,
             display_settings,
             created_at,
             updated_at
@@ -168,9 +195,162 @@ export async function getSalesInvoiceById(
  * Reopening or printing the invoice does NOT create another
  * invoice number.
  * ========================================================= */
+function buildSellerSnapshot(
+    companyProfile: CompanyProfile,
+): SalesInvoiceSnapshot {
+    return {
+        legal_name: companyProfile.legal_name,
+        trade_name: companyProfile.trade_name,
+        arabic_name: companyProfile.arabic_name,
+        tax_registration_number:
+            companyProfile.tax_registration_number,
+        trade_license_number:
+            companyProfile.trade_license_number,
+        phone: companyProfile.phone,
+        whatsapp: companyProfile.whatsapp,
+        email: companyProfile.email,
+        website: companyProfile.website,
+        address_line_1: companyProfile.address_line_1,
+        address_line_2: companyProfile.address_line_2,
+        city: companyProfile.city,
+        state: companyProfile.state,
+        country: companyProfile.country,
+        postal_code: companyProfile.postal_code,
+        po_box: companyProfile.po_box,
+        logo_path: companyProfile.logo_path,
+        document_footer: companyProfile.document_footer,
+        bank_name: companyProfile.bank_name,
+        bank_account_name:
+            companyProfile.bank_account_name,
+        bank_account_number:
+            companyProfile.bank_account_number,
+        bank_iban: companyProfile.bank_iban,
+        bank_swift_code:
+            companyProfile.bank_swift_code,
+    };
+}
+
+function buildBuyerSnapshot(
+    salesOrder: SalesOrderDetails,
+): SalesInvoiceSnapshot {
+    return {
+        customer_id: salesOrder.customer?.id ?? null,
+
+        customer: salesOrder.customer
+            ? {
+                id: salesOrder.customer.id,
+                customer_number:
+                    salesOrder.customer.customer_number,
+                display_name:
+                    salesOrder.customer.display_name,
+                company_name:
+                    salesOrder.customer.company_name,
+                email: salesOrder.customer.email,
+                phone: salesOrder.customer.phone,
+                currency_code:
+                    salesOrder.customer.currency_code,
+                tax_registration_number:
+                    salesOrder.customer
+                        .tax_registration_number,
+            }
+            : null,
+
+        customer_contact:
+            salesOrder.customer_contact
+                ? {
+                    id: salesOrder.customer_contact.id,
+                    contact_name:
+                        salesOrder.customer_contact
+                            .contact_name,
+                    job_title:
+                        salesOrder.customer_contact
+                            .job_title,
+                    email:
+                        salesOrder.customer_contact.email,
+                    phone:
+                        salesOrder.customer_contact.phone,
+                    whatsapp:
+                        salesOrder.customer_contact
+                            .whatsapp,
+                }
+                : null,
+
+        billing_address:
+            salesOrder.billing_address
+                ? {
+                    id: salesOrder.billing_address.id,
+                    address_type:
+                        salesOrder.billing_address
+                            .address_type,
+                    address_name:
+                        salesOrder.billing_address
+                            .address_name,
+                    contact_name:
+                        salesOrder.billing_address
+                            .contact_name,
+                    phone:
+                        salesOrder.billing_address.phone,
+                    address_line_1:
+                        salesOrder.billing_address
+                            .address_line_1,
+                    address_line_2:
+                        salesOrder.billing_address
+                            .address_line_2,
+                    city:
+                        salesOrder.billing_address.city,
+                    state:
+                        salesOrder.billing_address.state,
+                    country:
+                        salesOrder.billing_address
+                            .country,
+                    postal_code:
+                        salesOrder.billing_address
+                            .postal_code,
+                }
+                : null,
+
+        shipping_address:
+            salesOrder.shipping_address
+                ? {
+                    id: salesOrder.shipping_address.id,
+                    address_type:
+                        salesOrder.shipping_address
+                            .address_type,
+                    address_name:
+                        salesOrder.shipping_address
+                            .address_name,
+                    contact_name:
+                        salesOrder.shipping_address
+                            .contact_name,
+                    phone:
+                        salesOrder.shipping_address.phone,
+                    address_line_1:
+                        salesOrder.shipping_address
+                            .address_line_1,
+                    address_line_2:
+                        salesOrder.shipping_address
+                            .address_line_2,
+                    city:
+                        salesOrder.shipping_address.city,
+                    state:
+                        salesOrder.shipping_address.state,
+                    country:
+                        salesOrder.shipping_address
+                            .country,
+                    postal_code:
+                        salesOrder.shipping_address
+                            .postal_code,
+                }
+                : null,
+    };
+}
 
 export async function getOrCreateSalesInvoice(
     salesOrderId: string,
+    source: {
+        salesOrder: SalesOrderDetails;
+        companyProfile: CompanyProfile;
+    },
 ): Promise<SalesInvoiceDocument> {
     const existing =
         await getSalesInvoiceBySalesOrderId(
@@ -190,6 +370,14 @@ export async function getOrCreateSalesInvoice(
             invoice_number: "",
             template_type: "uae_tax",
             status: "issued",
+            seller_snapshot:
+                buildSellerSnapshot(
+                    source.companyProfile,
+                ),
+            buyer_snapshot:
+                buildBuyerSnapshot(
+                    source.salesOrder,
+                ),
             display_settings: {},
         })
         .select(`
@@ -199,8 +387,10 @@ export async function getOrCreateSalesInvoice(
             invoice_date,
             template_type,
             status,
-            customer_display_name,
+                        customer_display_name,
             customer_mark,
+            seller_snapshot,
+            buyer_snapshot,
             display_settings,
             created_at,
             updated_at
@@ -295,8 +485,10 @@ export async function updateSalesInvoicePresentation(
             invoice_date,
             template_type,
             status,
-            customer_display_name,
+                        customer_display_name,
             customer_mark,
+            seller_snapshot,
+            buyer_snapshot,
             display_settings,
             created_at,
             updated_at

@@ -240,6 +240,47 @@ function companyAddressLines(profile: CompanyProfile): string[] {
   ].filter((value): value is string => Boolean(value));
 }
 
+function snapshotObject(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function snapshotString(
+  object: Record<string, unknown> | null,
+  key: string,
+): string | null {
+  const value = object?.[key];
+
+  return typeof value === "string" ? value : null;
+}
+
+function snapshotAddressLines(
+  address: Record<string, unknown> | null,
+): string[] {
+  if (!address) {
+    return [];
+  }
+
+  const cityLine = [
+    snapshotString(address, "city"),
+    snapshotString(address, "state"),
+    snapshotString(address, "postal_code"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return [
+    snapshotString(address, "address_name"),
+    snapshotString(address, "address_line_1"),
+    snapshotString(address, "address_line_2"),
+    cityLine || null,
+    snapshotString(address, "country"),
+  ].filter((value): value is string => Boolean(value));
+}
+
 /* =========================================================
  * Main workspace
  * ========================================================= */
@@ -265,28 +306,102 @@ export function SalesInvoiceWorkspace({
     initialSettings(invoice),
   );
 
+  const sellerSnapshot = snapshotObject(invoice.seller_snapshot);
+
+  const buyerSnapshot = snapshotObject(invoice.buyer_snapshot);
+
+  const buyerCustomer = snapshotObject(buyerSnapshot?.customer);
+
+  const buyerContact = snapshotObject(buyerSnapshot?.customer_contact);
+
+  const buyerBillingAddress = snapshotObject(buyerSnapshot?.billing_address);
+
+  const buyerShippingAddress = snapshotObject(buyerSnapshot?.shipping_address);
+
+  const buyerCompanyName = snapshotString(buyerCustomer, "company_name");
+
+  const buyerDisplayName = snapshotString(buyerCustomer, "display_name");
+
+  const buyerTrn = snapshotString(buyerCustomer, "tax_registration_number");
+
+  const buyerContactName = snapshotString(buyerContact, "contact_name");
+
+  const buyerPhone =
+    snapshotString(buyerContact, "phone") ||
+    snapshotString(buyerCustomer, "phone");
+
+  const buyerEmail =
+    snapshotString(buyerContact, "email") ||
+    snapshotString(buyerCustomer, "email");
+
   const originalCustomerName =
-    salesOrder.customer?.company_name ||
-    salesOrder.customer?.display_name ||
-    "Customer";
+    buyerCompanyName || buyerDisplayName || "Customer";
 
   const invoiceCustomerName =
     customerDisplayName.trim() || originalCustomerName;
 
-  const sellerAddress = useMemo(
-    () => companyAddressLines(companyProfile),
-    [companyProfile],
-  );
+  const historicalCompanyProfile: CompanyProfile = {
+    ...companyProfile,
 
-  const billingAddress = useMemo(
-    () => addressLines(salesOrder.billing_address),
-    [salesOrder.billing_address],
-  );
+    legal_name:
+      snapshotString(sellerSnapshot, "legal_name") ?? companyProfile.legal_name,
 
-  const shippingAddress = useMemo(
-    () => addressLines(salesOrder.shipping_address),
-    [salesOrder.shipping_address],
-  );
+    trade_name: snapshotString(sellerSnapshot, "trade_name"),
+
+    arabic_name: snapshotString(sellerSnapshot, "arabic_name"),
+
+    tax_registration_number: snapshotString(
+      sellerSnapshot,
+      "tax_registration_number",
+    ),
+
+    trade_license_number: snapshotString(
+      sellerSnapshot,
+      "trade_license_number",
+    ),
+
+    phone: snapshotString(sellerSnapshot, "phone"),
+
+    whatsapp: snapshotString(sellerSnapshot, "whatsapp"),
+
+    email: snapshotString(sellerSnapshot, "email"),
+
+    website: snapshotString(sellerSnapshot, "website"),
+
+    address_line_1: snapshotString(sellerSnapshot, "address_line_1"),
+
+    address_line_2: snapshotString(sellerSnapshot, "address_line_2"),
+
+    city: snapshotString(sellerSnapshot, "city"),
+
+    state: snapshotString(sellerSnapshot, "state"),
+
+    country:
+      snapshotString(sellerSnapshot, "country") ?? companyProfile.country,
+
+    postal_code: snapshotString(sellerSnapshot, "postal_code"),
+
+    po_box: snapshotString(sellerSnapshot, "po_box"),
+
+    logo_path: snapshotString(sellerSnapshot, "logo_path"),
+
+    document_footer: snapshotString(sellerSnapshot, "document_footer"),
+
+    bank_name: snapshotString(sellerSnapshot, "bank_name"),
+
+    bank_account_name: snapshotString(sellerSnapshot, "bank_account_name"),
+
+    bank_account_number: snapshotString(sellerSnapshot, "bank_account_number"),
+
+    bank_iban: snapshotString(sellerSnapshot, "bank_iban"),
+
+    bank_swift_code: snapshotString(sellerSnapshot, "bank_swift_code"),
+  };
+
+  const sellerAddress = companyAddressLines(historicalCompanyProfile);
+  const billingAddress = snapshotAddressLines(buyerBillingAddress);
+
+  const shippingAddress = snapshotAddressLines(buyerShippingAddress);
 
   function setting(key: string): boolean {
     return settings[key] ?? false;
@@ -670,32 +785,32 @@ export function SalesInvoiceWorkspace({
 
             <header className="flex items-start justify-between gap-8 border-b-2 border-slate-900 pb-6">
               <div className="max-w-[60%]">
-                {companyProfile.logo_path ? (
+                {historicalCompanyProfile.logo_path ? (
                   <img
-                    src={companyProfile.logo_path}
-                    alt={companyProfile.legal_name}
+                    src={historicalCompanyProfile.logo_path}
+                    alt={historicalCompanyProfile.legal_name}
                     className="mb-4 max-h-16 max-w-52 object-contain object-left"
                   />
                 ) : null}
 
                 <h2 className="text-xl font-bold leading-tight text-slate-950">
-                  {companyProfile.legal_name}
+                  {historicalCompanyProfile.legal_name}
                 </h2>
 
                 {setting("show_company_trade_name") &&
-                companyProfile.trade_name ? (
+                historicalCompanyProfile.trade_name ? (
                   <p className="mt-1 text-sm font-medium text-slate-700">
-                    {companyProfile.trade_name}
+                    {historicalCompanyProfile.trade_name}
                   </p>
                 ) : null}
 
                 {setting("show_company_arabic_name") &&
-                companyProfile.arabic_name ? (
+                historicalCompanyProfile.arabic_name ? (
                   <p
                     dir="rtl"
                     className="mt-1 text-right text-sm font-semibold text-slate-700"
                   >
-                    {companyProfile.arabic_name}
+                    {historicalCompanyProfile.arabic_name}
                   </p>
                 ) : null}
 
@@ -709,35 +824,35 @@ export function SalesInvoiceWorkspace({
 
                 {setting("show_company_contact") ? (
                   <div className="mt-2 space-y-0.5 text-xs text-slate-600">
-                    {companyProfile.phone ? (
-                      <div>Tel: {companyProfile.phone}</div>
+                    {historicalCompanyProfile.phone ? (
+                      <div>Tel: {historicalCompanyProfile.phone}</div>
                     ) : null}
 
-                    {companyProfile.whatsapp ? (
-                      <div>WhatsApp: {companyProfile.whatsapp}</div>
+                    {historicalCompanyProfile.whatsapp ? (
+                      <div>WhatsApp: {historicalCompanyProfile.whatsapp}</div>
                     ) : null}
 
-                    {companyProfile.email ? (
-                      <div>Email: {companyProfile.email}</div>
+                    {historicalCompanyProfile.email ? (
+                      <div>Email: {historicalCompanyProfile.email}</div>
                     ) : null}
 
-                    {companyProfile.website ? (
-                      <div>Web: {companyProfile.website}</div>
+                    {historicalCompanyProfile.website ? (
+                      <div>Web: {historicalCompanyProfile.website}</div>
                     ) : null}
                   </div>
                 ) : null}
 
                 {setting("show_company_trn") &&
-                companyProfile.tax_registration_number ? (
+                historicalCompanyProfile.tax_registration_number ? (
                   <p className="mt-2 text-xs font-semibold text-slate-800">
-                    TRN: {companyProfile.tax_registration_number}
+                    TRN: {historicalCompanyProfile.tax_registration_number}
                   </p>
                 ) : null}
 
                 {setting("show_company_license") &&
-                companyProfile.trade_license_number ? (
+                historicalCompanyProfile.trade_license_number ? (
                   <p className="mt-1 text-xs text-slate-600">
-                    Trade License: {companyProfile.trade_license_number}
+                    Trade License: {historicalCompanyProfile.trade_license_number}
                   </p>
                 ) : null}
               </div>
@@ -792,44 +907,25 @@ export function SalesInvoiceWorkspace({
                 ) : null}
 
                 {setting("show_customer_name") &&
-                salesOrder.customer?.company_name &&
-                salesOrder.customer.display_name !==
-                  salesOrder.customer.company_name ? (
+                buyerCompanyName &&
+                buyerDisplayName &&
+                buyerDisplayName !== buyerCompanyName ? (
                   <p className="mt-0.5 text-xs text-slate-600">
-                    {salesOrder.customer.display_name}
+                    {buyerDisplayName}
                   </p>
                 ) : null}
 
-                {setting("show_customer_trn") &&
-                salesOrder.customer?.tax_registration_number ? (
+                {setting("show_customer_trn") && buyerTrn ? (
                   <p className="mt-2 text-xs font-medium text-slate-700">
-                    TRN: {salesOrder.customer.tax_registration_number}
+                    TRN: {buyerTrn}
                   </p>
                 ) : null}
 
                 {setting("show_customer_contact") ? (
                   <div className="mt-2 space-y-0.5 text-xs text-slate-600">
-                    {salesOrder.customer_contact?.contact_name ? (
-                      <div>{salesOrder.customer_contact.contact_name}</div>
-                    ) : null}
-
-                    {salesOrder.customer_contact?.phone ||
-                    salesOrder.customer?.phone ? (
-                      <div>
-                        Tel:{" "}
-                        {salesOrder.customer_contact?.phone ||
-                          salesOrder.customer?.phone}
-                      </div>
-                    ) : null}
-
-                    {salesOrder.customer_contact?.email ||
-                    salesOrder.customer?.email ? (
-                      <div>
-                        Email:{" "}
-                        {salesOrder.customer_contact?.email ||
-                          salesOrder.customer?.email}
-                      </div>
-                    ) : null}
+                    {buyerContactName ? <div>{buyerContactName}</div> : null}
+                    {buyerPhone ? <div>Tel: {buyerPhone}</div> : null}
+                    {buyerEmail ? <div>Email: {buyerEmail}</div> : null}
                   </div>
                 ) : null}
 
@@ -1115,41 +1211,41 @@ export function SalesInvoiceWorkspace({
             {/* Bank Details */}
 
             {setting("show_bank_details") &&
-            (companyProfile.bank_name ||
-              companyProfile.bank_iban ||
-              companyProfile.bank_account_number) ? (
+            (historicalCompanyProfile.bank_name ||
+              historicalCompanyProfile.bank_iban ||
+              historicalCompanyProfile.bank_account_number) ? (
               <section className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   Bank Details
                 </p>
 
                 <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
-                  {companyProfile.bank_name ? (
-                    <BankRow label="Bank" value={companyProfile.bank_name} />
+                  {historicalCompanyProfile.bank_name ? (
+                    <BankRow label="Bank" value={historicalCompanyProfile.bank_name} />
                   ) : null}
 
-                  {companyProfile.bank_account_name ? (
+                  {historicalCompanyProfile.bank_account_name ? (
                     <BankRow
                       label="Account Name"
-                      value={companyProfile.bank_account_name}
+                      value={historicalCompanyProfile.bank_account_name}
                     />
                   ) : null}
 
-                  {companyProfile.bank_account_number ? (
+                  {historicalCompanyProfile.bank_account_number ? (
                     <BankRow
                       label="Account No."
-                      value={companyProfile.bank_account_number}
+                      value={historicalCompanyProfile.bank_account_number}
                     />
                   ) : null}
 
-                  {companyProfile.bank_iban ? (
-                    <BankRow label="IBAN" value={companyProfile.bank_iban} />
+                  {historicalCompanyProfile.bank_iban ? (
+                    <BankRow label="IBAN" value={historicalCompanyProfile.bank_iban} />
                   ) : null}
 
-                  {companyProfile.bank_swift_code ? (
+                  {historicalCompanyProfile.bank_swift_code ? (
                     <BankRow
                       label="SWIFT"
-                      value={companyProfile.bank_swift_code}
+                      value={historicalCompanyProfile.bank_swift_code}
                     />
                   ) : null}
                 </div>
@@ -1158,9 +1254,9 @@ export function SalesInvoiceWorkspace({
 
             {/* Footer */}
 
-            {setting("show_footer") && companyProfile.document_footer ? (
+            {setting("show_footer") && historicalCompanyProfile.document_footer ? (
               <footer className="mt-10 border-t border-slate-200 pt-4 text-center text-[10px] leading-4 text-slate-500">
-                {companyProfile.document_footer}
+                {historicalCompanyProfile.document_footer}
               </footer>
             ) : null}
 
