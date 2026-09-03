@@ -573,6 +573,7 @@ export function SalesInvoiceWorkspace({
                 label="Company TRN"
                 checked={setting("show_company_trn")}
                 onChange={() => toggleSetting("show_company_trn")}
+                disabled={templateType === "uae_tax"}
               />
 
               <SettingToggle
@@ -594,6 +595,7 @@ export function SalesInvoiceWorkspace({
                 label="Company Address"
                 checked={setting("show_company_address")}
                 onChange={() => toggleSetting("show_company_address")}
+                disabled={templateType === "uae_tax"}
               />
             </SettingsGroup>
 
@@ -605,6 +607,7 @@ export function SalesInvoiceWorkspace({
                 label="Show Company / Customer Name"
                 checked={setting("show_customer_name")}
                 onChange={() => toggleSetting("show_customer_name")}
+                disabled={templateType === "uae_tax"}
               />
 
               <div className="px-2 py-2">
@@ -654,6 +657,7 @@ export function SalesInvoiceWorkspace({
                 label="Customer TRN"
                 checked={setting("show_customer_trn")}
                 onChange={() => toggleSetting("show_customer_trn")}
+                disabled={templateType === "uae_tax" && Boolean(buyerTrn)}
               />
 
               <SettingToggle
@@ -668,6 +672,7 @@ export function SalesInvoiceWorkspace({
                 label="Billing Address"
                 checked={setting("show_billing_address")}
                 onChange={() => toggleSetting("show_billing_address")}
+                disabled={templateType === "uae_tax"}
               />
 
               <SettingToggle
@@ -714,6 +719,7 @@ export function SalesInvoiceWorkspace({
                 label="VAT"
                 checked={setting("show_vat")}
                 onChange={() => toggleSetting("show_vat")}
+                disabled={templateType === "uae_tax"}
               />
             </SettingsGroup>
 
@@ -852,7 +858,8 @@ export function SalesInvoiceWorkspace({
                 {setting("show_company_license") &&
                 historicalCompanyProfile.trade_license_number ? (
                   <p className="mt-1 text-xs text-slate-600">
-                    Trade License: {historicalCompanyProfile.trade_license_number}
+                    Trade License:{" "}
+                    {historicalCompanyProfile.trade_license_number}
                   </p>
                 ) : null}
               </div>
@@ -1221,7 +1228,10 @@ export function SalesInvoiceWorkspace({
 
                 <div className="mt-3 grid grid-cols-2 gap-x-8 gap-y-2 text-xs">
                   {historicalCompanyProfile.bank_name ? (
-                    <BankRow label="Bank" value={historicalCompanyProfile.bank_name} />
+                    <BankRow
+                      label="Bank"
+                      value={historicalCompanyProfile.bank_name}
+                    />
                   ) : null}
 
                   {historicalCompanyProfile.bank_account_name ? (
@@ -1239,7 +1249,10 @@ export function SalesInvoiceWorkspace({
                   ) : null}
 
                   {historicalCompanyProfile.bank_iban ? (
-                    <BankRow label="IBAN" value={historicalCompanyProfile.bank_iban} />
+                    <BankRow
+                      label="IBAN"
+                      value={historicalCompanyProfile.bank_iban}
+                    />
                   ) : null}
 
                   {historicalCompanyProfile.bank_swift_code ? (
@@ -1254,7 +1267,8 @@ export function SalesInvoiceWorkspace({
 
             {/* Footer */}
 
-            {setting("show_footer") && historicalCompanyProfile.document_footer ? (
+            {setting("show_footer") &&
+            historicalCompanyProfile.document_footer ? (
               <footer className="mt-10 border-t border-slate-200 pt-4 text-center text-[10px] leading-4 text-slate-500">
                 {historicalCompanyProfile.document_footer}
               </footer>
@@ -1367,15 +1381,34 @@ function SettingToggle({
   label,
   checked,
   onChange,
+  disabled = false,
 }: {
   name: string;
   label: string;
   checked: boolean;
   onChange: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
-      <span className="text-sm text-slate-700">{label}</span>
+    <label
+      className={`flex items-center justify-between gap-3 rounded-lg px-2 py-2 ${
+        disabled
+          ? "cursor-not-allowed bg-slate-50"
+          : "cursor-pointer hover:bg-slate-50"
+      }`}
+    >
+      <span
+        className={`text-sm ${
+          disabled ? "font-medium text-slate-500" : "text-slate-700"
+        }`}
+      >
+        {label}
+        {disabled ? (
+          <span className="ml-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            Required
+          </span>
+        ) : null}
+      </span>
 
       <input type="hidden" name={name} value={checked ? "true" : "false"} />
 
@@ -1383,7 +1416,8 @@ function SettingToggle({
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="size-4 rounded border-slate-300"
+        disabled={disabled}
+        className="size-4 rounded border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
       />
     </label>
   );
