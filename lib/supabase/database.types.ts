@@ -329,6 +329,99 @@ export type Database = {
         }
         Relationships: []
       }
+      company_profile: {
+        Row: {
+          address_line_1: string | null
+          address_line_2: string | null
+          arabic_name: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_iban: string | null
+          bank_name: string | null
+          bank_swift_code: string | null
+          city: string | null
+          country: string
+          created_at: string
+          created_by: string | null
+          document_footer: string | null
+          email: string | null
+          id: string
+          legal_name: string
+          logo_path: string | null
+          phone: string | null
+          po_box: string | null
+          postal_code: string | null
+          state: string | null
+          tax_registration_number: string | null
+          trade_license_number: string | null
+          trade_name: string | null
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          arabic_name?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift_code?: string | null
+          city?: string | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          document_footer?: string | null
+          email?: string | null
+          id?: string
+          legal_name: string
+          logo_path?: string | null
+          phone?: string | null
+          po_box?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tax_registration_number?: string | null
+          trade_license_number?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address_line_1?: string | null
+          address_line_2?: string | null
+          arabic_name?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_iban?: string | null
+          bank_name?: string | null
+          bank_swift_code?: string | null
+          city?: string | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          document_footer?: string | null
+          email?: string | null
+          id?: string
+          legal_name?: string
+          logo_path?: string | null
+          phone?: string | null
+          po_box?: string | null
+          postal_code?: string | null
+          state?: string | null
+          tax_registration_number?: string | null
+          trade_license_number?: string | null
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       countries: {
         Row: {
           created_at: string | null
@@ -502,6 +595,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      customer_receipt_allocation_repair_audit: {
+        Row: {
+          allocation_id: string
+          allocation_snapshot: Json
+          receipt_id: string
+          receipt_snapshot: Json
+          repair_reason: string
+          repaired_at: string
+          repaired_by: string | null
+          sales_order_id: string
+          sales_order_snapshot: Json
+        }
+        Insert: {
+          allocation_id: string
+          allocation_snapshot: Json
+          receipt_id: string
+          receipt_snapshot: Json
+          repair_reason: string
+          repaired_at?: string
+          repaired_by?: string | null
+          sales_order_id: string
+          sales_order_snapshot: Json
+        }
+        Update: {
+          allocation_id?: string
+          allocation_snapshot?: Json
+          receipt_id?: string
+          receipt_snapshot?: Json
+          repair_reason?: string
+          repaired_at?: string
+          repaired_by?: string | null
+          sales_order_id?: string
+          sales_order_snapshot?: Json
+        }
+        Relationships: []
       }
       customer_receipt_allocations: {
         Row: {
@@ -2323,6 +2452,7 @@ export type Database = {
           source_document_item_id: string | null
           total_cost: number | null
           unit_cost: number
+          valuation_unit_cost: number
           warehouse_id: string
         }
         Insert: {
@@ -2341,6 +2471,7 @@ export type Database = {
           source_document_item_id?: string | null
           total_cost?: number | null
           unit_cost?: number
+          valuation_unit_cost: number
           warehouse_id: string
         }
         Update: {
@@ -2359,6 +2490,7 @@ export type Database = {
           source_document_item_id?: string | null
           total_cost?: number | null
           unit_cost?: number
+          valuation_unit_cost?: number
           warehouse_id?: string
         }
         Relationships: [
@@ -3863,6 +3995,90 @@ export type Database = {
           },
         ]
       }
+      sales_invoice_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_display_name: string | null
+          customer_mark: string | null
+          display_settings: Json
+          id: string
+          invoice_date: string
+          invoice_number: string
+          sales_order_id: string
+          status: string
+          template_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_display_name?: string | null
+          customer_mark?: string | null
+          display_settings?: Json
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          sales_order_id: string
+          status?: string
+          template_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_display_name?: string | null
+          customer_mark?: string | null
+          display_settings?: Json
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          sales_order_id?: string
+          status?: string
+          template_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "receivable_open_items"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: true
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_margin_approvals: {
         Row: {
           approved_at: string | null
@@ -4660,6 +4876,7 @@ export type Database = {
           line_total: number
           notes: string | null
           original_unit_cost: number
+          original_valuation_unit_cost: number
           product_id: string
           quantity_returned: number
           return_cost: number | null
@@ -4688,6 +4905,7 @@ export type Database = {
           line_total?: number
           notes?: string | null
           original_unit_cost?: number
+          original_valuation_unit_cost: number
           product_id: string
           quantity_returned: number
           return_cost?: number | null
@@ -4716,6 +4934,7 @@ export type Database = {
           line_total?: number
           notes?: string | null
           original_unit_cost?: number
+          original_valuation_unit_cost?: number
           product_id?: string
           quantity_returned?: number
           return_cost?: number | null
@@ -5779,6 +5998,7 @@ export type Database = {
           notes: string | null
           original_inventory_item_id: string
           original_unit_cost: number
+          original_valuation_unit_cost: number
           product_id: string
           quantity_returned: number
           quick_purchase_item_id: string | null
@@ -5800,6 +6020,7 @@ export type Database = {
           notes?: string | null
           original_inventory_item_id: string
           original_unit_cost: number
+          original_valuation_unit_cost: number
           product_id: string
           quantity_returned: number
           quick_purchase_item_id?: string | null
@@ -5821,6 +6042,7 @@ export type Database = {
           notes?: string | null
           original_inventory_item_id?: string
           original_unit_cost?: number
+          original_valuation_unit_cost?: number
           product_id?: string
           quantity_returned?: number
           quick_purchase_item_id?: string | null
@@ -7176,6 +7398,10 @@ export type Database = {
         Args: { p_sales_order_id: string }
         Returns: number
       }
+      apply_customer_advance_to_sales_order_internal_161: {
+        Args: { p_sales_order_id: string }
+        Returns: number
+      }
       apply_supplier_advance_to_goods_receipt: {
         Args: { p_goods_receipt_id: string }
         Returns: number
@@ -7279,6 +7505,10 @@ export type Database = {
         Returns: string
       }
       cancel_customer_receipt_with_gl: {
+        Args: { p_reason: string; p_receipt_id: string }
+        Returns: string
+      }
+      cancel_customer_receipt_with_gl_internal_161: {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: string
       }
@@ -7710,6 +7940,7 @@ export type Database = {
       generate_inventory_transfer_number: { Args: never; Returns: string }
       generate_purchase_order_number: { Args: never; Returns: string }
       generate_rfq_number: { Args: never; Returns: string }
+      generate_sales_invoice_number: { Args: never; Returns: string }
       generate_sales_order_number: { Args: never; Returns: string }
       generate_sales_quotation_number: { Args: never; Returns: string }
       generate_sales_return_number: {
@@ -7912,6 +8143,10 @@ export type Database = {
         }
         Returns: string
       }
+      post_customer_advance_application_gl: {
+        Args: { p_customer_receipt_allocation_id: string }
+        Returns: string
+      }
       post_customer_receipt: {
         Args: {
           p_allocations: Json
@@ -7934,6 +8169,24 @@ export type Database = {
         Returns: string
       }
       post_customer_receipt_with_account: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_bank_name: string
+          p_cheque_date: string
+          p_cheque_number: string
+          p_currency_code: string
+          p_customer_id: string
+          p_exchange_rate: number
+          p_financial_account_id: string
+          p_notes: string
+          p_payment_method: string
+          p_receipt_date: string
+          p_reference_number: string
+        }
+        Returns: string
+      }
+      post_customer_receipt_with_account_internal_161: {
         Args: {
           p_allocations: Json
           p_amount: number
@@ -8129,6 +8382,21 @@ export type Database = {
       reconcile_customer_receipt_gl: {
         Args: { p_customer_receipt_id: string }
         Returns: string
+      }
+      reconcile_historical_accounts_payable_165: { Args: never; Returns: Json }
+      reconcile_historical_accounts_receivable_164: {
+        Args: never
+        Returns: Json
+      }
+      reconcile_historical_customer_receipts_162: { Args: never; Returns: Json }
+      reconcile_historical_expense_gl_166: { Args: never; Returns: Json }
+      reconcile_historical_sales_order_revenue_163: {
+        Args: never
+        Returns: Json
+      }
+      reconcile_historical_treasury_gl_metadata_167: {
+        Args: never
+        Returns: Json
       }
       reconcile_targeted_sales_cogs_gl: { Args: never; Returns: Json }
       refund_supplier_return_credit: {
@@ -8496,12 +8764,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8525,11 +8793,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8550,11 +8818,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8575,11 +8843,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8592,11 +8860,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

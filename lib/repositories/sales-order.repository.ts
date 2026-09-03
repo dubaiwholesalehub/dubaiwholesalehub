@@ -89,6 +89,7 @@ export interface SalesOrderCustomer {
     email: string | null;
     phone: string | null;
     currency_code: string;
+    tax_registration_number: string | null;
 }
 
 export interface SalesOrderCustomerContact {
@@ -1273,7 +1274,8 @@ export async function getSalesOrderById(
         company_name,
         email,
         phone,
-        currency_code
+        currency_code,
+        tax_registration_number
       ),
       customer_contact:customer_contacts (
         id,
@@ -1664,7 +1666,8 @@ export async function getSalesOrderFormOptions(): Promise<
         company_name,
         email,
         phone,
-        currency_code
+        currency_code,
+        tax_registration_number
       `)
             .eq("status", "active")
             .order("display_name", {

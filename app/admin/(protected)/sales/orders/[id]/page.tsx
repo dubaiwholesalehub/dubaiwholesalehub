@@ -12,6 +12,7 @@ import {
   Pencil,
   ReceiptText,
   ShoppingCart,
+  Printer,
   Truck,
   UserRound,
   WalletCards,
@@ -101,6 +102,20 @@ export default async function SalesOrderDetailsPage({
           >
             <Pencil className="size-4" />
             Edit Sales Order
+          </Link>
+        ) : null}
+        {order.status !== "draft" && order.status !== "cancelled" ? (
+          <Link
+            href={`/admin/sales/orders/${order.id}/invoice`}
+            className={cn(
+              buttonVariants({
+                variant: "outline",
+                size: "default",
+              }),
+            )}
+          >
+            <Printer className="size-4" />
+            Invoice / Print
           </Link>
         ) : null}
         <SalesOrderWorkflowActions
