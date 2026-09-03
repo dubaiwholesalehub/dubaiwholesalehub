@@ -296,6 +296,8 @@ export function SalesInvoiceWorkspace({
 
   const [invoiceDate, setInvoiceDate] = useState(invoice.invoice_date);
 
+  const [supplyDate, setSupplyDate] = useState(invoice.supply_date);
+
   const [customerDisplayName, setCustomerDisplayName] = useState(
     invoice.customer_display_name ?? "",
   );
@@ -512,6 +514,8 @@ export function SalesInvoiceWorkspace({
 
               <input type="hidden" name="invoice_date" value={invoiceDate} />
 
+              <input type="hidden" name="supply_date" value={supplyDate} />
+
               <div className="grid gap-2">
                 <TemplateButton
                   active={templateType === "uae_tax"}
@@ -536,19 +540,37 @@ export function SalesInvoiceWorkspace({
               </div>
             </div>
 
-            {/* Invoice Date */}
+            {/* Invoice / Supply Dates */}
 
             <div className="border-b border-slate-100 p-4">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Invoice Date
-              </label>
+              <div className="grid gap-3">
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Invoice Date
+                  </label>
+                  <input
+                    type="date"
+                    value={invoiceDate}
+                    onChange={(event) => setInvoiceDate(event.target.value)}
+                    className="mt-2 h-9 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+                  />
+                </div>
 
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(event) => setInvoiceDate(event.target.value)}
-                className="mt-2 h-9 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
-              />
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Date of Supply
+                  </label>
+                  <input
+                    type="date"
+                    value={supplyDate}
+                    onChange={(event) => setSupplyDate(event.target.value)}
+                    className="mt-2 h-9 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+                  />
+                  <p className="mt-1 text-[11px] leading-4 text-slate-400">
+                    Printed when it differs from the Invoice Date.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Seller */}
@@ -879,6 +901,13 @@ export function SalesInvoiceWorkspace({
                   <dt className="text-slate-500">Invoice Date</dt>
 
                   <dd className="font-medium">{formatDate(invoiceDate)}</dd>
+
+                  {supplyDate !== invoiceDate ? (
+                    <>
+                      <dt className="text-slate-500">Date of Supply</dt>
+                      <dd className="font-medium">{formatDate(supplyDate)}</dd>
+                    </>
+                  ) : null}
 
                   <dt className="text-slate-500">Sales Order</dt>
 

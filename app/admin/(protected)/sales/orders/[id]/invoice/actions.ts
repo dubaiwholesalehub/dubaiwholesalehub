@@ -187,6 +187,12 @@ export async function updateSalesInvoicePresentationAction(
             "invoice_date",
         );
 
+    const supplyDate =
+        stringValue(
+            formData,
+            "supply_date",
+        );
+
     const customerDisplayName =
         stringValue(
             formData,
@@ -204,6 +210,9 @@ export async function updateSalesInvoicePresentationAction(
         {
             invoice_date:
                 invoiceDate || undefined,
+
+            supply_date:
+                supplyDate || undefined,
 
             template_type:
                 templateType,

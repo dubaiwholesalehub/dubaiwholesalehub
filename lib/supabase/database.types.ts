@@ -4009,6 +4009,7 @@ export type Database = {
           sales_order_id: string
           seller_snapshot: Json | null
           status: string
+          supply_date: string
           template_type: string
           updated_at: string
           updated_by: string | null
@@ -4026,6 +4027,7 @@ export type Database = {
           sales_order_id: string
           seller_snapshot?: Json | null
           status?: string
+          supply_date?: string
           template_type?: string
           updated_at?: string
           updated_by?: string | null
@@ -4043,6 +4045,7 @@ export type Database = {
           sales_order_id?: string
           seller_snapshot?: Json | null
           status?: string
+          supply_date?: string
           template_type?: string
           updated_at?: string
           updated_by?: string | null

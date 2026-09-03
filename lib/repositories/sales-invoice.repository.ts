@@ -21,6 +21,7 @@ export interface SalesInvoiceDocument {
     sales_order_id: string;
     invoice_number: string;
     invoice_date: string;
+    supply_date: string;
     template_type: SalesInvoiceTemplateType;
     status: SalesInvoiceStatus;
     customer_display_name: string | null;
@@ -34,6 +35,7 @@ export interface SalesInvoiceDocument {
 
 export interface UpdateSalesInvoicePresentationInput {
     invoice_date?: string;
+    supply_date?: string;
     template_type?: SalesInvoiceTemplateType;
     customer_display_name?: string | null;
     customer_mark?: string | null;
@@ -50,6 +52,7 @@ function mapSalesInvoiceDocument(
         sales_order_id: string;
         invoice_number: string;
         invoice_date: string;
+        supply_date: string;
         template_type: string;
         status: string;
         customer_display_name: string | null;
@@ -73,6 +76,7 @@ function mapSalesInvoiceDocument(
         sales_order_id: row.sales_order_id,
         invoice_number: row.invoice_number,
         invoice_date: row.invoice_date,
+        supply_date: row.supply_date,
         template_type:
             row.template_type as SalesInvoiceTemplateType,
         status:
@@ -119,6 +123,7 @@ export async function getSalesInvoiceBySalesOrderId(
             sales_order_id,
             invoice_number,
             invoice_date,
+            supply_date,
             template_type,
             status,
                         customer_display_name,
@@ -161,6 +166,7 @@ export async function getSalesInvoiceById(
             sales_order_id,
             invoice_number,
             invoice_date,
+            supply_date,
             template_type,
             status,
                         customer_display_name,
@@ -368,6 +374,7 @@ export async function getOrCreateSalesInvoice(
         .insert({
             sales_order_id: salesOrderId,
             invoice_number: "",
+            supply_date: source.salesOrder.order_date,
             template_type: "uae_tax",
             status: "issued",
             seller_snapshot:
@@ -378,13 +385,21 @@ export async function getOrCreateSalesInvoice(
                 buildBuyerSnapshot(
                     source.salesOrder,
                 ),
-            display_settings: {},
+            display_settings: {
+                show_company_address: true,
+                show_company_trn: true,
+                show_customer_name: true,
+                show_customer_trn: true,
+                show_billing_address: true,
+                show_vat: true,
+            },
         })
         .select(`
             id,
             sales_order_id,
             invoice_number,
             invoice_date,
+            supply_date,
             template_type,
             status,
                         customer_display_name,
@@ -443,6 +458,7 @@ export async function updateSalesInvoicePresentation(
 
     const payload: {
         invoice_date?: string;
+        supply_date?: string;
         template_type?: SalesInvoiceTemplateType;
         customer_display_name?: string | null;
         customer_mark?: string | null;
@@ -452,6 +468,11 @@ export async function updateSalesInvoicePresentation(
     if (input.invoice_date !== undefined) {
         payload.invoice_date =
             input.invoice_date;
+    }
+
+    if (input.supply_date !== undefined) {
+        payload.supply_date =
+            input.supply_date;
     }
 
     if (input.template_type !== undefined) {
@@ -483,6 +504,7 @@ export async function updateSalesInvoicePresentation(
             sales_order_id,
             invoice_number,
             invoice_date,
+            supply_date,
             template_type,
             status,
                         customer_display_name,
