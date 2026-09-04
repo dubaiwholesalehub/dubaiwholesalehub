@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   revalidatePath,
 } from "next/cache";
@@ -21,6 +21,7 @@ function returnPath(
 export async function approveSalesReturnAction(
   formData: FormData,
 ): Promise<void> {
+  await requireAdmin();
   const salesReturnId =
     String(
       formData.get(
@@ -74,6 +75,7 @@ export async function approveSalesReturnAction(
 export async function receiveSalesReturnAction(
   formData: FormData,
 ): Promise<void> {
+  await requireAdmin();
   const salesReturnId =
     String(
       formData.get(
@@ -127,6 +129,7 @@ export async function receiveSalesReturnAction(
 export async function postSalesReturnAction(
   formData: FormData,
 ): Promise<void> {
+  await requireAdmin();
   const salesReturnId =
     String(
       formData.get(

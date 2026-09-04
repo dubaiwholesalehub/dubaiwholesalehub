@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
   getReorderSupplierAdvice,
@@ -77,6 +78,7 @@ function getErrorMessage(
 export async function generateReorderPurchaseOrdersAction(
   selectedProductIds: string[],
 ): Promise<ReorderPurchaseOrderActionResult> {
+  await requireAdmin();
   try {
     /*
      * Never trust quantities, prices or suppliers

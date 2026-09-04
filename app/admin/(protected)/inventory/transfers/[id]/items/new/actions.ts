@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
     createInventoryTransferItem,
@@ -11,6 +12,7 @@ export async function addTransferItem(
     transferId: string,
     formData: FormData,
 ) {
+    await requireAdmin();
     const productId = String(
         formData.get("productId") ?? "",
     ).trim();

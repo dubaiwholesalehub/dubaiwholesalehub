@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
     createCustomer,
@@ -46,6 +47,7 @@ function getErrorMessage(
 export async function createCustomerAction(
     values: CustomerValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     let customerId: string;
 
     try {
@@ -125,6 +127,7 @@ export async function updateCustomerAction(
     customerId: string,
     values: CustomerValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id = customerId.trim();
 
     if (!id) {
@@ -212,6 +215,7 @@ export async function createCustomerContactAction(
     customerId: string,
     values: CustomerContactValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id = customerId.trim();
 
     if (!id) {
@@ -274,6 +278,7 @@ export async function updateCustomerContactAction(
     contactId: string,
     values: CustomerContactValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const normalizedCustomerId =
         customerId.trim();
 
@@ -346,6 +351,7 @@ export async function createCustomerAddressAction(
     customerId: string,
     values: CustomerAddressValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id = customerId.trim();
 
     if (!id) {
@@ -424,6 +430,7 @@ export async function updateCustomerAddressAction(
     addressId: string,
     values: CustomerAddressValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const normalizedCustomerId =
         customerId.trim();
 
@@ -508,62 +515,63 @@ export async function updateCustomerAddressAction(
     );
 }
 export interface CustomerStatusActionState {
-  success: boolean;
-  message: string | null;
+    success: boolean;
+    message: string | null;
 }
 
 export async function changeCustomerStatusAction(
-  customerId: string,
-  status: CustomerStatus,
+    customerId: string,
+    status: CustomerStatus,
 ): Promise<CustomerStatusActionState> {
-  const id = customerId.trim();
+    await requireAdmin();
+    const id = customerId.trim();
 
-  if (!id) {
-    return {
-      success: false,
-      message: "Customer ID is required.",
-    };
-  }
+    if (!id) {
+        return {
+            success: false,
+            message: "Customer ID is required.",
+        };
+    }
 
-  try {
-    const customer = await setCustomerStatus(
-      id,
-      status,
-    );
+    try {
+        const customer = await setCustomerStatus(
+            id,
+            status,
+        );
 
-    revalidatePath(
-      "/admin/customers",
-    );
+        revalidatePath(
+            "/admin/customers",
+        );
 
-    revalidatePath(
-      `/admin/customers/${id}`,
-    );
+        revalidatePath(
+            `/admin/customers/${id}`,
+        );
 
-    const messages: Record<
-      CustomerStatus,
-      string
-    > = {
-      active:
-        "Customer activated successfully.",
+        const messages: Record<
+            CustomerStatus,
+            string
+        > = {
+            active:
+                "Customer activated successfully.",
 
-      inactive:
-        "Customer marked inactive successfully.",
+            inactive:
+                "Customer marked inactive successfully.",
 
-      blocked:
-        "Customer blocked successfully.",
-    };
+            blocked:
+                "Customer blocked successfully.",
+        };
 
-    return {
-      success: true,
-      message: messages[customer.status],
-    };
-  } catch (error) {
-    return {
-      success: false,
-      message: getErrorMessage(
-        error,
-        "Unable to update customer status.",
-      ),
-    };
-  }
+        return {
+            success: true,
+            message: messages[customer.status],
+        };
+    } catch (error) {
+        return {
+            success: false,
+            message: getErrorMessage(
+                error,
+                "Unable to update customer status.",
+            ),
+        };
+    }
 }

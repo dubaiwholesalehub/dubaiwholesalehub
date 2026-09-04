@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
     addSalesQuotationItem,
@@ -53,6 +54,7 @@ function getErrorMessage(
 export async function createSalesQuotationAction(
     values: SalesQuotationValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     let quotationId: string;
 
     try {
@@ -148,6 +150,7 @@ export async function updateSalesQuotationAction(
     quotationId: string,
     values: SalesQuotationValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -253,6 +256,7 @@ export async function changeSalesQuotationStatusAction(
     quotationId: string,
     status: SalesQuotationStatus,
 ): Promise<SalesQuotationStatusActionState> {
+    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -330,6 +334,7 @@ export interface DeleteSalesQuotationActionState {
 export async function deleteDraftSalesQuotationAction(
     quotationId: string,
 ): Promise<DeleteSalesQuotationActionState> {
+    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -365,6 +370,7 @@ export async function addSalesQuotationItemAction(
     quotationId: string,
     values: SalesQuotationItemValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -441,6 +447,7 @@ export async function updateSalesQuotationItemAction(
     itemId: string,
     values: SalesQuotationItemValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const normalizedQuotationId =
         quotationId.trim();
 
@@ -527,6 +534,7 @@ export async function addSalesQuotationItemsAction(
     quotationId: string,
     items: BulkSalesQuotationItemInput[],
 ): Promise<void> {
+    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -562,6 +570,7 @@ export async function getQuotationProductPricingAction(
     quotationId: string,
     productId: string,
 ): Promise<ProductQuotationPricingInsight> {
+    await requireAdmin();
     const normalizedQuotationId =
         quotationId.trim();
 
@@ -609,43 +618,44 @@ export async function getQuotationProductPricingAction(
  * ========================================================= */
 
 export async function convertQuotationToSalesOrderAction(
-  quotationId: string,
+    quotationId: string,
 ): Promise<void> {
-  const id = quotationId.trim();
+    await requireAdmin();
+    const id = quotationId.trim();
 
-  if (!id) {
-    throw new Error(
-      "Sales quotation ID is required.",
-    );
-  }
+    if (!id) {
+        throw new Error(
+            "Sales quotation ID is required.",
+        );
+    }
 
-  try {
-    const order =
-      await convertQuotationToSalesOrder(
-        id,
-      );
+    try {
+        const order =
+            await convertQuotationToSalesOrder(
+                id,
+            );
 
-    revalidatePath(
-      QUOTATION_LIST_URL,
-    );
+        revalidatePath(
+            QUOTATION_LIST_URL,
+        );
 
-    revalidatePath(
-      `/admin/sales/quotations/${id}`,
-    );
+        revalidatePath(
+            `/admin/sales/quotations/${id}`,
+        );
 
-    revalidatePath(
-      "/admin/sales/orders",
-    );
+        revalidatePath(
+            "/admin/sales/orders",
+        );
 
-    redirect(
-      `/admin/sales/orders/${order.id}`,
-    );
-  } catch (error) {
-    throw new Error(
-      getErrorMessage(
-        error,
-        "Unable to convert quotation.",
-      ),
-    );
-  }
+        redirect(
+            `/admin/sales/orders/${order.id}`,
+        );
+    } catch (error) {
+        throw new Error(
+            getErrorMessage(
+                error,
+                "Unable to convert quotation.",
+            ),
+        );
+    }
 }

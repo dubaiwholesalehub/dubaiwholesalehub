@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
     cancelDeliveryOrder,
@@ -41,6 +42,7 @@ function getErrorMessage(
 export async function createDeliveryAction(
     salesOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -130,6 +132,7 @@ async function runDeliveryWorkflowAction(
 export async function startDeliveryPickingAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         startDeliveryPicking,
@@ -144,6 +147,7 @@ export async function startDeliveryPickingAction(
 export async function confirmDeliveryPickedAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         confirmDeliveryPicked,
@@ -158,6 +162,7 @@ export async function confirmDeliveryPickedAction(
 export async function startDeliveryPackingAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         startDeliveryPacking,
@@ -172,6 +177,7 @@ export async function startDeliveryPackingAction(
 export async function confirmDeliveryPackedAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         confirmDeliveryPacked,
@@ -186,6 +192,7 @@ export async function confirmDeliveryPackedAction(
 export async function dispatchDeliveryOrderAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         dispatchDeliveryOrder,
@@ -200,6 +207,7 @@ export async function dispatchDeliveryOrderAction(
 export async function markDeliveryDeliveredAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         markDeliveryDelivered,
@@ -214,6 +222,7 @@ export async function markDeliveryDeliveredAction(
 export async function cancelDeliveryOrderAction(
     deliveryOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     return runDeliveryWorkflowAction(
         deliveryOrderId,
         cancelDeliveryOrder,
@@ -236,6 +245,7 @@ export async function updateDeliveryItemQuantitiesAction(
     deliveryOrderItemId: string,
     values: UpdateDeliveryItemQuantitiesInput,
 ): Promise<void> {
+    await requireAdmin();
     const orderId =
         deliveryOrderId.trim();
 

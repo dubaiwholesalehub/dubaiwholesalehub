@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
     revalidatePath,
 } from "next/cache";
@@ -78,6 +78,7 @@ function getOptionalString(
 export async function createSalesReturnAction(
     formData: FormData,
 ): Promise<void> {
+    await requireAdmin();
     const salesOrderId =
         getRequiredString(
             formData,

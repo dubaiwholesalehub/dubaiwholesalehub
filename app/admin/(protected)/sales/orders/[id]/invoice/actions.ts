@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { revalidatePath } from "next/cache";
 
 import {
@@ -29,6 +29,7 @@ export async function updateSalesInvoicePresentationAction(
     invoiceId: string,
     formData: FormData,
 ) {
+    await requireAdmin();
     const templateValue =
         stringValue(
             formData,

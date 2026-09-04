@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import {
     addSalesOrderItem,
@@ -47,6 +48,7 @@ function getErrorMessage(
 export async function createSalesOrderAction(
     values: SalesOrderValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     let salesOrderId: string;
 
     try {
@@ -157,6 +159,7 @@ export async function updateSalesOrderAction(
     salesOrderId: string,
     values: SalesOrderValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
     const id =
         salesOrderId.trim();
 
@@ -273,6 +276,7 @@ export async function updateSalesOrderAction(
 export async function confirmSalesOrderAction(
     salesOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -312,6 +316,7 @@ export async function confirmSalesOrderAction(
 export async function cancelSalesOrderAction(
     salesOrderId: string,
 ): Promise<void> {
+    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -347,6 +352,7 @@ export async function cancelSalesOrderAction(
 export async function approveAndConfirmSalesOrderAction(
     formData: FormData,
 ) {
+    await requireAdmin();
     const salesOrderId =
         String(
             formData.get(
@@ -412,6 +418,7 @@ export async function addSalesOrderItemAction(
         "sales_order_id"
     >,
 ): Promise<void> {
+    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -457,6 +464,7 @@ export async function updateSalesOrderItemAction(
     salesOrderItemId: string,
     input: UpdateSalesOrderItemInput,
 ): Promise<void> {
+    await requireAdmin();
     const orderId =
         salesOrderId.trim();
 
@@ -511,6 +519,7 @@ export async function deleteSalesOrderItemAction(
     salesOrderId: string,
     salesOrderItemId: string,
 ): Promise<void> {
+    await requireAdmin();
     const orderId =
         salesOrderId.trim();
 

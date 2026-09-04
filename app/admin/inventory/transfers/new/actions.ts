@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/auth/require-admin";
 
 import { createInventoryTransfer } from "@/lib/repositories/inventory-transfer.repository";
 
@@ -69,6 +70,7 @@ export async function createInventoryTransferAction(
   _previousState: CreateInventoryTransferActionState,
   formData: FormData,
 ): Promise<CreateInventoryTransferActionState> {
+  await requireAdmin();
   const sourceWarehouseId = getRequiredString(
     formData,
     "sourceWarehouseId",
@@ -108,7 +110,7 @@ export async function createInventoryTransferAction(
 
   const fieldErrors:
     CreateInventoryTransferActionState["fieldErrors"] =
-      {};
+    {};
 
   if (!sourceWarehouseId) {
     fieldErrors.sourceWarehouseId =
