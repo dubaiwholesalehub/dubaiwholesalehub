@@ -8,9 +8,9 @@ import {
  * ========================================================= */
 
 export type CustomerStatementEntryType =
+    | "opening_balance"
     | "sale"
     | "receipt";
-
 
 export type CustomerStatementEntry = {
     id: string;
@@ -445,10 +445,121 @@ export async function getCustomerStatement(
         sortPriority: number;
     };
 
+    /* -------------------------------------------------------
+ * Customer Opening Balances
+ *
+ * Historical receivables brought forward into the ERP.
+ * These affect the customer ledger balance but must not
+ * be treated as current-period sales.
+ * ------------------------------------------------------- */
+
+    let openingBalancesQuery =
+        supabase
+            .from(
+                "customer_opening_balances",
+            )
+            .select(`
+        id,
+        opening_date,
+        reference_number,
+        original_amount,
+        notes,
+        status,
+        created_at
+      `)
+            .eq(
+                "customer_id",
+                input.customerId,
+            )
+            .neq(
+                "status",
+                "cancelled",
+            )
+            .order(
+                "opening_date",
+                {
+                    ascending: true,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true,
+                },
+            );
+
+
+    if (dateTo) {
+        openingBalancesQuery =
+            openingBalancesQuery.lte(
+                "opening_date",
+                dateTo,
+            );
+    }
+
+
+    const {
+        data: openingBalances,
+        error: openingBalancesError,
+    } =
+        await openingBalancesQuery;
+
+
+    if (openingBalancesError) {
+        throw new Error(
+            `Unable to load customer opening balances: ${openingBalancesError.message}`,
+        );
+    }
+
 
     const rawEntries:
         RawEntry[] = [];
 
+    for (
+        const openingBalance of
+        openingBalances ?? []
+    ) {
+        rawEntries.push({
+            id:
+                `opening-balance-${openingBalance.id}`,
+
+            date:
+                openingBalance.opening_date,
+
+            createdAt:
+                openingBalance.created_at,
+
+            documentNumber:
+                openingBalance.reference_number?.trim() ||
+                "Opening Balance",
+
+            type:
+                "opening_balance",
+
+            description:
+                openingBalance.notes?.trim() ||
+                "Customer Opening Balance",
+
+            debit:
+                money(
+                    openingBalance.original_amount,
+                ),
+
+            credit:
+                0,
+
+            href:
+                "/admin/accounts/opening-balances",
+
+            /*
+             * Opening balances are historical receivables.
+             * Process them before normal sales/receipts
+             * when dates are identical.
+             */
+            sortPriority:
+                0,
+        });
+    }
 
     for (
         const sale of
@@ -667,18 +778,22 @@ export async function getCustomerStatement(
             (
                 entry,
             ) => {
-                salesTotal =
-                    money(
-                        salesTotal +
-                        entry.debit,
-                    );
+                if (entry.type === "sale") {
+                    salesTotal =
+                        money(
+                            salesTotal +
+                            entry.debit,
+                        );
+                }
 
 
-                receiptsTotal =
-                    money(
-                        receiptsTotal +
-                        entry.credit,
-                    );
+                if (entry.type === "receipt") {
+                    receiptsTotal =
+                        money(
+                            receiptsTotal +
+                            entry.credit,
+                        );
+                }
 
 
                 runningBalance =

@@ -54,11 +54,19 @@ export type CreateSupplierPaymentInput = {
     | {
       quickPurchaseId: string;
       goodsReceiptId?: never;
+      supplierOpeningBalanceId?: never;
       amount: number;
     }
     | {
       quickPurchaseId?: never;
       goodsReceiptId: string;
+      supplierOpeningBalanceId?: never;
+      amount: number;
+    }
+    | {
+      quickPurchaseId?: never;
+      goodsReceiptId?: never;
+      supplierOpeningBalanceId: string;
       amount: number;
     }
   >;
@@ -190,12 +198,21 @@ export async function createSupplierPayment(
           allocation.goodsReceiptId,
         );
 
-      if (
-        hasQuickPurchase ===
-        hasGoodsReceipt
-      ) {
+      const hasOpeningBalance =
+        "supplierOpeningBalanceId" in allocation &&
+        Boolean(
+          allocation.supplierOpeningBalanceId,
+        );
+
+      const targetCount = [
+        hasQuickPurchase,
+        hasGoodsReceipt,
+        hasOpeningBalance,
+      ].filter(Boolean).length;
+
+      if (targetCount !== 1) {
         throw new Error(
-          "Each allocation must belong to exactly one Quick Purchase or Goods Receipt.",
+          "Each allocation must belong to exactly one Quick Purchase, Goods Receipt, or Supplier Opening Balance.",
         );
       }
 

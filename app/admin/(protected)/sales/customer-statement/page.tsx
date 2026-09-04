@@ -32,7 +32,11 @@ function money(value: number) {
   }).format(value);
 }
 
-function typeLabel(type: "sale" | "receipt") {
+function typeLabel(type: "opening_balance" | "sale" | "receipt") {
+  if (type === "opening_balance") {
+    return "Opening Balance";
+  }
+
   return type === "sale" ? "Sale" : "Receipt";
 }
 

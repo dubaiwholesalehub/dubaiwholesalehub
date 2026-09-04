@@ -38,9 +38,13 @@ function typeLabel(
     | "supplier_return"
     | "supplier_return_refund"
     | "payment"
-    | "legacy_payment",
+    | "legacy_payment"
+    | "opening_balance",
 ) {
   switch (type) {
+    case "opening_balance":
+      return "Opening Balance";
+
     case "purchase":
       return "Purchase";
 

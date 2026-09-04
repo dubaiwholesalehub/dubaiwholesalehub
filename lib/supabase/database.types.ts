@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       account_transactions: {
@@ -596,6 +571,81 @@ export type Database = {
           },
         ]
       }
+      customer_opening_balances: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          customer_id: string
+          due_date: string | null
+          exchange_rate: number
+          id: string
+          notes: string | null
+          opening_date: string
+          original_amount: number
+          posted_at: string
+          posted_by: string | null
+          reference_number: string | null
+          status: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code: string
+          customer_id: string
+          due_date?: string | null
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          opening_date: string
+          original_amount: number
+          posted_at?: string
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          customer_id?: string
+          due_date?: string | null
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          opening_date?: string
+          original_amount?: number
+          posted_at?: string
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_opening_balances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receivable_summary"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_opening_balances_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_receipt_allocation_repair_audit: {
         Row: {
           allocation_id: string
@@ -636,25 +686,35 @@ export type Database = {
         Row: {
           amount: number
           created_at: string
+          customer_opening_balance_id: string | null
           id: string
           receipt_id: string
-          sales_order_id: string
+          sales_order_id: string | null
         }
         Insert: {
           amount: number
           created_at?: string
+          customer_opening_balance_id?: string | null
           id?: string
           receipt_id: string
-          sales_order_id: string
+          sales_order_id?: string | null
         }
         Update: {
           amount?: number
           created_at?: string
+          customer_opening_balance_id?: string | null
           id?: string
           receipt_id?: string
-          sales_order_id?: string
+          sales_order_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_receipt_allocations_opening_balance_fk"
+            columns: ["customer_opening_balance_id"]
+            isOneToOne: false
+            referencedRelation: "customer_opening_balances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_receipt_allocations_receipt_id_fkey"
             columns: ["receipt_id"]
@@ -674,13 +734,6 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -1212,13 +1265,6 @@ export type Database = {
             foreignKeyName: "delivery_orders_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
-            referencedRelation: "receivable_open_items"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "delivery_orders_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -1502,13 +1548,6 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "expenses_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -4069,13 +4108,6 @@ export type Database = {
             foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: true
-            referencedRelation: "receivable_open_items"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "sales_invoice_documents_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: true
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -4177,13 +4209,6 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "sales_margin_approvals_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -4401,13 +4426,6 @@ export type Database = {
             columns: ["sales_order_id"]
             isOneToOne: false
             referencedRelation: "profitability_sales_lines"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "sales_order_items_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
-            referencedRelation: "receivable_open_items"
             referencedColumns: ["sales_order_id"]
           },
           {
@@ -5230,13 +5248,6 @@ export type Database = {
             foreignKeyName: "sales_returns_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
-            referencedRelation: "receivable_open_items"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "sales_returns_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -5309,6 +5320,81 @@ export type Database = {
           },
         ]
       }
+      supplier_opening_balances: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string | null
+          currency_code: string
+          due_date: string | null
+          exchange_rate: number
+          id: string
+          notes: string | null
+          opening_date: string
+          original_amount: number
+          posted_at: string
+          posted_by: string | null
+          reference_number: string | null
+          status: string
+          supplier_id: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code: string
+          due_date?: string | null
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          opening_date: string
+          original_amount: number
+          posted_at?: string
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+          supplier_id: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency_code?: string
+          due_date?: string | null
+          exchange_rate?: number
+          id?: string
+          notes?: string | null
+          opening_date?: string
+          original_amount?: number
+          posted_at?: string
+          posted_by?: string | null
+          reference_number?: string | null
+          status?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_opening_balances_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_payable_summary"
+            referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "supplier_opening_balances_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_payment_allocations: {
         Row: {
           allocation_source: string
@@ -5317,6 +5403,7 @@ export type Database = {
           goods_receipt_id: string | null
           id: string
           quick_purchase_id: string | null
+          supplier_opening_balance_id: string | null
           supplier_payment_id: string
         }
         Insert: {
@@ -5326,6 +5413,7 @@ export type Database = {
           goods_receipt_id?: string | null
           id?: string
           quick_purchase_id?: string | null
+          supplier_opening_balance_id?: string | null
           supplier_payment_id: string
         }
         Update: {
@@ -5335,6 +5423,7 @@ export type Database = {
           goods_receipt_id?: string | null
           id?: string
           quick_purchase_id?: string | null
+          supplier_opening_balance_id?: string | null
           supplier_payment_id?: string
         }
         Relationships: [
@@ -5343,6 +5432,13 @@ export type Database = {
             columns: ["goods_receipt_id"]
             isOneToOne: false
             referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplier_payment_allocations_opening_balance_fk"
+            columns: ["supplier_opening_balance_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_opening_balances"
             referencedColumns: ["id"]
           },
           {
@@ -7023,13 +7119,6 @@ export type Database = {
             foreignKeyName: "expenses_sales_order_id_fkey"
             columns: ["sales_order_id"]
             isOneToOne: false
-            referencedRelation: "receivable_open_items"
-            referencedColumns: ["sales_order_id"]
-          },
-          {
-            foreignKeyName: "expenses_sales_order_id_fkey"
-            columns: ["sales_order_id"]
-            isOneToOne: false
             referencedRelation: "sales_order_margin_analysis"
             referencedColumns: ["sales_order_id"]
           },
@@ -7190,22 +7279,7 @@ export type Database = {
           source: string | null
           status: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sales_orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customer_receivable_summary"
-            referencedColumns: ["customer_id"]
-          },
-          {
-            foreignKeyName: "sales_orders_customer_id_fkey"
-            columns: ["customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sales_order_margin_analysis: {
         Row: {
@@ -7505,6 +7579,14 @@ export type Database = {
         Args: { p_reason: string; p_transaction_id: string }
         Returns: undefined
       }
+      cancel_customer_opening_balance: {
+        Args: {
+          p_customer_opening_balance_id: string
+          p_reason: string
+          p_reversal_date: string
+        }
+        Returns: string
+      }
       cancel_customer_receipt: {
         Args: { p_reason: string; p_receipt_id: string }
         Returns: string
@@ -7560,6 +7642,14 @@ export type Database = {
       cancel_sales_order_atomic_managed: {
         Args: { p_sales_order_id: string }
         Returns: Json
+      }
+      cancel_supplier_opening_balance: {
+        Args: {
+          p_reason: string
+          p_reversal_date: string
+          p_supplier_opening_balance_id: string
+        }
+        Returns: string
       }
       cancel_supplier_payment: {
         Args: { p_reason: string; p_supplier_payment_id: string }
@@ -7957,6 +8047,10 @@ export type Database = {
         Returns: string
       }
       generate_supplier_payment_number: { Args: never; Returns: string }
+      get_customer_opening_balance_outstanding: {
+        Args: { p_customer_opening_balance_id: string }
+        Returns: number
+      }
       get_expense_category_gl_account: {
         Args: { p_expense_category_id: string }
         Returns: string
@@ -8089,6 +8183,10 @@ export type Database = {
         Returns: Json
       }
       get_receivables_payables_intelligence: { Args: never; Returns: Json }
+      get_supplier_opening_balance_outstanding: {
+        Args: { p_supplier_opening_balance_id: string }
+        Returns: number
+      }
       get_warehouse_stock_page: {
         Args: {
           p_brand_id?: string
@@ -8154,6 +8252,19 @@ export type Database = {
       }
       post_customer_advance_application_gl: {
         Args: { p_customer_receipt_allocation_id: string }
+        Returns: string
+      }
+      post_customer_opening_balance: {
+        Args: {
+          p_amount: number
+          p_currency_code: string
+          p_customer_id: string
+          p_due_date: string
+          p_exchange_rate: number
+          p_notes: string
+          p_opening_date: string
+          p_reference_number: string
+        }
         Returns: string
       }
       post_customer_receipt: {
@@ -8335,6 +8446,19 @@ export type Database = {
       }
       post_supplier_advance_application_gl: {
         Args: { p_supplier_payment_allocation_id: string }
+        Returns: string
+      }
+      post_supplier_opening_balance: {
+        Args: {
+          p_amount: number
+          p_currency_code: string
+          p_due_date: string
+          p_exchange_rate: number
+          p_notes: string
+          p_opening_date: string
+          p_reference_number: string
+          p_supplier_id: string
+        }
         Returns: string
       }
       post_supplier_payment: {
@@ -8652,6 +8776,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      sync_customer_opening_balance_status: {
+        Args: { p_customer_opening_balance_id: string }
+        Returns: undefined
+      }
       sync_customer_receipt_totals: {
         Args: { p_receipt_id: string }
         Returns: undefined
@@ -8670,6 +8798,10 @@ export type Database = {
       }
       sync_sales_order_paid_amount: {
         Args: { p_sales_order_id: string }
+        Returns: undefined
+      }
+      sync_supplier_opening_balance_status: {
+        Args: { p_supplier_opening_balance_id: string }
         Returns: undefined
       }
       sync_supplier_payment_totals: {
@@ -8883,9 +9015,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],

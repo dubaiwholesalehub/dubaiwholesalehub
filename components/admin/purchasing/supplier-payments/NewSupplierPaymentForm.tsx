@@ -250,6 +250,15 @@ export default function NewSupplierPaymentForm({
 
         const amountValue = Number(allocationAmount.toFixed(2));
 
+        if (payable.sourceType === "supplier_opening_balance") {
+          return {
+            supplierOpeningBalanceId:
+              payable.supplierOpeningBalanceId ?? payable.id,
+
+            amount: amountValue,
+          };
+        }
+
         if (payable.sourceType === "goods_receipt") {
           return {
             goodsReceiptId: payable.goodsReceiptId ?? payable.id,
@@ -462,10 +471,11 @@ export default function NewSupplierPaymentForm({
         <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-semibold">Outstanding Quick Purchases</h2>
+              <h2 className="font-semibold">Outstanding Supplier Payables</h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Allocate this payment against supplier purchases.
+                Allocate this payment against purchases, Goods Receipts, or
+                opening payables.
               </p>
             </div>
 
@@ -541,9 +551,12 @@ export default function NewSupplierPaymentForm({
                             <div>{purchase.purchaseNumber}</div>
 
                             <div className="mt-1 text-xs font-normal text-muted-foreground">
-                              {purchase.sourceType === "goods_receipt"
-                                ? "Goods Receipt"
-                                : "Quick Purchase"}
+                              {purchase.sourceType ===
+                              "supplier_opening_balance"
+                                ? "Opening Balance"
+                                : purchase.sourceType === "goods_receipt"
+                                  ? "Goods Receipt"
+                                  : "Quick Purchase"}
                             </div>
                           </div>
                         </td>

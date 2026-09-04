@@ -24,11 +24,19 @@ export type SupplierPaymentAllocationInput =
     | {
         quickPurchaseId: string;
         goodsReceiptId?: never;
+        supplierOpeningBalanceId?: never;
         amount: number;
     }
     | {
         quickPurchaseId?: never;
         goodsReceiptId: string;
+        supplierOpeningBalanceId?: never;
+        amount: number;
+    }
+    | {
+        quickPurchaseId?: never;
+        goodsReceiptId?: never;
+        supplierOpeningBalanceId: string;
         amount: number;
     };
 
@@ -66,13 +74,18 @@ export type SupplierOutstandingPurchase = {
 
     sourceType:
     | "quick_purchase"
-    | "goods_receipt";
+    | "goods_receipt"
+    | "supplier_opening_balance";
 
     quickPurchaseId:
     | string
     | null;
 
     goodsReceiptId:
+    | string
+    | null;
+
+    supplierOpeningBalanceId:
     | string
     | null;
 
@@ -187,6 +200,10 @@ export async function postSupplierPayment(
                                 "goodsReceiptId" in allocation
                                     ? allocation.goodsReceiptId
                                     : null,
+                            supplier_opening_balance_id:
+                                "supplierOpeningBalanceId" in allocation
+                                    ? allocation.supplierOpeningBalanceId
+                                    : null,
 
                             amount:
                                 allocation.amount,
@@ -222,7 +239,8 @@ export async function postSupplierPayment(
 type SupplierPayableOpenItemRow = {
     source_type:
     | "quick_purchase"
-    | "goods_receipt";
+    | "goods_receipt"
+    | "supplier_opening_balance";
 
     source_id: string;
 
@@ -231,6 +249,10 @@ type SupplierPayableOpenItemRow = {
     | null;
 
     goods_receipt_id:
+    | string
+    | null;
+
+    supplier_opening_balance_id:
     | string
     | null;
 
@@ -296,6 +318,7 @@ export async function getSupplierOutstandingPurchases(
         source_id,
         quick_purchase_id,
         goods_receipt_id,
+        supplier_opening_balance_id,
         document_number,
         document_date,
         supplier_invoice_number,
@@ -346,13 +369,17 @@ export async function getSupplierOutstandingPurchases(
             sourceType:
                 payable.source_type as
                 | "quick_purchase"
-                | "goods_receipt",
+                | "goods_receipt"
+                | "supplier_opening_balance",
 
             quickPurchaseId:
                 payable.quick_purchase_id,
 
             goodsReceiptId:
                 payable.goods_receipt_id,
+
+            supplierOpeningBalanceId:
+                payable.supplier_opening_balance_id,
 
             purchaseNumber:
                 payable.document_number,
@@ -904,7 +931,8 @@ export type SupplierPaymentAllocation = {
 
     sourceType:
     | "quick_purchase"
-    | "goods_receipt";
+    | "goods_receipt"
+    | "supplier_opening_balance";
 
     sourceId: string;
 
@@ -913,6 +941,10 @@ export type SupplierPaymentAllocation = {
     | null;
 
     goodsReceiptId:
+    | string
+    | null;
+
+    supplierOpeningBalanceId:
     | string
     | null;
 
@@ -1000,6 +1032,10 @@ type SupplierPaymentAllocationQueryRow = {
     | null;
 
     goods_receipt_id:
+    | string
+    | null;
+
+    supplier_opening_balance_id:
     | string
     | null;
 
@@ -1146,6 +1182,45 @@ type SupplierPaymentAllocationQueryRow = {
         | null;
     }[]
     | null;
+
+    supplier_opening_balance:
+    | {
+        opening_date:
+        | string
+        | null;
+
+        reference_number:
+        | string
+        | null;
+
+        original_amount:
+        | number
+        | string
+        | null;
+
+        status:
+        | string
+        | null;
+    }
+    | {
+        opening_date:
+        | string
+        | null;
+
+        reference_number:
+        | string
+        | null;
+
+        original_amount:
+        | number
+        | string
+        | null;
+
+        status:
+        | string
+        | null;
+    }[]
+    | null;
 };
 export async function getSupplierPaymentById(
     paymentId: string,
@@ -1203,6 +1278,7 @@ export async function getSupplierPaymentById(
           id,
           quick_purchase_id,
           goods_receipt_id,
+          supplier_opening_balance_id,
           amount,
 
           quick_purchase:quick_purchases (
@@ -1228,7 +1304,14 @@ export async function getSupplierPaymentById(
             balance_due,
 
             payment_status
-          )
+          ),
+
+          supplier_opening_balance:supplier_opening_balances (
+            opening_date,
+            reference_number,
+            original_amount,
+            status
+            )
         )
       `)
             .eq(
@@ -1290,6 +1373,14 @@ export async function getSupplierPaymentById(
                         : allocation
                             .goods_receipt;
 
+                const supplierOpeningBalance =
+                    Array.isArray(
+                        allocation.supplier_opening_balance,
+                    )
+                        ? allocation
+                            .supplier_opening_balance[0]
+                        : allocation
+                            .supplier_opening_balance;
 
                 if (
                     allocation.goods_receipt_id &&
@@ -1324,6 +1415,9 @@ export async function getSupplierPaymentById(
 
                         goodsReceiptId:
                             allocation.goods_receipt_id,
+
+                        supplierOpeningBalanceId:
+                            null,
 
                         documentNumber:
                             goodsReceipt
@@ -1373,6 +1467,71 @@ export async function getSupplierPaymentById(
                 }
 
                 if (
+                    allocation.supplier_opening_balance_id &&
+                    supplierOpeningBalance
+                ) {
+                    const originalAmount =
+                        Number(
+                            supplierOpeningBalance
+                                .original_amount ??
+                            0,
+                        );
+
+                    return {
+                        id:
+                            allocation.id,
+
+                        sourceType:
+                            "supplier_opening_balance" as const,
+
+                        sourceId:
+                            allocation.supplier_opening_balance_id,
+
+                        quickPurchaseId:
+                            null,
+
+                        goodsReceiptId:
+                            null,
+
+                        supplierOpeningBalanceId:
+                            allocation.supplier_opening_balance_id,
+
+                        documentNumber:
+                            supplierOpeningBalance
+                                .reference_number
+                                ?.trim() ||
+                            "Opening Balance",
+
+                        supplierInvoiceNumber:
+                            null,
+
+                        documentDate:
+                            supplierOpeningBalance
+                                .opening_date ??
+                            "",
+
+                        amount:
+                            Number(
+                                allocation.amount,
+                            ),
+
+                        grandTotal:
+                            originalAmount,
+
+                        paidAmount:
+                            0,
+
+                        balanceDue:
+                            originalAmount,
+
+                        paymentStatus:
+                            supplierOpeningBalance
+                                .status ??
+                            "posted",
+                    };
+                }
+
+                if (
                     !allocation.quick_purchase_id
                 ) {
                     throw new Error(
@@ -1396,7 +1555,8 @@ export async function getSupplierPaymentById(
 
                     goodsReceiptId:
                         null,
-
+                    supplierOpeningBalanceId:
+                        null,
                     documentNumber:
                         purchase
                             ?.purchase_number ??

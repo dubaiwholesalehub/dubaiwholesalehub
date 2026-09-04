@@ -201,9 +201,12 @@ export default async function SupplierPaymentDetailPage({
                             <div>{allocation.documentNumber}</div>
 
                             <div className="mt-1 text-xs font-normal text-muted-foreground">
-                              {allocation.sourceType === "goods_receipt"
-                                ? "Goods Receipt"
-                                : "Quick Purchase"}
+                              {allocation.sourceType ===
+                              "supplier_opening_balance"
+                                ? "Opening Balance"
+                                : allocation.sourceType === "goods_receipt"
+                                  ? "Goods Receipt"
+                                  : "Quick Purchase"}
                             </div>
                           </div>
                         </td>

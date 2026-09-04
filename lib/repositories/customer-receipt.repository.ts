@@ -8,7 +8,8 @@ export type CustomerReceiptPaymentMethod =
     | "other";
 
 export type CustomerReceiptAllocationInput = {
-    salesOrderId: string;
+    salesOrderId?: string | null;
+    customerOpeningBalanceId?: string | null;
     amount: number;
 };
 
@@ -104,7 +105,12 @@ export async function postCustomerReceipt(
                 input.allocations.map(
                     (allocation) => ({
                         sales_order_id:
-                            allocation.salesOrderId,
+                            allocation.salesOrderId ??
+                            null,
+
+                        customer_opening_balance_id:
+                            allocation.customerOpeningBalanceId ??
+                            null,
 
                         amount:
                             allocation.amount,
@@ -585,11 +591,25 @@ export async function getCustomerReceiptSummary():
 }
 
 /* =========================================================
- * Customer Outstanding Sales Orders
+ * Customer Outstanding Receivables
+ *
+ * Includes:
+ *   - Sales Orders
+ *   - Customer Opening Balances
+ *
+ * receivable_open_items is the authoritative AR open-item
+ * view and already reflects posted receipt allocations.
  * ========================================================= */
 
 export type CustomerOutstandingOrder = {
     id: string;
+
+    sourceType:
+    | "sales_order"
+    | "customer_opening_balance";
+
+    salesOrderId: string | null;
+    customerOpeningBalanceId: string | null;
 
     orderNumber: string;
     orderDate: string;
@@ -612,84 +632,126 @@ export async function getCustomerOutstandingOrders(
     const {
         data,
         error,
-    } =
-        await supabase
-            .from("sales_orders")
-            .select(`
-                id,
-                order_number,
-                order_date,
-                currency_code,
-                grand_total,
-                paid_amount,
-                balance_due,
-                payment_status
-            `)
-            .eq(
-                "customer_id",
-                customerId,
-            )
-            .gt(
-                "balance_due",
-                0,
-            )
-            .neq(
-                "status",
-                "cancelled",
-            )
-            .order(
-                "order_date",
-                {
-                    ascending: true,
-                },
-            )
-            .order(
-                "created_at",
-                {
-                    ascending: true,
-                },
-            );
+    } = await supabase
+        .from(
+            "receivable_open_items",
+        )
+        .select(`
+            sales_order_id,
+            order_number,
+            order_date,
+            currency_code,
+            grand_total,
+            paid_amount,
+            outstanding_amount,
+            payment_status,
+            source,
+            external_reference
+        `)
+        .eq(
+            "customer_id",
+            customerId,
+        )
+        .gt(
+            "outstanding_amount",
+            0,
+        )
+        .order(
+            "order_date",
+            {
+                ascending: true,
+            },
+        );
 
     if (error) {
         throw new Error(
-            `Unable to load outstanding sales orders: ${error.message}`,
+            `Unable to load customer outstanding receivables: ${error.message}`,
         );
     }
 
     return (
         data ?? []
     ).map(
-        (order) => ({
-            id:
-                order.id,
+        (item) => {
+            const isOpeningBalance =
+                item.source ===
+                "customer_opening_balance";
 
-            orderNumber:
-                order.order_number,
+            /*
+             * Migration 183 keeps the existing
+             * receivable_open_items contract.
+             *
+             * For an opening-balance row:
+             * - sales_order_id carries the opening-balance
+             *   source ID for compatibility with the
+             *   historical view contract.
+             * - source tells us how that ID must be
+             *   allocated.
+             */
 
-            orderDate:
-                order.order_date,
+            const sourceId =
+                item.sales_order_id;
 
-            currencyCode:
-                order.currency_code,
+            if (!sourceId) {
+                throw new Error(
+                    "Outstanding receivable is missing its source ID.",
+                );
+            }
 
-            grandTotal:
-                Number(
-                    order.grand_total,
-                ),
+            return {
+                id:
+                    `${item.source}:${sourceId}`,
 
-            paidAmount:
-                Number(
-                    order.paid_amount,
-                ),
+                sourceType:
+                    isOpeningBalance
+                        ? "customer_opening_balance"
+                        : "sales_order",
 
-            balanceDue:
-                Number(
-                    order.balance_due,
-                ),
+                salesOrderId:
+                    isOpeningBalance
+                        ? null
+                        : sourceId,
 
-            paymentStatus:
-                order.payment_status,
-        }),
+                customerOpeningBalanceId:
+                    isOpeningBalance
+                        ? sourceId
+                        : null,
+
+                orderNumber:
+                    item.order_number ||
+                    item.external_reference ||
+                    (isOpeningBalance
+                        ? `OPENING-${sourceId.slice(0, 8)}`
+                        : "Sales Order"),
+
+                orderDate:
+                    item.order_date ??
+                    "",
+
+                currencyCode:
+                    item.currency_code ??
+                    "AED",
+
+                grandTotal:
+                    Number(
+                        item.grand_total,
+                    ),
+
+                paidAmount:
+                    Number(
+                        item.paid_amount,
+                    ),
+
+                balanceDue:
+                    Number(
+                        item.outstanding_amount,
+                    ),
+
+                paymentStatus:
+                    item.payment_status ??
+                    "unpaid",
+            };
+        },
     );
 }
 
@@ -700,9 +762,14 @@ export async function getCustomerOutstandingOrders(
 export type CustomerReceiptAllocation = {
     id: string;
 
-    salesOrderId: string;
-    orderNumber: string;
+    sourceType:
+    | "sales_order"
+    | "customer_opening_balance";
 
+    salesOrderId: string | null;
+    customerOpeningBalanceId: string | null;
+
+    orderNumber: string;
     orderDate: string;
 
     amount: number;
@@ -813,6 +880,7 @@ export async function getCustomerReceiptById(
                 allocations:customer_receipt_allocations (
                     id,
                     sales_order_id,
+                    customer_opening_balance_id,
                     amount,
 
                     sales_order:sales_orders (
@@ -824,6 +892,14 @@ export async function getCustomerReceiptById(
                         balance_due,
 
                         payment_status
+                    ),
+
+                    customer_opening_balance:customer_opening_balances (
+                        id,
+                        opening_date,
+                        reference_number,
+                        original_amount,
+                        status
                     )
                 )
             `)
@@ -866,22 +942,74 @@ export async function getCustomerReceiptById(
                         : allocation
                             .sales_order;
 
+                const openingBalance =
+                    Array.isArray(
+                        allocation.customer_opening_balance,
+                    )
+                        ? allocation
+                            .customer_opening_balance[0]
+                        : allocation
+                            .customer_opening_balance;
+
+                const isOpeningBalance =
+                    Boolean(
+                        allocation.customer_opening_balance_id,
+                    );
+
+                const openingOriginalAmount =
+                    Number(
+                        openingBalance
+                            ?.original_amount ??
+                        0,
+                    );
+
                 return {
                     id:
                         allocation.id,
 
+                    sourceType:
+                        isOpeningBalance
+                            ? "customer_opening_balance"
+                            : "sales_order",
+
                     salesOrderId:
                         allocation.sales_order_id,
 
+                    customerOpeningBalanceId:
+                        allocation.customer_opening_balance_id,
+
                     orderNumber:
-                        order
-                            ?.order_number ??
-                        "Unknown Order",
+                        isOpeningBalance
+                            ? (
+                                openingBalance
+                                    ?.reference_number ??
+                                `OPENING-${allocation
+                                    .customer_opening_balance_id
+                                    ?.slice(
+                                        0,
+                                        8,
+                                    ) ??
+                                ""
+                                }`
+                            )
+                            : (
+                                order
+                                    ?.order_number ??
+                                "Unknown Order"
+                            ),
 
                     orderDate:
-                        order
-                            ?.order_date ??
-                        "",
+                        isOpeningBalance
+                            ? (
+                                openingBalance
+                                    ?.opening_date ??
+                                ""
+                            )
+                            : (
+                                order
+                                    ?.order_date ??
+                                ""
+                            ),
 
                     amount:
                         Number(
@@ -889,34 +1017,55 @@ export async function getCustomerReceiptById(
                         ),
 
                     grandTotal:
-                        Number(
-                            order
-                                ?.grand_total ??
-                            0,
-                        ),
+                        isOpeningBalance
+                            ? openingOriginalAmount
+                            : Number(
+                                order
+                                    ?.grand_total ??
+                                0,
+                            ),
 
                     paidAmount:
-                        Number(
-                            order
-                                ?.paid_amount ??
-                            0,
-                        ),
+                        isOpeningBalance
+                            ? 0
+                            : Number(
+                                order
+                                    ?.paid_amount ??
+                                0,
+                            ),
 
                     balanceDue:
-                        Number(
-                            order
-                                ?.balance_due ??
-                            0,
-                        ),
+                        isOpeningBalance
+                            ? Math.max(
+                                openingOriginalAmount -
+                                Number(
+                                    allocation.amount,
+                                ),
+                                0,
+                            )
+                            : Number(
+                                order
+                                    ?.balance_due ??
+                                0,
+                            ),
 
                     paymentStatus:
-                        order
-                            ?.payment_status ??
-                        "unknown",
+                        isOpeningBalance
+                            ? (
+                                openingBalance
+                                    ?.status ===
+                                    "settled"
+                                    ? "paid"
+                                    : "unpaid"
+                            )
+                            : (
+                                order
+                                    ?.payment_status ??
+                                "unknown"
+                            ),
                 };
             },
         );
-
     return {
         id:
             data.id,

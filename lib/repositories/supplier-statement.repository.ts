@@ -8,6 +8,7 @@
  * ========================================================= */
 
 export type SupplierStatementEntryType =
+    | "opening_balance"
     | "purchase"
     | "goods_receipt"
     | "supplier_return"
@@ -637,10 +638,119 @@ export async function getSupplierStatement(
         | null;
     };
 
+    /* -------------------------------------------------------
+ * Supplier Opening Balances
+ *
+ * Historical supplier payables brought forward into
+ * the ERP. These affect the supplier ledger balance but
+ * must not be treated as current-period purchases.
+ * ------------------------------------------------------- */
+
+    const {
+        data: supplierOpeningBalances,
+        error: supplierOpeningBalancesError,
+    } =
+        await supabase
+            .from(
+                "supplier_opening_balances",
+            )
+            .select(`
+        id,
+        opening_date,
+        reference_number,
+        original_amount,
+        notes,
+        status,
+        created_at
+      `)
+            .eq(
+                "supplier_id",
+                supplierId,
+            )
+            .neq(
+                "status",
+                "cancelled",
+            )
+            .order(
+                "opening_date",
+                {
+                    ascending: true,
+                },
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: true,
+                },
+            );
+
+
+    if (supplierOpeningBalancesError) {
+        throw new Error(
+            `Unable to load supplier opening balances: ${supplierOpeningBalancesError.message}`,
+        );
+    }
+
 
     const rawEntries:
         RawEntry[] = [];
 
+    for (
+        const openingBalance of
+        supplierOpeningBalances ?? []
+    ) {
+        rawEntries.push({
+            id:
+                `opening-balance-${openingBalance.id}`,
+
+            date:
+                openingBalance.opening_date,
+
+            sortTimestamp:
+                openingBalance.created_at,
+
+            sortPriority:
+                0,
+
+            type:
+                "opening_balance",
+
+            documentNumber:
+                openingBalance.reference_number?.trim() ||
+                "Opening Balance",
+
+            referenceNumber:
+                openingBalance.reference_number,
+
+            /*
+             * Supplier statement convention:
+             * debit increases the amount owed to supplier.
+             */
+            debit:
+                numberValue(
+                    openingBalance.original_amount,
+                ),
+
+            credit:
+                0,
+
+            quickPurchaseId:
+                null,
+
+            goodsReceiptId:
+                null,
+
+            supplierPaymentId:
+                null,
+
+            supplierReturnId:
+                null,
+
+            description:
+                openingBalance.notes?.trim() ||
+                "Supplier Opening Balance",
+        });
+    }
 
     for (
         const purchase of

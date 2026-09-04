@@ -46,7 +46,8 @@ export type CreateCustomerReceiptInput = {
     notes?: string;
 
     allocations: Array<{
-        salesOrderId: string;
+        salesOrderId?: string | null;
+        customerOpeningBalanceId?: string | null;
         amount: number;
     }>;
 };

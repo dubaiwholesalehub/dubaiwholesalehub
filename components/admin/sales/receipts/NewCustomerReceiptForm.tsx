@@ -261,11 +261,21 @@ export default function NewCustomerReceiptForm({
 
     const allocations = Object.entries(activeAllocations)
       .filter(([, value]) => value > 0)
-      .map(([salesOrderId, allocationAmount]) => ({
-        salesOrderId,
+      .map(([itemId, allocationAmount]) => {
+        const item = orders.find((order) => order.id === itemId);
 
-        amount: Number(allocationAmount.toFixed(2)),
-      }));
+        if (!item) {
+          throw new Error("Unable to identify receipt allocation target.");
+        }
+
+        return {
+          salesOrderId: item.salesOrderId,
+
+          customerOpeningBalanceId: item.customerOpeningBalanceId,
+
+          amount: Number(allocationAmount.toFixed(2)),
+        };
+      });
 
     startPosting(async () => {
       const result = await createCustomerReceipt({
@@ -467,10 +477,11 @@ export default function NewCustomerReceiptForm({
         <section className="overflow-hidden rounded-xl border bg-card">
           <div className="flex flex-col gap-4 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-semibold">Outstanding Sales Orders</h2>
+              <h2 className="font-semibold">Outstanding Receivables</h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Allocate this payment against customer invoices.
+                Allocate this receipt against Sales Orders or opening
+                receivables.
               </p>
             </div>
 
@@ -504,11 +515,11 @@ export default function NewCustomerReceiptForm({
             </div>
           ) : !customerId ? (
             <div className="px-6 py-14 text-center text-sm text-muted-foreground">
-              Select a customer to view their outstanding Sales Orders.
+              Select a customer to view their outstanding receivables.
             </div>
           ) : orders.length === 0 ? (
             <div className="px-6 py-14 text-center">
-              <p className="font-medium">No outstanding Sales Orders.</p>
+              <p className="font-medium">No outstanding receivables.</p>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 Any unallocated receipt amount will remain available as customer
@@ -520,7 +531,9 @@ export default function NewCustomerReceiptForm({
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                   <tr>
-                    <th className="px-4 py-3">Order</th>
+                    <th className="px-4 py-3">Type</th>
+
+                    <th className="px-4 py-3">Document</th>
 
                     <th className="px-4 py-3">Date</th>
 
@@ -540,6 +553,18 @@ export default function NewCustomerReceiptForm({
 
                     return (
                       <tr key={order.id}>
+                        <td className="px-4 py-4">
+                          {order.sourceType === "customer_opening_balance" ? (
+                            <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                              Opening Balance
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
+                              Sales Order
+                            </span>
+                          )}
+                        </td>
+
                         <td className="px-4 py-4 font-semibold">
                           {order.orderNumber}
                         </td>

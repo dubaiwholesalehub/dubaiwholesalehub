@@ -158,6 +158,11 @@ const navigationGroups = [
         icon: Landmark,
       },
       {
+        label: "Opening Balances",
+        href: "/admin/accounts/opening-balances",
+        icon: BookOpenText,
+      },
+      {
         label: "Expenses",
         href: "/admin/accounts/expenses",
         icon: ReceiptText,
