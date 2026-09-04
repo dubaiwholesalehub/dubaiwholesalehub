@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -35,6 +35,8 @@ function getErrorMessage(
 export async function createWarehouseAction(
     values: WarehouseValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
+
     let warehouseId: string;
 
     try {
@@ -90,6 +92,8 @@ export async function updateWarehouseAction(
     warehouseId: string,
     values: WarehouseValidatedValues,
 ): Promise<void> {
+    await requireAdmin();
+
     const id = warehouseId.trim();
 
     if (!id) {
@@ -157,6 +161,8 @@ export async function changeWarehouseStatusAction(
     warehouseId: string,
     isActive: boolean,
 ): Promise<WarehouseStatusActionState> {
+    await requireAdmin();
+
     const id = warehouseId.trim();
 
     if (!id) {

@@ -2,33 +2,52 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-const MANAGEMENT_ROLES = new Set([
+export const APP_ROLES = [
   "super_admin",
   "admin",
   "manager",
-]);
+  "sales",
+  "viewer",
+] as const;
 
-export async function requireAdmin() {
+export type AppRole =
+  (typeof APP_ROLES)[number];
+
+const MANAGEMENT_ROLES: readonly AppRole[] = [
+  "super_admin",
+  "admin",
+  "manager",
+];
+
+export async function requireRoles(
+  allowedRoles: readonly AppRole[],
+) {
   const supabase = await createClient();
 
-  const claimsResult = await supabase.auth.getClaims();
-  const userId = claimsResult.data?.claims?.sub;
+  const claimsResult =
+    await supabase.auth.getClaims();
+
+  const userId =
+    claimsResult.data?.claims?.sub;
 
   if (claimsResult.error || !userId) {
     redirect("/admin/login");
   }
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, role, is_active")
-    .eq("id", userId)
-    .single();
+  const { data: profile, error } =
+    await supabase
+      .from("profiles")
+      .select(
+        "id, email, full_name, role, is_active",
+      )
+      .eq("id", userId)
+      .single();
 
   if (
     error ||
     !profile ||
     !profile.is_active ||
-    !MANAGEMENT_ROLES.has(profile.role)
+    !allowedRoles.includes(profile.role)
   ) {
     redirect(
       "/admin?error=" +
@@ -42,4 +61,8 @@ export async function requireAdmin() {
     supabase,
     profile,
   };
+}
+
+export async function requireAdmin() {
+  return requireRoles(MANAGEMENT_ROLES);
 }

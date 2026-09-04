@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   revalidatePath,
 } from "next/cache";
@@ -24,6 +24,8 @@ function stringValue(
 export async function saveCompanyProfileAction(
   formData: FormData,
 ) {
+    await requireAdmin();
+
   await saveCompanyProfile({
     legal_name:
       stringValue(

@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   revalidatePath,
 } from "next/cache";
@@ -54,6 +54,7 @@ function numberValue(
 export async function createExpenseAction(
   formData: FormData,
 ) {
+  await requireAdmin();
   const taxTreatment =
     stringValue(
       formData,
@@ -206,6 +207,8 @@ export async function createExpenseAction(
 export async function updateExpenseAction(
   formData: FormData,
 ) {
+  await requireAdmin();
+
   const expenseId =
     stringValue(
       formData,
@@ -370,6 +373,7 @@ export async function updateExpenseAction(
 export async function postExpenseAction(
   formData: FormData,
 ) {
+  await requireAdmin();
   const expenseId =
     stringValue(
       formData,
@@ -397,6 +401,8 @@ export async function postExpenseAction(
 export async function cancelExpenseAction(
   formData: FormData,
 ) {
+  await requireAdmin();
+
   const expenseId =
     stringValue(
       formData,

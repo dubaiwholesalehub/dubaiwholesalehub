@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   revalidatePath,
 } from "next/cache";
@@ -30,6 +30,8 @@ function stringValue(
 export async function postOpeningBalanceAction(
   formData: FormData,
 ) {
+  await requireAdmin();
+
   const accountId =
     stringValue(
       formData,

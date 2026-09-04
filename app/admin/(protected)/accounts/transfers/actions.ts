@@ -1,5 +1,5 @@
 "use server";
-
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   revalidatePath,
 } from "next/cache";
@@ -44,6 +44,8 @@ function numberValue(
 export async function createFinancialTransferAction(
   formData: FormData,
 ) {
+  await requireAdmin();
+
   const transferId =
     await postFinancialTransfer({
       transferDate:
@@ -118,6 +120,8 @@ export async function createFinancialTransferAction(
 export async function cancelFinancialTransferAction(
   formData: FormData,
 ) {
+  await requireAdmin();
+
   const transferId =
     stringValue(
       formData,
