@@ -158,16 +158,16 @@ export default async function CustomerReceiptDetailPage({
 
           <section className="overflow-hidden rounded-xl border bg-card">
             <div className="border-b p-5">
-              <h2 className="font-semibold">Sales Order Allocations</h2>
+              <h2 className="font-semibold">Receipt Allocations</h2>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Sales Orders paid by this receipt.
+                Sales Orders and opening balances paid by this receipt.
               </p>
             </div>
 
             {receipt.allocations.length === 0 ? (
               <div className="px-6 py-14 text-center">
-                <p className="font-medium">No Sales Order allocations.</p>
+                <p className="font-medium">No receipt allocations.</p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
                   The full receipt amount remains as unallocated customer
@@ -179,11 +179,11 @@ export default async function CustomerReceiptDetailPage({
                 <table className="w-full text-sm">
                   <thead className="border-b bg-muted/40 text-left text-xs uppercase text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">Sales Order</th>
+                      <th className="px-4 py-3">Source</th>
 
                       <th className="px-4 py-3">Date</th>
 
-                      <th className="px-4 py-3 text-right">Order Total</th>
+                      <th className="px-4 py-3 text-right">Original Amount</th>
 
                       <th className="px-4 py-3 text-right">This Receipt</th>
 
@@ -197,12 +197,25 @@ export default async function CustomerReceiptDetailPage({
                     {receipt.allocations.map((allocation) => (
                       <tr key={allocation.id}>
                         <td className="px-4 py-4">
-                          <Link
-                            href={`/admin/sales/orders/${allocation.salesOrderId}`}
-                            className="font-semibold text-primary hover:underline"
-                          >
-                            {allocation.orderNumber}
-                          </Link>
+                          {allocation.sourceType === "sales_order" &&
+                          allocation.salesOrderId ? (
+                            <Link
+                              href={`/admin/sales/orders/${allocation.salesOrderId}`}
+                              className="font-semibold text-primary hover:underline"
+                            >
+                              {allocation.orderNumber}
+                            </Link>
+                          ) : (
+                            <div>
+                              <div className="font-semibold">
+                                {allocation.orderNumber}
+                              </div>
+
+                              <div className="mt-0.5 text-xs text-muted-foreground">
+                                Customer Opening Balance
+                              </div>
+                            </div>
+                          )}
                         </td>
 
                         <td className="px-4 py-4 text-muted-foreground">

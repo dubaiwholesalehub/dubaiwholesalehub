@@ -228,13 +228,22 @@ export default async function SupplierPaymentDetailPage({
                         </td>
 
                         <td className="px-4 py-4 text-right font-semibold">
-                          AED {money(allocation.balanceDue)}
+                          {allocation.sourceType === "supplier_opening_balance"
+                            ? "-"
+                            : `AED ${money(allocation.balanceDue)}`}
                         </td>
 
                         <td className="px-4 py-4">
-                          <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                            {paymentStatusLabel(allocation.paymentStatus)}
-                          </span>
+                          {allocation.sourceType ===
+                          "supplier_opening_balance" ? (
+                            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                              Opening Balance
+                            </span>
+                          ) : (
+                            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+                              {paymentStatusLabel(allocation.paymentStatus)}
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
