@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import QuickSalesQuotationItemsForm from "@/components/admin/sales/quotations/items/QuickSalesQuotationItemsForm";
 import ConvertToSalesOrderButton from "@/components/admin/sales/quotations/ConvertToSalesOrderButton";
 import SalesQuotationWorkflowActions from "@/components/admin/sales/quotations/SalesQuotationWorkflowActions";
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 interface SalesQuotationDetailsPageProps {
   params: Promise<{
     id: string;
@@ -40,6 +41,7 @@ export default async function SalesQuotationDetailsPage({
   params,
 }: SalesQuotationDetailsPageProps) {
   const { id } = await params;
+  const { profile } = await requireSalesAccess();
 
   const [quotation, itemOptions] = await Promise.all([
     getSalesQuotationById(id),
@@ -47,6 +49,13 @@ export default async function SalesQuotationDetailsPage({
   ]);
 
   if (!quotation) {
+    notFound();
+  }
+
+  if (
+    !isManagementRole(profile.role) &&
+    quotation.salesperson_id !== profile.id
+  ) {
     notFound();
   }
 

@@ -1,7 +1,5 @@
-import {
-  Plus,
-  ShoppingCart,
-} from "lucide-react";
+import { Plus, ShoppingCart } from "lucide-react";
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 
 import PageHeader from "@/components/admin/shared/PageHeader";
 import SalesOrderFilters from "@/components/admin/sales/orders/SalesOrderFilters";
@@ -18,20 +16,13 @@ import {
 } from "@/lib/repositories/sales-order.repository";
 
 interface SalesOrdersPageProps {
-  searchParams: Promise<
-    Record<
-      string,
-      string | string[] | undefined
-    >
-  >;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function getStringParam(
   value: string | string[] | undefined,
 ): string | undefined {
-  return typeof value === "string"
-    ? value
-    : undefined;
+  return typeof value === "string" ? value : undefined;
 }
 
 function getPositiveInteger(
@@ -40,30 +31,22 @@ function getPositiveInteger(
 ): number {
   const parsed = Number(value);
 
-  return Number.isInteger(parsed) &&
-    parsed > 0
-    ? parsed
-    : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
-function normalizeStatus(
-  value: string | undefined,
-): SalesOrderStatus | "all" {
-  const statuses:
-    readonly SalesOrderStatus[] = [
-      "draft",
-      "confirmed",
-      "processing",
-      "partially_fulfilled",
-      "fulfilled",
-      "completed",
-      "cancelled",
-      "closed",
-    ];
+function normalizeStatus(value: string | undefined): SalesOrderStatus | "all" {
+  const statuses: readonly SalesOrderStatus[] = [
+    "draft",
+    "confirmed",
+    "processing",
+    "partially_fulfilled",
+    "fulfilled",
+    "completed",
+    "cancelled",
+    "closed",
+  ];
 
-  return statuses.includes(
-    value as SalesOrderStatus,
-  )
+  return statuses.includes(value as SalesOrderStatus)
     ? (value as SalesOrderStatus)
     : "all";
 }
@@ -71,21 +54,18 @@ function normalizeStatus(
 function normalizeFulfilmentStatus(
   value: string | undefined,
 ): SalesOrderFulfilmentStatus | "all" {
-  const statuses:
-    readonly SalesOrderFulfilmentStatus[] = [
-      "unplanned",
-      "awaiting_stock",
-      "awaiting_procurement",
-      "partially_allocated",
-      "allocated",
-      "partially_fulfilled",
-      "fulfilled",
-      "not_required",
-    ];
+  const statuses: readonly SalesOrderFulfilmentStatus[] = [
+    "unplanned",
+    "awaiting_stock",
+    "awaiting_procurement",
+    "partially_allocated",
+    "allocated",
+    "partially_fulfilled",
+    "fulfilled",
+    "not_required",
+  ];
 
-  return statuses.includes(
-    value as SalesOrderFulfilmentStatus,
-  )
+  return statuses.includes(value as SalesOrderFulfilmentStatus)
     ? (value as SalesOrderFulfilmentStatus)
     : "all";
 }
@@ -93,36 +73,28 @@ function normalizeFulfilmentStatus(
 function normalizePaymentStatus(
   value: string | undefined,
 ): SalesOrderPaymentStatus | "all" {
-  const statuses:
-    readonly SalesOrderPaymentStatus[] = [
-      "unpaid",
-      "partially_paid",
-      "paid",
-      "overpaid",
-      "refunded",
-    ];
+  const statuses: readonly SalesOrderPaymentStatus[] = [
+    "unpaid",
+    "partially_paid",
+    "paid",
+    "overpaid",
+    "refunded",
+  ];
 
-  return statuses.includes(
-    value as SalesOrderPaymentStatus,
-  )
+  return statuses.includes(value as SalesOrderPaymentStatus)
     ? (value as SalesOrderPaymentStatus)
     : "all";
 }
 
-function normalizeSource(
-  value: string | undefined,
-): SalesOrderSource | "all" {
-  const sources:
-    readonly SalesOrderSource[] = [
-      "internal",
-      "hmshoponline",
-      "dubaiwholesalehub",
-      "import",
-    ];
+function normalizeSource(value: string | undefined): SalesOrderSource | "all" {
+  const sources: readonly SalesOrderSource[] = [
+    "internal",
+    "hmshoponline",
+    "dubaiwholesalehub",
+    "import",
+  ];
 
-  return sources.includes(
-    value as SalesOrderSource,
-  )
+  return sources.includes(value as SalesOrderSource)
     ? (value as SalesOrderSource)
     : "all";
 }
@@ -130,69 +102,52 @@ function normalizeSource(
 export default async function SalesOrdersPage({
   searchParams,
 }: SalesOrdersPageProps) {
+  const { profile } = await requireSalesAccess();
+
+  const salespersonId = isManagementRole(profile.role) ? undefined : profile.id;
   const params = await searchParams;
 
-  const search =
-    getStringParam(params.search)?.trim() ??
-    "";
+  const search = getStringParam(params.search)?.trim() ?? "";
 
-  const status = normalizeStatus(
-    getStringParam(params.status),
+  const status = normalizeStatus(getStringParam(params.status));
+
+  const fulfilmentStatus = normalizeFulfilmentStatus(
+    getStringParam(params.fulfilmentStatus),
   );
 
-  const fulfilmentStatus =
-    normalizeFulfilmentStatus(
-      getStringParam(
-        params.fulfilmentStatus,
-      ),
-    );
-
-  const paymentStatus =
-    normalizePaymentStatus(
-      getStringParam(
-        params.paymentStatus,
-      ),
-    );
-
-  const source = normalizeSource(
-    getStringParam(params.source),
+  const paymentStatus = normalizePaymentStatus(
+    getStringParam(params.paymentStatus),
   );
 
-  const dateFrom =
-    getStringParam(params.dateFrom) ?? "";
+  const source = normalizeSource(getStringParam(params.source));
 
-  const dateTo =
-    getStringParam(params.dateTo) ?? "";
+  const dateFrom = getStringParam(params.dateFrom) ?? "";
 
-  const page = getPositiveInteger(
-    getStringParam(params.page),
-    1,
-  );
+  const dateTo = getStringParam(params.dateTo) ?? "";
+
+  const page = getPositiveInteger(getStringParam(params.page), 1);
 
   const pageSize = Math.min(
-    getPositiveInteger(
-      getStringParam(params.pageSize),
-      25,
-    ),
+    getPositiveInteger(getStringParam(params.pageSize), 25),
     100,
   );
 
-  const [result, summary] =
-    await Promise.all([
-      getSalesOrderPage({
-        search: search || undefined,
-        status,
-        fulfilmentStatus,
-        paymentStatus,
-        source,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-        page,
-        pageSize,
-      }),
+  const [result, summary] = await Promise.all([
+    getSalesOrderPage({
+      search: search || undefined,
+      status,
+      fulfilmentStatus,
+      paymentStatus,
+      source,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      page,
+      pageSize,
+      salespersonId,
+    }),
 
-      getSalesOrderSummary(),
-    ]);
+    getSalesOrderSummary(salespersonId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -207,9 +162,7 @@ export default async function SalesOrdersPage({
         }}
       />
 
-      <SalesOrderSummaryCards
-        summary={summary}
-      />
+      <SalesOrderSummaryCards summary={summary} />
 
       <SalesOrderFilters
         values={{
@@ -232,9 +185,7 @@ export default async function SalesOrdersPage({
           </p>
         </div>
 
-        <SalesOrderTable
-          orders={result.data}
-        />
+        <SalesOrderTable orders={result.data} />
 
         <SalesOrderPagination
           page={result.page}
@@ -242,18 +193,14 @@ export default async function SalesOrdersPage({
           totalCount={result.count}
           pageSize={result.pageSize}
           searchParams={{
-            search:
-              search || undefined,
+            search: search || undefined,
             status,
             fulfilmentStatus,
             paymentStatus,
             source,
-            dateFrom:
-              dateFrom || undefined,
-            dateTo:
-              dateTo || undefined,
-            pageSize:
-              String(pageSize),
+            dateFrom: dateFrom || undefined,
+            dateTo: dateTo || undefined,
+            pageSize: String(pageSize),
           }}
         />
       </section>

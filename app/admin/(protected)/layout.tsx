@@ -18,9 +18,7 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default async function AdminLayout({
-  children,
-}: AdminLayoutProps) {
+export default async function AdminLayout({ children }: AdminLayoutProps) {
   const supabase = await createClient();
 
   const claimsResult = await supabase.auth.getClaims();
@@ -43,8 +41,7 @@ export default async function AdminLayout({
     !ALLOWED_ADMIN_ROLES.includes(profile.role)
   ) {
     redirect(
-      "/admin/login?error=" +
-        encodeURIComponent("Access is not authorized."),
+      "/admin/login?error=" + encodeURIComponent("Access is not authorized."),
     );
   }
 
@@ -52,6 +49,7 @@ export default async function AdminLayout({
     <AdminShell
       userName={profile.full_name ?? "Administrator"}
       userEmail={profile.email}
+      userRole={profile.role}
       logoutAction={logout}
     >
       {children}

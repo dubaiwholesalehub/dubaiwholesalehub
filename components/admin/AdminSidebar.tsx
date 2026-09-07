@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { AppRole } from "@/lib/auth/require-admin";
 import {
   Boxes,
   Building2,
@@ -36,6 +37,7 @@ import {
 interface AdminSidebarProps {
   mobileOpen: boolean;
   desktopOpen: boolean;
+  userRole: AppRole;
   onClose: () => void;
 }
 
@@ -83,6 +85,11 @@ const navigationGroups = [
         label: "Sales Returns",
         href: "/admin/sales/returns",
         icon: ArrowLeftRight,
+      },
+      {
+        label: "Salesperson Performance",
+        href: "/admin/sales/salesperson-performance",
+        icon: TrendingUp,
       },
       {
         label: "Customers",
@@ -240,6 +247,11 @@ const navigationGroups = [
         icon: Ruler,
       },
       {
+        label: "Users & Salespeople",
+        href: "/admin/settings/users",
+        icon: Users,
+      },
+      {
         label: "Settings",
         href: "/admin/settings",
         icon: Settings,
@@ -266,10 +278,28 @@ function isGroupActive(
 export default function AdminSidebar({
   mobileOpen,
   desktopOpen,
+  userRole,
   onClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const visibleNavigationGroups =
+    userRole === "sales"
+      ? navigationGroups
+          .map((group) => ({
+            ...group,
+            items: group.items.filter((item) =>
+              [
+                "/admin/sales/quick-sale",
+                "/admin/sales/quotations",
+                "/admin/sales/orders",
+                "/admin/customers",
+              ].includes(item.href),
+            ),
+          }))
+          .filter((group) => group.items.length > 0)
+      : navigationGroups;
 
   function isGroupOpen(group: (typeof navigationGroups)[number]) {
     if (group.label === "Overview") {
@@ -289,7 +319,7 @@ export default function AdminSidebar({
       [label]: !(current[label] ?? label === "Sales"),
     }));
   }
-
+  const homeHref = userRole === "sales" ? "/admin/sales/quick-sale" : "/admin";
   return (
     <>
       {mobileOpen && (
@@ -309,7 +339,7 @@ export default function AdminSidebar({
         ].join(" ")}
       >
         <div className="flex h-20 items-center justify-between border-b border-slate-800 px-6">
-          <Link href="/admin" onClick={onClose}>
+          <Link href={homeHref} onClick={onClose}>
             <span className="block text-lg font-bold tracking-wide">
               DubaiWholesaleHub
             </span>
@@ -331,7 +361,7 @@ export default function AdminSidebar({
 
         <nav className="flex-1 overflow-y-auto px-4 py-6">
           <div className="space-y-7">
-            {navigationGroups.map((group) => (
+            {visibleNavigationGroups.map((group) => (
               <div key={group.label}>
                 {group.label === "Overview" ? (
                   <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">

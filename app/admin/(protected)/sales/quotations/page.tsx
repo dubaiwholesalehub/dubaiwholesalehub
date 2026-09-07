@@ -1,7 +1,4 @@
-import {
-  FileText,
-  Plus,
-} from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 
 import PageHeader from "@/components/admin/shared/PageHeader";
 import SalesQuotationFilters from "@/components/admin/sales/quotations/SalesQuotationFilters";
@@ -14,22 +11,16 @@ import {
   type SalesQuotationSource,
   type SalesQuotationStatus,
 } from "@/lib/repositories/sales-quotation.repository";
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 
 interface SalesQuotationsPageProps {
-  searchParams: Promise<
-    Record<
-      string,
-      string | string[] | undefined
-    >
-  >;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function getStringParam(
   value: string | string[] | undefined,
 ): string | undefined {
-  return typeof value === "string"
-    ? value
-    : undefined;
+  return typeof value === "string" ? value : undefined;
 }
 
 function getPositiveInteger(
@@ -38,29 +29,23 @@ function getPositiveInteger(
 ): number {
   const parsed = Number(value);
 
-  return Number.isInteger(parsed) &&
-    parsed > 0
-    ? parsed
-    : fallback;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
 function normalizeStatus(
   value: string | undefined,
 ): SalesQuotationStatus | "all" {
-  const statuses:
-    readonly SalesQuotationStatus[] = [
-      "draft",
-      "sent",
-      "accepted",
-      "rejected",
-      "expired",
-      "cancelled",
-      "converted",
-    ];
+  const statuses: readonly SalesQuotationStatus[] = [
+    "draft",
+    "sent",
+    "accepted",
+    "rejected",
+    "expired",
+    "cancelled",
+    "converted",
+  ];
 
-  return statuses.includes(
-    value as SalesQuotationStatus,
-  )
+  return statuses.includes(value as SalesQuotationStatus)
     ? (value as SalesQuotationStatus)
     : "all";
 }
@@ -68,17 +53,14 @@ function normalizeStatus(
 function normalizeSource(
   value: string | undefined,
 ): SalesQuotationSource | "all" {
-  const sources:
-    readonly SalesQuotationSource[] = [
-      "internal",
-      "hmshoponline",
-      "dubaiwholesalehub",
-      "import",
-    ];
+  const sources: readonly SalesQuotationSource[] = [
+    "internal",
+    "hmshoponline",
+    "dubaiwholesalehub",
+    "import",
+  ];
 
-  return sources.includes(
-    value as SalesQuotationSource,
-  )
+  return sources.includes(value as SalesQuotationSource)
     ? (value as SalesQuotationSource)
     : "all";
 }
@@ -86,45 +68,36 @@ function normalizeSource(
 export default async function SalesQuotationsPage({
   searchParams,
 }: SalesQuotationsPageProps) {
+  const { profile } = await requireSalesAccess();
+
+  const salespersonId = isManagementRole(profile.role) ? undefined : profile.id;
   const params = await searchParams;
 
-  const search =
-    getStringParam(params.search)?.trim() ??
-    "";
+  const search = getStringParam(params.search)?.trim() ?? "";
 
-  const status = normalizeStatus(
-    getStringParam(params.status),
-  );
+  const status = normalizeStatus(getStringParam(params.status));
 
-  const source = normalizeSource(
-    getStringParam(params.source),
-  );
+  const source = normalizeSource(getStringParam(params.source));
 
-  const page = getPositiveInteger(
-    getStringParam(params.page),
-    1,
-  );
+  const page = getPositiveInteger(getStringParam(params.page), 1);
 
   const pageSize = Math.min(
-    getPositiveInteger(
-      getStringParam(params.pageSize),
-      25,
-    ),
+    getPositiveInteger(getStringParam(params.pageSize), 25),
     100,
   );
 
-  const [result, summary] =
-    await Promise.all([
-      getSalesQuotationPage({
-        search: search || undefined,
-        status,
-        source,
-        page,
-        pageSize,
-      }),
+  const [result, summary] = await Promise.all([
+    getSalesQuotationPage({
+      search: search || undefined,
+      status,
+      source,
+      page,
+      pageSize,
+      salespersonId,
+    }),
 
-      getSalesQuotationSummary(),
-    ]);
+    getSalesQuotationSummary(salespersonId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -139,9 +112,7 @@ export default async function SalesQuotationsPage({
         }}
       />
 
-      <SalesQuotationSummaryCards
-        summary={summary}
-      />
+      <SalesQuotationSummaryCards summary={summary} />
 
       <SalesQuotationFilters
         values={{
@@ -160,9 +131,7 @@ export default async function SalesQuotationsPage({
           </p>
         </div>
 
-        <SalesQuotationTable
-          quotations={result.data}
-        />
+        <SalesQuotationTable quotations={result.data} />
 
         <SalesQuotationPagination
           page={result.page}
@@ -170,12 +139,10 @@ export default async function SalesQuotationsPage({
           totalCount={result.count}
           pageSize={result.pageSize}
           searchParams={{
-            search:
-              search || undefined,
+            search: search || undefined,
             status,
             source,
-            pageSize:
-              String(pageSize),
+            pageSize: String(pageSize),
           }}
         />
       </section>

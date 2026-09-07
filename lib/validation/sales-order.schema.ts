@@ -87,6 +87,8 @@ const salesOrderBaseSchema = z.object({
 
   customer_id: requiredUuid,
 
+  salesperson_id: requiredUuid,
+
   customer_contact_id: optionalUuid,
 
   billing_address_id: optionalUuid,
@@ -205,7 +207,7 @@ function applySalesOrderRules(
   if (
     values.requested_delivery_date &&
     values.requested_delivery_date <
-      values.order_date
+    values.order_date
   ) {
     context.addIssue({
       code: "custom",
@@ -220,7 +222,7 @@ function applySalesOrderRules(
   if (
     values.expected_delivery_date &&
     values.expected_delivery_date <
-      values.order_date
+    values.order_date
   ) {
     context.addIssue({
       code: "custom",
@@ -236,7 +238,7 @@ function applySalesOrderRules(
     values.requested_delivery_date &&
     values.expected_delivery_date &&
     values.expected_delivery_date <
-      values.requested_delivery_date
+    values.requested_delivery_date
   ) {
     context.addIssue({
       code: "custom",
@@ -417,7 +419,7 @@ function applySalesOrderItemRules(
     values.expected_delivery_date &&
     values.requested_delivery_date &&
     values.expected_delivery_date <
-      values.requested_delivery_date
+    values.requested_delivery_date
   ) {
     context.addIssue({
       code: "custom",
@@ -431,9 +433,9 @@ function applySalesOrderItemRules(
 
   if (
     values.fulfilment_method ===
-      "service" &&
+    "service" &&
     values.procurement_lead_time_days >
-      0
+    0
   ) {
     context.addIssue({
       code: "custom",
@@ -447,7 +449,7 @@ function applySalesOrderItemRules(
 
   if (
     values.fulfilment_method ===
-      "service" &&
+    "service" &&
     values.allow_backorder
   ) {
     context.addIssue({
@@ -549,7 +551,7 @@ export const salesOrderListFilterSchema =
           values.date_from &&
           values.date_to &&
           values.date_to <
-            values.date_from
+          values.date_from
         ) {
           context.addIssue({
             code: "custom",

@@ -82,6 +82,8 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [customerId, setCustomerId] = useState("");
 
+  const [salespersonId, setSalespersonId] = useState("");
+
   const [customerAdvance, setCustomerAdvance] = useState(0);
 
   const [isLoadingAdvance, startLoadingAdvance] = useTransition();
@@ -116,8 +118,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [items, setItems] = useState<QuickSaleItem[]>([createEmptyItem()]);
 
-  const newProductPickerRef =
-    useRef<QuickSaleProductPickerHandle | null>(null);
+  const newProductPickerRef = useRef<QuickSaleProductPickerHandle | null>(null);
 
   const [marginApprovalReason, setMarginApprovalReason] = useState("");
 
@@ -382,7 +383,11 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
       return;
     }
+    if (!salespersonId) {
+      toast.error("Please select a salesperson.");
 
+      return;
+    }
     if (!warehouseId) {
       toast.error("Please select a warehouse.");
 
@@ -477,6 +482,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
     startPosting(async () => {
       const result = await completeQuickSale({
         customerId,
+        salespersonId,
         warehouseId,
         saleDate,
 
@@ -550,9 +556,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           <div>
             <div className="flex items-center gap-2">
               <ReceiptText className="h-5 w-5 text-amber-600" />
-              <h2 className="text-base font-bold text-slate-950">
-                Quick Sale
-              </h2>
+              <h2 className="text-base font-bold text-slate-950">Quick Sale</h2>
             </div>
 
             <p className="mt-1 text-xs text-slate-500">
@@ -567,7 +571,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
         </div>
 
         <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-12">
-          <div className="xl:col-span-4">
+          <div className="xl:col-span-3">
             <Field label="Customer">
               <select
                 value={customerId}
@@ -623,6 +627,24 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           </div>
 
           <div className="xl:col-span-3">
+            <Field label="Salesperson" required>
+              <select
+                value={salespersonId}
+                onChange={(event) => setSalespersonId(event.target.value)}
+                className={inputClass}
+              >
+                <option value="">Select salesperson</option>
+
+                {options.salespeople.map((salesperson) => (
+                  <option key={salesperson.id} value={salesperson.id}>
+                    {salesperson.fullName?.trim() || salesperson.email}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <div className="xl:col-span-2">
             <Field label="Warehouse" required>
               <select
                 value={warehouseId}
@@ -651,7 +673,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             </Field>
           </div>
 
-          <div className="xl:col-span-3">
+          <div className="xl:col-span-2">
             <Field label="VAT Treatment">
               <select
                 value={taxTreatment}
@@ -732,9 +754,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             <PackagePlus className="h-5 w-5 text-amber-600" />
 
             <div>
-              <h2 className="text-sm font-bold text-slate-950">
-                Sale Items
-              </h2>
+              <h2 className="text-sm font-bold text-slate-950">Sale Items</h2>
 
               <p className="text-xs text-slate-500">
                 Stock and local-purchase items can be mixed in one sale.
@@ -772,36 +792,32 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               const stock = getStock(item.productId);
               const purchaseInfo = getPurchaseInfo(item.productId);
 
-              const lineTotal =
-                item.quantity * item.sellingPrice;
+              const lineTotal = item.quantity * item.sellingPrice;
 
-              const lineMargin =
-                marginAnalysis.lines.find(
-                  (line) => line.itemId === item.id,
-                );
+              const lineMargin = marginAnalysis.lines.find(
+                (line) => line.itemId === item.id,
+              );
 
               const displayedCost =
                 item.fulfilment === "stock"
-                  ? stock?.averageUnitCost ?? 0
+                  ? (stock?.averageUnitCost ?? 0)
                   : item.purchaseCost;
 
-              const marginLabel =
-                !lineMargin
+              const marginLabel = !lineMargin
+                ? "—"
+                : lineMargin.margin === null
                   ? "—"
-                  : lineMargin.margin === null
-                    ? "—"
-                    : `${lineMargin.margin.toFixed(1)}%`;
+                  : `${lineMargin.margin.toFixed(1)}%`;
 
-              const marginClass =
-                !lineMargin
-                  ? "bg-slate-100 text-slate-500"
-                  : lineMargin.status === "healthy"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : lineMargin.status === "warning"
-                      ? "bg-amber-100 text-amber-800"
-                      : lineMargin.status === "at_cost"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-red-100 text-red-800";
+              const marginClass = !lineMargin
+                ? "bg-slate-100 text-slate-500"
+                : lineMargin.status === "healthy"
+                  ? "bg-emerald-100 text-emerald-800"
+                  : lineMargin.status === "warning"
+                    ? "bg-amber-100 text-amber-800"
+                    : lineMargin.status === "at_cost"
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-red-100 text-red-800";
 
               return (
                 <div
@@ -822,11 +838,9 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                       products={options.products}
                       value={item.productId}
                       onChange={(productId) => {
-                        const selectedProduct =
-                          getProduct(productId);
+                        const selectedProduct = getProduct(productId);
 
-                        const selectedPurchaseInfo =
-                          getPurchaseInfo(productId);
+                        const selectedPurchaseInfo = getPurchaseInfo(productId);
 
                         const nextFulfilment =
                           selectedProduct?.defaultFulfilmentMethod ===
@@ -841,13 +855,13 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
                           supplierId:
                             nextFulfilment === "local_purchase"
-                              ? selectedPurchaseInfo?.supplierId ?? ""
+                              ? (selectedPurchaseInfo?.supplierId ?? "")
                               : "",
 
                           purchaseCost:
                             nextFulfilment === "local_purchase"
-                              ? selectedPurchaseInfo
-                                  ?.suggestedPurchasePrice ?? 0
+                              ? (selectedPurchaseInfo?.suggestedPurchasePrice ??
+                                0)
                               : 0,
                         });
                       }}
@@ -855,22 +869,17 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
                     {product ? (
                       <div className="mt-1 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-[10px] text-slate-500">
-                        {product.sku ? (
-                          <span>SKU: {product.sku}</span>
-                        ) : null}
+                        {product.sku ? <span>SKU: {product.sku}</span> : null}
 
                         <span>
                           Unit:{" "}
-                          {product.unitShortName ??
-                            product.unitName ??
-                            "PCS"}
+                          {product.unitShortName ?? product.unitName ?? "PCS"}
                         </span>
 
                         {item.fulfilment === "stock" ? (
                           <span
                             className={
-                              (stock?.quantityAvailable ?? 0) <
-                              item.quantity
+                              (stock?.quantityAvailable ?? 0) < item.quantity
                                 ? "font-bold text-red-600"
                                 : "font-semibold text-emerald-700"
                             }
@@ -895,10 +904,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     value={item.quantity}
                     onChange={(event) =>
                       updateItem(item.id, {
-                        quantity: Math.max(
-                          Number(event.target.value) || 1,
-                          1,
-                        ),
+                        quantity: Math.max(Number(event.target.value) || 1, 1),
                       })
                     }
                     className={compactInputClass}
@@ -908,17 +914,15 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                   <select
                     value={item.fulfilment}
                     onChange={(event) => {
-                      const nextFulfilment =
-                        event.target.value as ItemFulfilment;
+                      const nextFulfilment = event.target
+                        .value as ItemFulfilment;
 
                       updateItem(item.id, {
                         fulfilment: nextFulfilment,
 
                         supplierId:
                           nextFulfilment === "local_purchase"
-                            ? item.supplierId ||
-                              purchaseInfo?.supplierId ||
-                              ""
+                            ? item.supplierId || purchaseInfo?.supplierId || ""
                             : "",
 
                         purchaseCost:
@@ -969,8 +973,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     readOnly={item.fulfilment === "stock"}
                     onChange={(event) =>
                       updateItem(item.id, {
-                        purchaseCost:
-                          Number(event.target.value) || 0,
+                        purchaseCost: Number(event.target.value) || 0,
                       })
                     }
                     className={`${compactInputClass} text-right ${
@@ -988,8 +991,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     value={item.sellingPrice}
                     onChange={(event) =>
                       updateItem(item.id, {
-                        sellingPrice:
-                          Number(event.target.value) || 0,
+                        sellingPrice: Number(event.target.value) || 0,
                       })
                     }
                     className={`${compactInputClass} text-right font-semibold`}
@@ -1047,10 +1049,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               <strong className="text-slate-900">
                 {items
                   .filter((item) => item.productId)
-                  .reduce(
-                    (total, item) => total + item.quantity,
-                    0,
-                  )}
+                  .reduce((total, item) => total + item.quantity, 0)}
               </strong>
             </span>
 
@@ -1103,9 +1102,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 <WalletCards className="h-4.5 w-4.5 text-amber-600" />
 
                 <div>
-                  <h2 className="text-sm font-bold text-slate-950">
-                    Payment
-                  </h2>
+                  <h2 className="text-sm font-bold text-slate-950">Payment</h2>
 
                   <p className="text-[11px] text-slate-500">
                     Record customer payment for this sale.
@@ -1171,9 +1168,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     <select
                       value={paymentMethod}
                       onChange={(event) => {
-                        setPaymentMethod(
-                          event.target.value as PaymentMethod,
-                        );
+                        setPaymentMethod(event.target.value as PaymentMethod);
 
                         setFinancialAccountId("");
                       }}
@@ -1201,10 +1196,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         <option value="">Select account</option>
 
                         {compatibleFinancialAccounts.map((account) => (
-                          <option
-                            key={account.id}
-                            value={account.id}
-                          >
+                          <option key={account.id} value={account.id}>
                             {account.accountName}
                             {" — "}
                             {account.accountCode}
@@ -1236,9 +1228,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                           : amountReceived
                       }
                       onChange={(event) =>
-                        setAmountReceived(
-                          Number(event.target.value) || 0,
-                        )
+                        setAmountReceived(Number(event.target.value) || 0)
                       }
                       disabled={paymentStatus === "paid"}
                       className={compactInputClass}
@@ -1248,8 +1238,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
                 <div
                   className={
-                    paymentMethod === "bank" ||
-                    paymentMethod === "cheque"
+                    paymentMethod === "bank" || paymentMethod === "cheque"
                       ? "xl:col-span-2"
                       : "xl:col-span-4"
                   }
@@ -1271,9 +1260,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     <Field label="Bank Name">
                       <input
                         value={bankName}
-                        onChange={(event) =>
-                          setBankName(event.target.value)
-                        }
+                        onChange={(event) => setBankName(event.target.value)}
                         placeholder="Bank name"
                         className={compactInputClass}
                       />
@@ -1314,8 +1301,8 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             ) : (
               <div className="px-4 py-3">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  Credit sale — no customer receipt will be created now.
-                  The full sale amount will remain outstanding.
+                  Credit sale — no customer receipt will be created now. The
+                  full sale amount will remain outstanding.
                 </div>
               </div>
             )}
@@ -1330,9 +1317,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 <Truck className="h-4.5 w-4.5 text-amber-600" />
 
                 <div>
-                  <h2 className="text-sm font-bold text-slate-950">
-                    Delivery
-                  </h2>
+                  <h2 className="text-sm font-bold text-slate-950">Delivery</h2>
 
                   <p className="text-[11px] text-slate-500">
                     Complete now or keep delivery pending.

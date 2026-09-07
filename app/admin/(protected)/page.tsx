@@ -1,4 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import {
+  isManagementRole,
+  requireSalesAccess,
+} from "@/lib/auth/require-admin";
 import {
   AlertTriangle,
   ArrowRight,
@@ -28,6 +34,12 @@ import {
 import { getPurchaseOrders } from "@/lib/repositories/purchase-orders/purchase-order.repository";
 
 export default async function AdminDashboardPage() {
+    const { profile } =
+    await requireSalesAccess();
+
+  if (!isManagementRole(profile.role)) {
+    redirect("/admin/sales/quick-sale");
+  }
   const today = new Date();
 
   const dateTo = formatDateForRepository(today);

@@ -30,6 +30,8 @@ export interface SalesOrderFormInitialValues {
   quotation_id?: string | null;
 
   customer_id?: string | null;
+
+  salesperson_id?: string | null;
   customer_contact_id?: string | null;
 
   billing_address_id?: string | null;
@@ -107,6 +109,8 @@ function getDefaultValues(
     quotation_id: initialValues?.quotation_id ?? "",
 
     customer_id: initialValues?.customer_id ?? "",
+
+    salesperson_id: initialValues?.salesperson_id ?? "",
 
     customer_contact_id: initialValues?.customer_contact_id ?? "",
 
@@ -287,6 +291,28 @@ export default function SalesOrderForm({
               {options.customers.map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.customer_number} — {customer.display_name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField
+            id="salesperson_id"
+            label="Salesperson"
+            required
+            error={errors.salesperson_id?.message}
+          >
+            <select
+              id="salesperson_id"
+              className={selectClassName}
+              aria-invalid={Boolean(errors.salesperson_id)}
+              {...register("salesperson_id")}
+            >
+              <option value="">Select salesperson</option>
+
+              {options.salespeople.map((salesperson) => (
+                <option key={salesperson.id} value={salesperson.id}>
+                  {salesperson.full_name?.trim() || salesperson.email}
                 </option>
               ))}
             </select>

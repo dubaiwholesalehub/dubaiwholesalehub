@@ -2,7 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import {
+    isManagementRole,
+    requireAdmin,
+    requireSalesAccess,
+} from "@/lib/auth/require-admin";
 
 import {
     addSalesQuotationItem,
@@ -14,6 +18,7 @@ import {
     setSalesQuotationStatus,
     updateSalesQuotation,
     updateSalesQuotationItem,
+    getSalesQuotationItemById,
     type BulkSalesQuotationItemInput,
     type ProductQuotationPricingInsight,
     type SalesQuotationStatus,
@@ -31,6 +36,67 @@ import {
 const QUOTATION_LIST_URL =
     "/admin/sales/quotations";
 
+async function requireQuotationAccess(
+    quotationId: string,
+) {
+    const auth =
+        await requireSalesAccess();
+
+    if (
+        isManagementRole(
+            auth.profile.role,
+        )
+    ) {
+        return auth;
+    }
+
+    const quotation =
+        await getSalesQuotationById(
+            quotationId,
+        );
+
+    if (!quotation) {
+        throw new Error(
+            "Sales quotation was not found.",
+        );
+    }
+
+    if (
+        quotation.salesperson_id !==
+        auth.profile.id
+    ) {
+        throw new Error(
+            "You can only manage quotations assigned to you.",
+        );
+    }
+
+    return auth;
+}
+async function requireQuotationItemAccess(
+    quotationId: string,
+    itemId: string,
+) {
+    const auth =
+        await requireQuotationAccess(
+            quotationId,
+        );
+
+    const item =
+        await getSalesQuotationItemById(
+            itemId,
+        );
+
+    if (
+        !item ||
+        item.sales_quotation_id !== quotationId
+    ) {
+        throw new Error(
+            "Sales quotation item does not belong to this sales quotation.",
+        );
+    }
+
+    return auth;
+}
 function getErrorMessage(
     error: unknown,
     fallback: string,
@@ -54,7 +120,16 @@ function getErrorMessage(
 export async function createSalesQuotationAction(
     values: SalesQuotationValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
+    const {
+        profile,
+    } =
+        await requireSalesAccess();
+
+    const managementUser =
+        isManagementRole(
+            profile.role,
+        );
+
     let quotationId: string;
 
     try {
@@ -65,7 +140,10 @@ export async function createSalesQuotationAction(
             await createSalesQuotation({
                 customer_id:
                     validated.customer_id,
-
+                salesperson_id:
+                    managementUser
+                        ? validated.salesperson_id
+                        : profile.id,
                 customer_contact_id:
                     validated.customer_contact_id ??
                     null,
@@ -150,7 +228,6 @@ export async function updateSalesQuotationAction(
     quotationId: string,
     values: SalesQuotationValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -159,6 +236,18 @@ export async function updateSalesQuotationAction(
         );
     }
 
+    const {
+        profile,
+    } =
+        await requireQuotationAccess(
+            id,
+        );
+
+    const managementUser =
+        isManagementRole(
+            profile.role,
+        );
+
     try {
         const validated =
             salesQuotationSchema.parse(values);
@@ -166,6 +255,11 @@ export async function updateSalesQuotationAction(
         await updateSalesQuotation(id, {
             customer_id:
                 validated.customer_id,
+
+            salesperson_id:
+                managementUser
+                    ? validated.salesperson_id
+                    : profile.id,
 
             customer_contact_id:
                 validated.customer_contact_id ??
@@ -256,7 +350,6 @@ export async function changeSalesQuotationStatusAction(
     quotationId: string,
     status: SalesQuotationStatus,
 ): Promise<SalesQuotationStatusActionState> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -266,7 +359,7 @@ export async function changeSalesQuotationStatusAction(
                 "Sales quotation ID is required.",
         };
     }
-
+    await requireQuotationAccess(id);
     try {
         const quotation =
             await setSalesQuotationStatus(
@@ -334,7 +427,6 @@ export interface DeleteSalesQuotationActionState {
 export async function deleteDraftSalesQuotationAction(
     quotationId: string,
 ): Promise<DeleteSalesQuotationActionState> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -344,7 +436,7 @@ export async function deleteDraftSalesQuotationAction(
                 "Sales quotation ID is required.",
         };
     }
-
+    await requireQuotationAccess(id);
     try {
         await deleteDraftSalesQuotation(id);
 
@@ -370,7 +462,6 @@ export async function addSalesQuotationItemAction(
     quotationId: string,
     values: SalesQuotationItemValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -378,7 +469,7 @@ export async function addSalesQuotationItemAction(
             "Sales quotation ID is required.",
         );
     }
-
+    await requireQuotationAccess(id);
     try {
         const validated =
             salesQuotationItemSchema.parse(
@@ -447,7 +538,6 @@ export async function updateSalesQuotationItemAction(
     itemId: string,
     values: SalesQuotationItemValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
     const normalizedQuotationId =
         quotationId.trim();
 
@@ -465,7 +555,10 @@ export async function updateSalesQuotationItemAction(
             "Sales quotation item ID is required.",
         );
     }
-
+    await requireQuotationItemAccess(
+        normalizedQuotationId,
+        normalizedItemId,
+    );
     try {
         const validated =
             salesQuotationItemSchema.parse(
@@ -534,7 +627,6 @@ export async function addSalesQuotationItemsAction(
     quotationId: string,
     items: BulkSalesQuotationItemInput[],
 ): Promise<void> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -542,7 +634,7 @@ export async function addSalesQuotationItemsAction(
             "Sales quotation ID is required.",
         );
     }
-
+    await requireQuotationAccess(id);
     try {
         await addSalesQuotationItems(
             id,
@@ -570,7 +662,6 @@ export async function getQuotationProductPricingAction(
     quotationId: string,
     productId: string,
 ): Promise<ProductQuotationPricingInsight> {
-    await requireAdmin();
     const normalizedQuotationId =
         quotationId.trim();
 
@@ -588,7 +679,9 @@ export async function getQuotationProductPricingAction(
             "Product ID is required.",
         );
     }
-
+    await requireQuotationAccess(
+        normalizedQuotationId,
+    );
     const quotation =
         await getSalesQuotationById(
             normalizedQuotationId,
@@ -620,7 +713,6 @@ export async function getQuotationProductPricingAction(
 export async function convertQuotationToSalesOrderAction(
     quotationId: string,
 ): Promise<void> {
-    await requireAdmin();
     const id = quotationId.trim();
 
     if (!id) {
@@ -628,7 +720,7 @@ export async function convertQuotationToSalesOrderAction(
             "Sales quotation ID is required.",
         );
     }
-
+    await requireQuotationAccess(id);
     try {
         const order =
             await convertQuotationToSalesOrder(

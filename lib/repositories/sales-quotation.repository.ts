@@ -140,6 +140,8 @@ export interface SalesQuotation {
   customer_notes: string | null;
   internal_notes: string | null;
 
+  salesperson_id: string;
+
   sent_at: string | null;
   accepted_at: string | null;
   rejected_at: string | null;
@@ -346,6 +348,8 @@ export interface ProductQuotationPricingInsight {
 export interface CreateSalesQuotationInput {
   customer_id: string;
 
+  salesperson_id: string;
+
   customer_contact_id?: string | null;
 
   billing_address_id?: string | null;
@@ -422,6 +426,8 @@ export interface GetSalesQuotationsInput {
 
   customerId?: string;
 
+  salespersonId?: string;
+
   dateFrom?: string;
   dateTo?: string;
 
@@ -490,8 +496,15 @@ export interface SalesQuotationFormAddress {
   is_active: boolean;
 }
 
+export interface SalesQuotationSalesperson {
+  id: string;
+  full_name: string | null;
+  email: string;
+  role: Database["public"]["Enums"]["app_role"];
+}
 export interface SalesQuotationFormOptions {
   customers: SalesQuotationCustomer[];
+  salespeople: SalesQuotationSalesperson[];
   contacts: SalesQuotationFormContact[];
   addresses: SalesQuotationFormAddress[];
   warehouses: SalesQuotationWarehouse[];
@@ -968,6 +981,9 @@ function mapSalesQuotationRow(
     internal_notes:
       row.internal_notes,
 
+    salesperson_id:
+      row.salesperson_id,
+
     sent_at:
       row.sent_at,
 
@@ -1173,6 +1189,7 @@ export async function getSalesQuotationPage({
   status,
   source,
   customerId,
+  salespersonId,
   dateFrom,
   dateTo,
   page,
@@ -1249,6 +1266,13 @@ export async function getSalesQuotationPage({
     query = query.eq(
       "customer_id",
       customerId.trim(),
+    );
+  }
+
+  if (salespersonId?.trim()) {
+    query = query.eq(
+      "salesperson_id",
+      salespersonId.trim(),
     );
   }
 
@@ -1475,8 +1499,9 @@ export async function getSalesQuotationById(
   };
 }
 
-export async function getSalesQuotationSummary(): Promise<SalesQuotationSummary> {
-  const supabase = await createClient();
+export async function getSalesQuotationSummary(
+  salespersonId?: string,
+): Promise<SalesQuotationSummary> {
 
   const [
     totalResult,
@@ -1489,30 +1514,28 @@ export async function getSalesQuotationSummary(): Promise<SalesQuotationSummary>
     convertedResult,
     valueResult,
   ] = await Promise.all([
-    countSalesQuotations(),
+    countSalesQuotations(
+      undefined,
+      salespersonId,
+    ),
 
-    countSalesQuotations("draft"),
+    countSalesQuotations("draft", salespersonId,),
 
-    countSalesQuotations("sent"),
+    countSalesQuotations("sent", salespersonId,),
 
-    countSalesQuotations("accepted"),
+    countSalesQuotations("accepted", salespersonId,),
 
-    countSalesQuotations("rejected"),
+    countSalesQuotations("rejected", salespersonId,),
 
-    countSalesQuotations("expired"),
+    countSalesQuotations("expired", salespersonId,),
 
-    countSalesQuotations("cancelled"),
+    countSalesQuotations("cancelled", salespersonId,),
 
-    countSalesQuotations("converted"),
+    countSalesQuotations("converted", salespersonId,),
 
-    supabase
-      .from("sales_quotations")
-      .select("grand_total")
-      .in("status", [
-        "sent",
-        "accepted",
-        "converted",
-      ]),
+    getSalesQuotationValueSummary(
+      salespersonId,
+    ),
   ]);
 
   const firstError =
@@ -1575,6 +1598,7 @@ export async function getSalesQuotationSummary(): Promise<SalesQuotationSummary>
 
 async function countSalesQuotations(
   status?: SalesQuotationStatus,
+  salespersonId?: string,
 ) {
   const supabase = await createClient();
 
@@ -1589,6 +1613,37 @@ async function countSalesQuotations(
     query = query.eq(
       "status",
       status,
+    );
+  }
+
+  if (salespersonId?.trim()) {
+    query = query.eq(
+      "salesperson_id",
+      salespersonId.trim(),
+    );
+  }
+
+  return query;
+}
+
+async function getSalesQuotationValueSummary(
+  salespersonId?: string,
+) {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("sales_quotations")
+    .select("grand_total")
+    .in("status", [
+      "sent",
+      "accepted",
+      "converted",
+    ]);
+
+  if (salespersonId?.trim()) {
+    query = query.eq(
+      "salesperson_id",
+      salespersonId.trim(),
     );
   }
 
@@ -1970,6 +2025,12 @@ export async function createSalesQuotation(
         "Customer ID",
       ),
 
+    salesperson_id:
+      requireId(
+        input.salesperson_id,
+        "Salesperson ID",
+      ),
+
     customer_contact_id:
       input.customer_contact_id ??
       null,
@@ -2132,6 +2193,16 @@ export async function updateSalesQuotation(
       requireId(
         input.customer_id,
         "Customer ID",
+      );
+  }
+
+  if (
+    input.salesperson_id !== undefined
+  ) {
+    payload.salesperson_id =
+      requireId(
+        input.salesperson_id,
+        "Salesperson ID",
       );
   }
 
@@ -2305,6 +2376,7 @@ export async function getSalesQuotationFormOptions(): Promise<
 
   const [
     customersResult,
+    salespeopleResult,
     contactsResult,
     addressesResult,
     warehousesResult,
@@ -2323,6 +2395,26 @@ export async function getSalesQuotationFormOptions(): Promise<
       .eq("status", "active")
       .order("display_name", {
         ascending: true,
+      }),
+
+    supabase
+      .from("profiles")
+      .select(`
+        id,
+        full_name,
+        email,
+        role
+      `)
+      .eq("is_active", true)
+      .in("role", [
+        "super_admin",
+        "admin",
+        "manager",
+        "sales",
+      ])
+      .order("full_name", {
+        ascending: true,
+        nullsFirst: false,
       }),
 
     supabase
@@ -2384,6 +2476,7 @@ export async function getSalesQuotationFormOptions(): Promise<
 
   const firstError =
     customersResult.error ??
+    salespeopleResult.error ??
     contactsResult.error ??
     addressesResult.error ??
     warehousesResult.error;
@@ -2397,6 +2490,9 @@ export async function getSalesQuotationFormOptions(): Promise<
   return {
     customers:
       customersResult.data ?? [],
+
+    salespeople:
+      salespeopleResult.data ?? [],
 
     contacts:
       contactsResult.data ?? [],

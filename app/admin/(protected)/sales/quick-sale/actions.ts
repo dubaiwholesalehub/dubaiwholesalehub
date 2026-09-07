@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import {
+  isManagementRole,
+  requireSalesAccess,
+} from "@/lib/auth/require-admin";
 
 import {
   addSalesOrderItems,
@@ -50,7 +53,7 @@ function cleanText(
 export async function loadCustomerAvailableAdvance(
   customerId: string,
 ): Promise<number> {
-  await requireAdmin();
+  await requireSalesAccess();
 
   if (!customerId) {
     return 0;
@@ -67,13 +70,30 @@ export async function completeQuickSale(
 ): Promise<CompleteQuickSaleResult> {
   const {
     supabase,
+    profile,
   } =
-    await requireAdmin();
+    await requireSalesAccess();
+
+  const managementUser =
+    isManagementRole(
+      profile.role,
+    );
+
+  const effectiveSalespersonId =
+    managementUser
+      ? input.salespersonId
+      : profile.id;
 
   try {
     if (!input.customerId) {
       throw new Error(
         "Please select a customer.",
+      );
+    }
+
+    if (!effectiveSalespersonId) {
+      throw new Error(
+        "Unable to determine the salesperson.",
       );
     }
 
@@ -468,11 +488,21 @@ export async function completeQuickSale(
     if (
       preflightApprovalRequired
     ) {
+      if (!managementUser) {
+        throw new Error(
+          lowestPreflightMargin !==
+            null
+            ? `Management approval is required because this Quick Sale contains a margin below the minimum allowed margin. Lowest margin: ${lowestPreflightMargin.toFixed(
+              2,
+            )}%.`
+            : "Management approval is required because one or more Quick Sale items do not have a valid cost.",
+        );
+      }
+
       const approvalReason =
         cleanText(
           input.marginApprovalReason,
         );
-
 
       if (!approvalReason) {
         throw new Error(
@@ -621,7 +651,8 @@ export async function completeQuickSale(
       await createSalesOrder({
         customer_id:
           input.customerId,
-
+        salesperson_id:
+          effectiveSalespersonId,
         warehouse_id:
           input.warehouseId,
 
@@ -840,6 +871,11 @@ export async function completeQuickSale(
 
 
     if (approvalRequired) {
+      if (!managementUser) {
+        throw new Error(
+          "Management approval is required before this below-margin sale can be completed.",
+        );
+      }
       const approvalReason =
         cleanText(
           input.marginApprovalReason,

@@ -57,6 +57,8 @@ const salesQuotationSourceSchema = z.enum([
 const salesQuotationBaseSchema = z.object({
   customer_id: requiredUuid,
 
+  salesperson_id: requiredUuid,
+
   customer_contact_id: optionalUuid,
 
   billing_address_id: optionalUuid,
@@ -161,7 +163,7 @@ function applySalesQuotationRules(
   if (
     values.valid_until &&
     values.valid_until <
-      values.quotation_date
+    values.quotation_date
   ) {
     context.addIssue({
       code: "custom",
@@ -389,23 +391,23 @@ export const salesQuotationListFilterSchema =
       .max(100)
       .default(25),
   })
-  .superRefine(
-    (values, context) => {
-      if (
-        values.date_from &&
-        values.date_to &&
-        values.date_to <
+    .superRefine(
+      (values, context) => {
+        if (
+          values.date_from &&
+          values.date_to &&
+          values.date_to <
           values.date_from
-      ) {
-        context.addIssue({
-          code: "custom",
-          path: ["date_to"],
-          message:
-            "End date cannot be earlier than the start date.",
-        });
-      }
-    },
-  );
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["date_to"],
+            message:
+              "End date cannot be earlier than the start date.",
+          });
+        }
+      },
+    );
 
 /* =========================================================
  * Exported Types

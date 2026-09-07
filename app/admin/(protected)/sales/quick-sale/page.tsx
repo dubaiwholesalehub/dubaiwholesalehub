@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Zap } from "lucide-react";
 
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireSalesAccess } from "@/lib/auth/require-admin";
 
 import { getCustomerLookupOptions } from "@/lib/repositories/customer.repository";
 
@@ -20,12 +20,13 @@ import { getQuickSalePurchaseInfo } from "@/lib/repositories/product-supplier.re
 import { getFinancialAccounts } from "@/lib/repositories/financial-account.repository";
 
 export default async function QuickSalePage() {
-  await requireAdmin();
+    await requireSalesAccess();
 
   const supabase = await createClient();
 
   const [
     customers,
+    salespeopleResult,
     warehouses,
     inventoryOptions,
     purchaseInfo,
@@ -35,6 +36,23 @@ export default async function QuickSalePage() {
     marginPolicyResult,
   ] = await Promise.all([
     getCustomerLookupOptions(),
+
+    supabase
+      .from("profiles")
+      .select(
+        `
+        id,
+        full_name,
+        email,
+        role
+      `,
+      )
+      .eq("is_active", true)
+      .in("role", ["super_admin", "admin", "manager", "sales"])
+      .order("full_name", {
+        ascending: true,
+        nullsFirst: false,
+      }),
 
     getWarehouseLookupOptions(),
 
@@ -79,6 +97,12 @@ export default async function QuickSalePage() {
       .maybeSingle(),
   ]);
 
+  if (salespeopleResult.error) {
+    throw new Error(
+      `Unable to load salespeople: ${salespeopleResult.error.message}`,
+    );
+  }
+
   if (suppliersResult.error) {
     throw new Error(
       `Unable to load suppliers: ${suppliersResult.error.message}`,
@@ -121,6 +145,13 @@ export default async function QuickSalePage() {
       displayName: customer.display_name,
 
       companyName: customer.company_name,
+    })),
+
+    salespeople: (salespeopleResult.data ?? []).map((salesperson) => ({
+      id: salesperson.id,
+      fullName: salesperson.full_name,
+      email: salesperson.email,
+      role: salesperson.role,
     })),
     purchaseInfo,
     warehouses: warehouses.map((warehouse) => ({

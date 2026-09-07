@@ -50,8 +50,16 @@ export type QuickSaleFinancialAccount = {
     currentBalance: number;
 };
 
+export type QuickSaleSalesperson = {
+    id: string;
+    fullName: string | null;
+    email: string;
+    role: string;
+};
+
 export type QuickSaleOptions = {
     customers: QuickSaleCustomer[];
+    salespeople: QuickSaleSalesperson[];
     warehouses: QuickSaleWarehouse[];
     products: QuickSaleProduct[];
     stock: QuickSaleStock[];
@@ -122,6 +130,7 @@ export type QuickSaleItemInput = {
 
 export type CompleteQuickSaleInput = {
     customerId: string;
+    salespersonId: string;
     warehouseId: string;
     saleDate: string;
 

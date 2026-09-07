@@ -1,7 +1,4 @@
-import {
-  ArrowLeft,
-  Pencil,
-} from "lucide-react";
+import { ArrowLeft, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import PageHeader from "@/components/admin/shared/PageHeader";
@@ -11,9 +8,8 @@ import {
   getSalesQuotationFormOptions,
 } from "@/lib/repositories/sales-quotation.repository";
 
-import {
-  updateSalesQuotationAction,
-} from "../../actions";
+import { updateSalesQuotationAction } from "../../actions";
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 
 interface EditSalesQuotationPageProps {
   params: Promise<{
@@ -25,11 +21,9 @@ export default async function EditSalesQuotationPage({
   params,
 }: EditSalesQuotationPageProps) {
   const { id } = await params;
+  const { profile } = await requireSalesAccess();
 
-  const [
-    quotation,
-    options,
-  ] = await Promise.all([
+  const [quotation, options] = await Promise.all([
     getSalesQuotationById(id),
     getSalesQuotationFormOptions(),
   ]);
@@ -38,17 +32,18 @@ export default async function EditSalesQuotationPage({
     notFound();
   }
 
-  if (quotation.status !== "draft") {
-    throw new Error(
-      "Only draft quotations can be edited.",
-    );
+  if (
+    !isManagementRole(profile.role) &&
+    quotation.salesperson_id !== profile.id
+  ) {
+    notFound();
   }
 
-  const submitAction =
-    updateSalesQuotationAction.bind(
-      null,
-      quotation.id,
-    );
+  if (quotation.status !== "draft") {
+    throw new Error("Only draft quotations can be edited.");
+  }
+
+  const submitAction = updateSalesQuotationAction.bind(null, quotation.id);
 
   return (
     <div className="space-y-6">
@@ -58,8 +53,7 @@ export default async function EditSalesQuotationPage({
         icon={Pencil}
         backLink={{
           href: `/admin/sales/quotations/${quotation.id}`,
-          label:
-            quotation.quotation_number,
+          label: quotation.quotation_number,
           icon: ArrowLeft,
         }}
       />
@@ -68,62 +62,45 @@ export default async function EditSalesQuotationPage({
         mode="edit"
         options={options}
         initialValues={{
-          customer_id:
-            quotation.customer_id,
+          customer_id: quotation.customer_id,
 
-          customer_contact_id:
-            quotation.customer_contact_id,
+          salesperson_id: quotation.salesperson_id,
 
-          billing_address_id:
-            quotation.billing_address_id,
+          customer_contact_id: quotation.customer_contact_id,
 
-          shipping_address_id:
-            quotation.shipping_address_id,
+          billing_address_id: quotation.billing_address_id,
 
-          warehouse_id:
-            quotation.warehouse_id,
+          shipping_address_id: quotation.shipping_address_id,
 
-          quotation_date:
-            quotation.quotation_date,
+          warehouse_id: quotation.warehouse_id,
 
-          valid_until:
-            quotation.valid_until,
+          quotation_date: quotation.quotation_date,
 
-          status:
-            quotation.status,
+          valid_until: quotation.valid_until,
 
-          source:
-            quotation.source,
+          status: quotation.status,
 
-          external_reference:
-            quotation.external_reference,
+          source: quotation.source,
 
-          customer_reference:
-            quotation.customer_reference,
+          external_reference: quotation.external_reference,
 
-          currency_code:
-            quotation.currency_code,
+          customer_reference: quotation.customer_reference,
 
-          exchange_rate:
-            quotation.exchange_rate,
+          currency_code: quotation.currency_code,
 
-          shipping_amount:
-            quotation.shipping_amount,
+          exchange_rate: quotation.exchange_rate,
 
-          payment_terms_days:
-            quotation.payment_terms_days,
+          shipping_amount: quotation.shipping_amount,
 
-          delivery_terms:
-            quotation.delivery_terms,
+          payment_terms_days: quotation.payment_terms_days,
 
-          payment_terms:
-            quotation.payment_terms,
+          delivery_terms: quotation.delivery_terms,
 
-          customer_notes:
-            quotation.customer_notes,
+          payment_terms: quotation.payment_terms,
 
-          internal_notes:
-            quotation.internal_notes,
+          customer_notes: quotation.customer_notes,
+
+          internal_notes: quotation.internal_notes,
         }}
         onSubmit={submitAction}
       />

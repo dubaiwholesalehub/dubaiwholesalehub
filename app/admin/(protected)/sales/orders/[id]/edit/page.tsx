@@ -13,6 +13,7 @@ import { getSalesQuotationItemFormOptions } from "@/lib/repositories/sales-quota
 import SalesOrderItemsEditor from "@/components/admin/sales/orders/SalesOrderItemsEditor";
 import { getStockAdjustmentOptions } from "@/lib/inventory/inventory-operation.repository";
 import { createClient } from "@/lib/supabase/server";
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 
 interface EditSalesOrderPageProps {
   params: Promise<{
@@ -24,6 +25,7 @@ export default async function EditSalesOrderPage({
   params,
 }: EditSalesOrderPageProps) {
   const { id } = await params;
+  const { profile } = await requireSalesAccess();
 
   const supabase = await createClient();
 
@@ -57,6 +59,10 @@ export default async function EditSalesOrderPage({
     notFound();
   }
 
+  if (!isManagementRole(profile.role) && order.salesperson_id !== profile.id) {
+    notFound();
+  }
+
   if (order.status !== "draft") {
     throw new Error("Only draft sales orders can be edited.");
   }
@@ -83,6 +89,8 @@ export default async function EditSalesOrderPage({
           quotation_id: order.quotation_id,
 
           customer_id: order.customer_id,
+
+          salesperson_id: order.salesperson_id,
 
           customer_contact_id: order.customer_contact_id,
 

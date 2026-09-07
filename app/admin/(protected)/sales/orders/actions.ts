@@ -2,17 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth/require-admin";
-
+import {
+    isManagementRole,
+    requireAdmin,
+    requireSalesAccess,
+} from "@/lib/auth/require-admin";
 import {
     addSalesOrderItem,
     cancelSalesOrder,
     confirmSalesOrder,
     createSalesOrder,
+    getSalesOrderById,
     deleteSalesOrderItem,
     updateSalesOrder,
     updateSalesOrderItem,
     approveSalesMarginException,
+    getSalesOrderItemById,
     type CreateSalesOrderItemInput,
     type UpdateSalesOrderItemInput,
 } from "@/lib/repositories/sales-order.repository";
@@ -24,6 +29,69 @@ import {
 
 const SALES_ORDER_LIST_URL =
     "/admin/sales/orders";
+
+async function requireSalesOrderAccess(
+    salesOrderId: string,
+) {
+    const auth =
+        await requireSalesAccess();
+
+    if (
+        isManagementRole(
+            auth.profile.role,
+        )
+    ) {
+        return auth;
+    }
+
+    const salesOrder =
+        await getSalesOrderById(
+            salesOrderId,
+        );
+
+    if (!salesOrder) {
+        throw new Error(
+            "Sales order was not found.",
+        );
+    }
+
+    if (
+        salesOrder.salesperson_id !==
+        auth.profile.id
+    ) {
+        throw new Error(
+            "You can only manage sales orders assigned to you.",
+        );
+    }
+
+    return auth;
+}
+
+async function requireSalesOrderItemAccess(
+    salesOrderId: string,
+    itemId: string,
+) {
+    const auth =
+        await requireSalesOrderAccess(
+            salesOrderId,
+        );
+
+    const item =
+        await getSalesOrderItemById(
+            itemId,
+        );
+
+    if (
+        !item ||
+        item.sales_order_id !== salesOrderId
+    ) {
+        throw new Error(
+            "Sales order item does not belong to this sales order.",
+        );
+    }
+
+    return auth;
+}
 
 function getErrorMessage(
     error: unknown,
@@ -48,7 +116,16 @@ function getErrorMessage(
 export async function createSalesOrderAction(
     values: SalesOrderValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
+    const {
+        profile,
+    } =
+        await requireSalesAccess();
+
+    const managementUser =
+        isManagementRole(
+            profile.role,
+        );
+
     let salesOrderId: string;
 
     try {
@@ -63,6 +140,11 @@ export async function createSalesOrderAction(
 
                 customer_id:
                     validated.customer_id,
+
+                salesperson_id:
+                    managementUser
+                        ? validated.salesperson_id
+                        : profile.id,
 
                 customer_contact_id:
                     validated.customer_contact_id ??
@@ -159,7 +241,6 @@ export async function updateSalesOrderAction(
     salesOrderId: string,
     values: SalesOrderValidatedValues,
 ): Promise<void> {
-    await requireAdmin();
     const id =
         salesOrderId.trim();
 
@@ -168,6 +249,17 @@ export async function updateSalesOrderAction(
             "Sales order ID is required.",
         );
     }
+    const {
+        profile,
+    } =
+        await requireSalesOrderAccess(
+            id,
+        );
+
+    const managementUser =
+        isManagementRole(
+            profile.role,
+        );
 
     try {
         const validated =
@@ -180,6 +272,11 @@ export async function updateSalesOrderAction(
 
             customer_id:
                 validated.customer_id,
+
+            salesperson_id:
+                managementUser
+                    ? validated.salesperson_id
+                    : profile.id,
 
             customer_contact_id:
                 validated.customer_contact_id ??
@@ -276,7 +373,6 @@ export async function updateSalesOrderAction(
 export async function confirmSalesOrderAction(
     salesOrderId: string,
 ): Promise<void> {
-    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -284,7 +380,7 @@ export async function confirmSalesOrderAction(
             "Sales order ID is required.",
         );
     }
-
+    await requireSalesOrderAccess(id);
     try {
         await confirmSalesOrder(id);
     } catch (error) {
@@ -418,7 +514,6 @@ export async function addSalesOrderItemAction(
         "sales_order_id"
     >,
 ): Promise<void> {
-    await requireAdmin();
     const id = salesOrderId.trim();
 
     if (!id) {
@@ -426,7 +521,7 @@ export async function addSalesOrderItemAction(
             "Sales order ID is required.",
         );
     }
-
+    await requireSalesOrderAccess(id);
     try {
         await addSalesOrderItem({
             ...input,
@@ -464,7 +559,6 @@ export async function updateSalesOrderItemAction(
     salesOrderItemId: string,
     input: UpdateSalesOrderItemInput,
 ): Promise<void> {
-    await requireAdmin();
     const orderId =
         salesOrderId.trim();
 
@@ -482,7 +576,10 @@ export async function updateSalesOrderItemAction(
             "Sales order item ID is required.",
         );
     }
-
+    await requireSalesOrderItemAccess(
+        orderId,
+        itemId,
+    );
     try {
         await updateSalesOrderItem(
             itemId,
@@ -519,7 +616,6 @@ export async function deleteSalesOrderItemAction(
     salesOrderId: string,
     salesOrderItemId: string,
 ): Promise<void> {
-    await requireAdmin();
     const orderId =
         salesOrderId.trim();
 
@@ -537,6 +633,10 @@ export async function deleteSalesOrderItemAction(
             "Sales order item ID is required.",
         );
     }
+    await requireSalesOrderItemAccess(
+        orderId,
+        itemId,
+    );
 
     try {
         await deleteSalesOrderItem(

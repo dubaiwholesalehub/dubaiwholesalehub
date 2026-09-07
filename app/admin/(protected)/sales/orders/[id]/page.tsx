@@ -34,7 +34,7 @@ import {
 } from "@/lib/repositories/sales-order.repository";
 import { cn } from "@/lib/utils";
 import SalesOrderWorkflowActions from "@/components/admin/sales/orders/SalesOrderWorkflowActions";
-
+import { isManagementRole, requireSalesAccess } from "@/lib/auth/require-admin";
 interface SalesOrderDetailsPageProps {
   params: Promise<{
     id: string;
@@ -44,6 +44,7 @@ interface SalesOrderDetailsPageProps {
 export default async function SalesOrderDetailsPage({
   params,
 }: SalesOrderDetailsPageProps) {
+  const { profile } = await requireSalesAccess();
   const { id } = await params;
 
   const [order, marginAnalysis, marginApproval] = await Promise.all([
@@ -55,6 +56,12 @@ export default async function SalesOrderDetailsPage({
   ]);
 
   if (!order) {
+    notFound();
+  }
+
+  const managementUser = isManagementRole(profile.role);
+
+  if (!managementUser && order.salesperson_id !== profile.id) {
     notFound();
   }
 
@@ -104,7 +111,9 @@ export default async function SalesOrderDetailsPage({
             Edit Sales Order
           </Link>
         ) : null}
-        {order.status !== "draft" && order.status !== "cancelled" ? (
+        {managementUser &&
+        order.status !== "draft" &&
+        order.status !== "cancelled" ? (
           <Link
             href={`/admin/sales/orders/${order.id}/invoice`}
             className={cn(
@@ -124,6 +133,8 @@ export default async function SalesOrderDetailsPage({
           status={order.status}
 
           hasItems={order.items.length > 0}
+
+          canManage={managementUser}
 
           requiresMarginApproval={requiresMarginApproval}
 

@@ -19,6 +19,19 @@ const MANAGEMENT_ROLES: readonly AppRole[] = [
   "manager",
 ];
 
+const SALES_OPERATION_ROLES: readonly AppRole[] = [
+  "super_admin",
+  "admin",
+  "manager",
+  "sales",
+];
+
+export function isManagementRole(
+  role: AppRole,
+) {
+  return MANAGEMENT_ROLES.includes(role);
+}
+
 export async function requireRoles(
   allowedRoles: readonly AppRole[],
 ) {
@@ -65,4 +78,10 @@ export async function requireRoles(
 
 export async function requireAdmin() {
   return requireRoles(MANAGEMENT_ROLES);
+}
+
+export async function requireSalesAccess() {
+  return requireRoles(
+    SALES_OPERATION_ROLES,
+  );
 }

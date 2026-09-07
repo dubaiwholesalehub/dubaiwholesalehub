@@ -33,6 +33,8 @@ interface SalesOrderWorkflowActionsProps {
 
   hasItems: boolean;
 
+  canManage: boolean;
+
   requiresMarginApproval?: boolean;
 
   hasApprovedMarginException?: boolean;
@@ -46,6 +48,7 @@ export default function SalesOrderWorkflowActions({
   salesOrderId,
   status,
   hasItems,
+  canManage,
   requiresMarginApproval = false,
   hasApprovedMarginException = false,
   hasMarginWarning = false,
@@ -189,7 +192,7 @@ export default function SalesOrderWorkflowActions({
           </Button>
         ) : null}
 
-        {status === "draft" && marginApprovalNeeded ? (
+        {canManage && status === "draft" && marginApprovalNeeded ? (
           <Button
             type="button"
             variant="destructive"
@@ -201,7 +204,8 @@ export default function SalesOrderWorkflowActions({
           </Button>
         ) : null}
 
-        {status !== "cancelled" &&
+        {canManage &&
+        status !== "cancelled" &&
         status !== "completed" &&
         status !== "closed" ? (
           <Button
@@ -267,7 +271,7 @@ export default function SalesOrderWorkflowActions({
             </div>
           </div>
 
-          {showApprovalForm ? (
+          {canManage && showApprovalForm ? (
             <div className="mt-4 space-y-3">
               <select
                 value={approvalReason}

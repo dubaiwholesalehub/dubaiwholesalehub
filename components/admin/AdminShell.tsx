@@ -5,11 +5,13 @@ import { useState } from "react";
 
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import type { AppRole } from "@/lib/auth/require-admin";
 
 interface AdminShellProps {
   children: ReactNode;
   userName: string;
   userEmail: string;
+  userRole: AppRole;
   logoutAction: () => Promise<void>;
 }
 
@@ -17,6 +19,7 @@ export default function AdminShell({
   children,
   userName,
   userEmail,
+  userRole,
   logoutAction,
 }: AdminShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -28,6 +31,7 @@ export default function AdminShell({
         <AdminSidebar
           mobileOpen={mobileOpen}
           desktopOpen={desktopSidebarOpen}
+          userRole={userRole}
           onClose={() => setMobileOpen(false)}
         />
       </div>

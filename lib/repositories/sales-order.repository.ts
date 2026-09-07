@@ -293,6 +293,8 @@ export interface SalesOrder {
     customer_notes: string | null;
     internal_notes: string | null;
 
+    salesperson_id: string;
+
     confirmed_at: string | null;
     processing_at: string | null;
     completed_at: string | null;
@@ -403,6 +405,8 @@ export interface CreateSalesOrderInput {
 
     customer_id: string;
 
+    salesperson_id: string;
+
     customer_contact_id?: string | null;
 
     billing_address_id?: string | null;
@@ -501,6 +505,8 @@ export interface GetSalesOrdersInput {
 
     customerId?: string;
 
+    salespersonId?: string;
+
     dateFrom?: string;
     dateTo?: string;
 
@@ -591,8 +597,16 @@ export interface SalesOrderFormAddress {
     is_active: boolean;
 }
 
+export interface SalesOrderSalesperson {
+    id: string;
+    full_name: string | null;
+    email: string;
+    role: Database["public"]["Enums"]["app_role"];
+}
 export interface SalesOrderFormOptions {
     customers: SalesOrderCustomer[];
+
+    salespeople: SalesOrderSalesperson[];
 
     contacts: SalesOrderFormContact[];
 
@@ -882,6 +896,9 @@ function mapSalesOrderRow(
         internal_notes:
             row.internal_notes,
 
+        salesperson_id:
+            row.salesperson_id,
+
         confirmed_at:
             row.confirmed_at,
 
@@ -1050,6 +1067,7 @@ export async function getSalesOrderPage({
     paymentStatus,
     source,
     customerId,
+    salespersonId,
     dateFrom,
     dateTo,
     page,
@@ -1153,6 +1171,13 @@ export async function getSalesOrderPage({
         query = query.eq(
             "customer_id",
             customerId.trim(),
+        );
+    }
+
+    if (salespersonId?.trim()) {
+        query = query.eq(
+            "salesperson_id",
+            salespersonId.trim(),
         );
     }
 
@@ -1413,7 +1438,9 @@ export async function getSalesOrderById(
  * Summary
  * ========================================================= */
 
-export async function getSalesOrderSummary(): Promise<SalesOrderSummary> {
+export async function getSalesOrderSummary(
+    salespersonId?: string,
+): Promise<SalesOrderSummary> {
     const supabase = await createClient();
 
     const [
@@ -1433,84 +1460,89 @@ export async function getSalesOrderSummary(): Promise<SalesOrderSummary> {
         paidResult,
         valueResult,
     ] = await Promise.all([
-        countSalesOrders(),
+        countSalesOrders(salespersonId),
 
         countSalesOrdersByField(
             "status",
             "draft",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "confirmed",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "processing",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "partially_fulfilled",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "fulfilled",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "completed",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "cancelled",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "status",
             "closed",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "fulfilment_status",
             "awaiting_procurement",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "fulfilment_status",
             "awaiting_stock",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "payment_status",
             "unpaid",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "payment_status",
             "partially_paid",
+            salespersonId,
         ),
 
         countSalesOrdersByField(
             "payment_status",
             "paid",
+            salespersonId,
         ),
 
-        supabase
-            .from("sales_orders")
-            .select(`
-        grand_total,
-        balance_due
-      `)
-            .not(
-                "status",
-                "in",
-                '("cancelled","closed")',
-            ),
+        getSalesOrderValueSummary(
+            salespersonId,
+        ),
     ]);
 
     const firstError =
@@ -1613,15 +1645,26 @@ export async function getSalesOrderSummary(): Promise<SalesOrderSummary> {
     };
 }
 
-async function countSalesOrders() {
+async function countSalesOrders(
+    salespersonId?: string,
+) {
     const supabase = await createClient();
 
-    return supabase
+    let query = supabase
         .from("sales_orders")
         .select("id", {
             count: "exact",
             head: true,
         });
+
+    if (salespersonId?.trim()) {
+        query = query.eq(
+            "salesperson_id",
+            salespersonId.trim(),
+        );
+    }
+
+    return query;
 }
 
 async function countSalesOrdersByField(
@@ -1630,16 +1673,56 @@ async function countSalesOrdersByField(
         | "fulfilment_status"
         | "payment_status",
     value: string,
+    salespersonId?: string,
 ) {
     const supabase = await createClient();
 
-    return supabase
+    let query = supabase
         .from("sales_orders")
         .select("id", {
             count: "exact",
             head: true,
         })
-        .eq(field, value);
+        .eq(
+            field,
+            value,
+        );
+
+    if (salespersonId?.trim()) {
+        query = query.eq(
+            "salesperson_id",
+            salespersonId.trim(),
+        );
+    }
+
+    return query;
+}
+
+async function getSalesOrderValueSummary(
+    salespersonId?: string,
+) {
+    const supabase = await createClient();
+
+    let query = supabase
+        .from("sales_orders")
+        .select(`
+            grand_total,
+            balance_due
+        `)
+        .not(
+            "status",
+            "in",
+            '("cancelled","closed")',
+        );
+
+    if (salespersonId?.trim()) {
+        query = query.eq(
+            "salesperson_id",
+            salespersonId.trim(),
+        );
+    }
+
+    return query;
 }
 
 /* =========================================================
@@ -1653,6 +1736,7 @@ export async function getSalesOrderFormOptions(): Promise<
 
     const [
         customersResult,
+        salespeopleResult,
         contactsResult,
         addressesResult,
         warehousesResult,
@@ -1672,6 +1756,26 @@ export async function getSalesOrderFormOptions(): Promise<
             .eq("status", "active")
             .order("display_name", {
                 ascending: true,
+            }),
+
+        supabase
+            .from("profiles")
+            .select(`
+        id,
+        full_name,
+        email,
+        role
+      `)
+            .eq("is_active", true)
+            .in("role", [
+                "super_admin",
+                "admin",
+                "manager",
+                "sales",
+            ])
+            .order("full_name", {
+                ascending: true,
+                nullsFirst: false,
             }),
 
         supabase
@@ -1733,6 +1837,7 @@ export async function getSalesOrderFormOptions(): Promise<
 
     const firstError =
         customersResult.error ??
+        salespeopleResult.error ??
         contactsResult.error ??
         addressesResult.error ??
         warehousesResult.error;
@@ -1746,6 +1851,8 @@ export async function getSalesOrderFormOptions(): Promise<
     return {
         customers:
             customersResult.data ?? [],
+        salespeople:
+            salespeopleResult.data ?? [],
 
         contacts:
             contactsResult.data ?? [],
@@ -2243,6 +2350,12 @@ export async function createSalesOrder(
                 "Customer ID",
             ),
 
+        salesperson_id:
+            requireId(
+                input.salesperson_id,
+                "Salesperson ID",
+            ),
+
         customer_contact_id:
             input.customer_contact_id ??
             null,
@@ -2433,6 +2546,16 @@ export async function updateSalesOrder(
             requireId(
                 input.customer_id,
                 "Customer ID",
+            );
+    }
+
+    if (
+        input.salesperson_id !== undefined
+    ) {
+        payload.salesperson_id =
+            requireId(
+                input.salesperson_id,
+                "Salesperson ID",
             );
     }
 
@@ -3986,6 +4109,9 @@ export async function convertQuotationToSalesOrder(
 
                 customer_id:
                     quotation.customer_id,
+
+                salesperson_id:
+                    quotation.salesperson_id,
 
                 customer_contact_id:
                     quotation.customer_contact_id,

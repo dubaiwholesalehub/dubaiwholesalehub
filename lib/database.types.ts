@@ -3133,6 +3133,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          designation: string | null
           email: string
           full_name: string | null
           id: string
@@ -3143,6 +3144,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          designation?: string | null
           email: string
           full_name?: string | null
           id: string
@@ -3153,6 +3155,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          designation?: string | null
           email?: string
           full_name?: string | null
           id?: string
@@ -4491,6 +4494,7 @@ export type Database = {
           processing_at: string | null
           quotation_id: string | null
           requested_delivery_date: string | null
+          salesperson_id: string
           shipping_address_id: string | null
           shipping_amount: number
           source: string
@@ -4533,6 +4537,7 @@ export type Database = {
           processing_at?: string | null
           quotation_id?: string | null
           requested_delivery_date?: string | null
+          salesperson_id: string
           shipping_address_id?: string | null
           shipping_amount?: number
           source?: string
@@ -4575,6 +4580,7 @@ export type Database = {
           processing_at?: string | null
           quotation_id?: string | null
           requested_delivery_date?: string | null
+          salesperson_id?: string
           shipping_address_id?: string | null
           shipping_amount?: number
           source?: string
@@ -4619,6 +4625,13 @@ export type Database = {
             columns: ["quotation_id"]
             isOneToOne: false
             referencedRelation: "sales_quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_orders_salesperson_id_fkey"
+            columns: ["salesperson_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4755,6 +4768,7 @@ export type Database = {
           quotation_date: string
           quotation_number: string
           rejected_at: string | null
+          salesperson_id: string
           sent_at: string | null
           shipping_address_id: string | null
           shipping_amount: number
@@ -4793,6 +4807,7 @@ export type Database = {
           quotation_date?: string
           quotation_number: string
           rejected_at?: string | null
+          salesperson_id: string
           sent_at?: string | null
           shipping_address_id?: string | null
           shipping_amount?: number
@@ -4831,6 +4846,7 @@ export type Database = {
           quotation_date?: string
           quotation_number?: string
           rejected_at?: string | null
+          salesperson_id?: string
           sent_at?: string | null
           shipping_address_id?: string | null
           shipping_amount?: number
@@ -4870,6 +4886,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_quotations_salesperson_id_fkey"
+            columns: ["salesperson_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -7573,6 +7596,7 @@ export type Database = {
       backfill_legacy_local_purchase_gl: { Args: never; Returns: Json }
       backfill_missing_supplier_payment_gl: { Args: never; Returns: Json }
       can_approve_rfqs: { Args: never; Returns: boolean }
+      can_manage_profiles: { Args: never; Returns: boolean }
       can_manage_rfqs: { Args: never; Returns: boolean }
       can_view_rfqs: { Args: never; Returns: boolean }
       cancel_account_transaction: {
@@ -8209,6 +8233,32 @@ export type Database = {
       link_quick_purchase_inventory_items: {
         Args: { p_quick_purchase_id: string }
         Returns: number
+      }
+      manage_profile: {
+        Args: {
+          p_designation: string
+          p_full_name: string
+          p_is_active: boolean
+          p_profile_id: string
+          p_role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          designation: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       mark_delivery_delivered: {
         Args: { p_delivery_order_id: string }
