@@ -4486,6 +4486,364 @@ export type Database = {
           },
         ]
       }
+      sales_order_revision_effects: {
+        Row: {
+          amount_change: number | null
+          created_at: string
+          created_by: string | null
+          effect_data: Json
+          effect_sequence: number
+          effect_type: string
+          id: string
+          inventory_transaction_id: string | null
+          journal_entry_id: string | null
+          product_id: string | null
+          quantity_change: number | null
+          revision_id: string
+          sales_order_id: string
+          sales_order_item_id: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          warehouse_id: string | null
+        }
+        Insert: {
+          amount_change?: number | null
+          created_at?: string
+          created_by?: string | null
+          effect_data?: Json
+          effect_sequence: number
+          effect_type: string
+          id?: string
+          inventory_transaction_id?: string | null
+          journal_entry_id?: string | null
+          product_id?: string | null
+          quantity_change?: number | null
+          revision_id: string
+          sales_order_id: string
+          sales_order_item_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          warehouse_id?: string | null
+        }
+        Update: {
+          amount_change?: number | null
+          created_at?: string
+          created_by?: string | null
+          effect_data?: Json
+          effect_sequence?: number
+          effect_type?: string
+          id?: string
+          inventory_transaction_id?: string | null
+          journal_entry_id?: string | null
+          product_id?: string | null
+          quantity_change?: number | null
+          revision_id?: string
+          sales_order_id?: string
+          sales_order_item_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_revision_effects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_revision_id_fkey"
+            columns: ["revision_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_item_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_sales_order_item_id_fkey"
+            columns: ["sales_order_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_item_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_effects_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_order_revisions: {
+        Row: {
+          additional_amount_due: number
+          after_snapshot: Json
+          applied_at: string | null
+          applied_by: string | null
+          before_snapshot: Json
+          cancelled_at: string | null
+          cancelled_by: string | null
+          commercial_journal_entry_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_credit_amount: number
+          difference_snapshot: Json | null
+          id: string
+          idempotency_key: string
+          inventory_journal_entry_id: string | null
+          inventory_transaction_id: string | null
+          modification_type: string
+          notes: string | null
+          original_grand_total: number
+          original_paid_amount: number
+          reason: string
+          revised_balance_due: number
+          revised_grand_total: number
+          revision_number: number
+          sales_order_id: string
+          sales_return_id: string | null
+          status: string
+          total_difference: number
+        }
+        Insert: {
+          additional_amount_due?: number
+          after_snapshot: Json
+          applied_at?: string | null
+          applied_by?: string | null
+          before_snapshot: Json
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          commercial_journal_entry_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_credit_amount?: number
+          difference_snapshot?: Json | null
+          id?: string
+          idempotency_key: string
+          inventory_journal_entry_id?: string | null
+          inventory_transaction_id?: string | null
+          modification_type: string
+          notes?: string | null
+          original_grand_total: number
+          original_paid_amount?: number
+          reason: string
+          revised_balance_due?: number
+          revised_grand_total: number
+          revision_number: number
+          sales_order_id: string
+          sales_return_id?: string | null
+          status?: string
+          total_difference: number
+        }
+        Update: {
+          additional_amount_due?: number
+          after_snapshot?: Json
+          applied_at?: string | null
+          applied_by?: string | null
+          before_snapshot?: Json
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          commercial_journal_entry_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_credit_amount?: number
+          difference_snapshot?: Json | null
+          id?: string
+          idempotency_key?: string
+          inventory_journal_entry_id?: string | null
+          inventory_transaction_id?: string | null
+          modification_type?: string
+          notes?: string | null
+          original_grand_total?: number
+          original_paid_amount?: number
+          reason?: string
+          revised_balance_due?: number
+          revised_grand_total?: number
+          revision_number?: number
+          sales_order_id?: string
+          sales_return_id?: string | null
+          status?: string
+          total_difference?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_revisions_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_commercial_journal_entry_id_fkey"
+            columns: ["commercial_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_commercial_journal_entry_id_fkey"
+            columns: ["commercial_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_inventory_journal_entry_id_fkey"
+            columns: ["inventory_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_inventory_journal_entry_id_fkey"
+            columns: ["inventory_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_inventory_transaction_id_fkey"
+            columns: ["inventory_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["inventory_transaction_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revisions_sales_return_id_fkey"
+            columns: ["sales_return_id"]
+            isOneToOne: false
+            referencedRelation: "sales_returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_orders: {
         Row: {
           balance_due: number
@@ -7539,6 +7897,17 @@ export type Database = {
         Args: { p_sales_order_id: string }
         Returns: number
       }
+      apply_sales_order_modification: {
+        Args: {
+          p_after_snapshot: Json
+          p_idempotency_key: string
+          p_modification_type: string
+          p_notes?: string
+          p_reason: string
+          p_sales_order_id: string
+        }
+        Returns: Json
+      }
       apply_supplier_advance_to_goods_receipt: {
         Args: { p_goods_receipt_id: string }
         Returns: number
@@ -8261,6 +8630,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_authorized_sales_order_revision_write: {
+        Args: { p_sales_order_id: string }
+        Returns: boolean
+      }
       link_quick_purchase_inventory_items: {
         Args: { p_quick_purchase_id: string }
         Returns: number
@@ -8584,6 +8957,15 @@ export type Database = {
       post_supplier_return_gl: {
         Args: { p_supplier_return_id: string }
         Returns: string
+      }
+      preview_sales_order_modification: {
+        Args: {
+          p_after_snapshot: Json
+          p_modification_type: string
+          p_reason: string
+          p_sales_order_id: string
+        }
+        Returns: Json
       }
       recalculate_quotation_totals: {
         Args: { target_quotation_id: string }
