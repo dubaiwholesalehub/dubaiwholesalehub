@@ -1,4 +1,4 @@
-export type QuickSaleCustomer = {
+﻿export type QuickSaleCustomer = {
     id: string;
     customerNumber: string | null;
     displayName: string;
@@ -158,6 +158,10 @@ export type CompleteQuickSaleInput = {
     chequeDate?: string;
 
     amountReceived: number;
+
+    invoiceDiscountAmount: number;
+    deliveryCharge: number;
+    roundOffAmount: number;
 
     deliveryMode:
     QuickSaleDeliveryMode;

@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 
@@ -13,6 +13,7 @@ import {
   confirmSalesOrder,
   createSalesOrder,
   getSalesOrderMarginAnalysis,
+  updateSalesOrder,
 } from "@/lib/repositories/sales-order.repository";
 
 import {
@@ -139,6 +140,60 @@ export async function completeQuickSale(
           "Destination country is required for export sales.",
         );
       }
+    }
+
+    if (
+      !Number.isFinite(
+        input.invoiceDiscountAmount,
+      ) ||
+      input.invoiceDiscountAmount < 0
+    ) {
+      throw new Error(
+        "Invoice discount must be zero or greater.",
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        input.deliveryCharge,
+      ) ||
+      input.deliveryCharge < 0
+    ) {
+      throw new Error(
+        "Delivery charges must be zero or greater.",
+      );
+    }
+
+    if (
+      !Number.isFinite(
+        input.roundOffAmount,
+      ) ||
+      input.roundOffAmount < -10 ||
+      input.roundOffAmount > 10
+    ) {
+      throw new Error(
+        "Round off must be between AED -10.00 and AED 10.00.",
+      );
+    }
+
+    const quickSaleNetItemAmount =
+      input.items.reduce(
+        (total, item) =>
+          total +
+          (
+            item.quantity *
+            item.sellingPrice
+          ),
+        0,
+      );
+
+    if (
+      input.invoiceDiscountAmount >
+      quickSaleNetItemAmount
+    ) {
+      throw new Error(
+        "Invoice discount cannot exceed the merchandise amount.",
+      );
     }
 
     for (
@@ -392,6 +447,7 @@ export async function completeQuickSale(
       null;
 
 
+
     for (
       const item of
       input.items
@@ -542,6 +598,7 @@ export async function completeQuickSale(
           }>;
         }
       >();
+
 
     for (
       const item of
@@ -836,6 +893,34 @@ export async function completeQuickSale(
           };
         },
       ),
+    );
+
+    /*
+     * ---------------------------------------------------------
+     * Apply invoice-level adjustments.
+     *
+     * These must be stored after Sales Order items exist so
+     * invoice discount can be validated against merchandise
+     * value and VAT can be recalculated correctly.
+     *
+     * This must also happen BEFORE margin protection because
+     * the margin-analysis view allocates invoice discount
+     * across merchandise lines.
+     * ---------------------------------------------------------
+     */
+
+    await updateSalesOrder(
+      salesOrder.id,
+      {
+        invoice_discount_amount:
+          input.invoiceDiscountAmount,
+
+        shipping_amount:
+          input.deliveryCharge,
+
+        round_off_amount:
+          input.roundOffAmount,
+      },
     );
 
     /*
@@ -1245,3 +1330,4 @@ export async function completeQuickSale(
     };
   }
 }
+

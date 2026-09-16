@@ -1,4 +1,4 @@
-import type { Database } from "@/lib/database.types";
+﻿import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
 import {
     getSalesQuotationById,
@@ -278,8 +278,10 @@ export interface SalesOrder {
 
     subtotal: number;
     discount_amount: number;
+    invoice_discount_amount: number;
     tax_amount: number;
     shipping_amount: number;
+    round_off_amount: number;
     grand_total: number;
 
     paid_amount: number;
@@ -428,6 +430,8 @@ export interface CreateSalesOrderInput {
     exchange_rate?: number;
 
     shipping_amount?: number;
+    invoice_discount_amount?: number;
+    round_off_amount?: number;
 
     payment_terms_days?: number;
 
@@ -866,11 +870,21 @@ function mapSalesOrderRow(
         discount_amount:
             Number(row.discount_amount),
 
+        invoice_discount_amount:
+            Number(
+                row.invoice_discount_amount,
+            ),
+
         tax_amount:
             Number(row.tax_amount),
 
         shipping_amount:
             Number(row.shipping_amount),
+
+        round_off_amount:
+            Number(
+                row.round_off_amount,
+            ),
 
         grand_total:
             Number(row.grand_total),
@@ -1986,6 +2000,10 @@ function validateSalesOrderHeaderInput(
 
         shipping_amount?: number;
 
+        invoice_discount_amount?: number;
+
+        round_off_amount?: number;
+
         payment_terms_days?: number;
     },
 ): void {
@@ -2025,6 +2043,35 @@ function validateSalesOrderHeaderInput(
     ) {
         throw new Error(
             "Shipping amount cannot be negative.",
+        );
+    }
+
+    if (
+        input.invoice_discount_amount !== undefined &&
+        (
+            !Number.isFinite(
+                input.invoice_discount_amount,
+            ) ||
+            input.invoice_discount_amount < 0
+        )
+    ) {
+        throw new Error(
+            "Invoice discount amount cannot be negative.",
+        );
+    }
+
+    if (
+        input.round_off_amount !== undefined &&
+        (
+            !Number.isFinite(
+                input.round_off_amount,
+            ) ||
+            input.round_off_amount < -10 ||
+            input.round_off_amount > 10
+        )
+    ) {
+        throw new Error(
+            "Round-off amount must be between -10.00 and 10.00.",
         );
     }
 
@@ -2332,6 +2379,12 @@ export async function createSalesOrder(
         shipping_amount:
             input.shipping_amount,
 
+        invoice_discount_amount:
+            input.invoice_discount_amount,
+
+        round_off_amount:
+            input.round_off_amount,
+
         payment_terms_days:
             input.payment_terms_days,
     });
@@ -2422,16 +2475,31 @@ export async function createSalesOrder(
                 input.shipping_amount ?? 0,
             ),
 
+        invoice_discount_amount:
+            roundCurrency(
+                input.invoice_discount_amount ?? 0,
+            ),
+
+        round_off_amount:
+            roundCurrency(
+                input.round_off_amount ?? 0,
+            ),
+
         grand_total:
             roundCurrency(
-                input.shipping_amount ?? 0,
+                (input.shipping_amount ?? 0) +
+                (input.round_off_amount ?? 0),
             ),
 
         paid_amount: 0,
 
         balance_due:
             roundCurrency(
-                input.shipping_amount ?? 0,
+                Math.max(
+                    (input.shipping_amount ?? 0) +
+                    (input.round_off_amount ?? 0),
+                    0,
+                ),
             ),
 
         payment_terms_days:
@@ -2524,6 +2592,14 @@ export async function updateSalesOrder(
         shipping_amount:
             input.shipping_amount ??
             existing.shipping_amount,
+
+        invoice_discount_amount:
+            input.invoice_discount_amount ??
+            existing.invoice_discount_amount,
+
+        round_off_amount:
+            input.round_off_amount ??
+            existing.round_off_amount,
 
         payment_terms_days:
             input.payment_terms_days ??
@@ -2660,6 +2736,26 @@ export async function updateSalesOrder(
         payload.shipping_amount =
             roundCurrency(
                 input.shipping_amount,
+            );
+    }
+
+    if (
+        input.invoice_discount_amount !==
+        undefined
+    ) {
+        payload.invoice_discount_amount =
+            roundCurrency(
+                input.invoice_discount_amount,
+            );
+    }
+
+    if (
+        input.round_off_amount !==
+        undefined
+    ) {
+        payload.round_off_amount =
+            roundCurrency(
+                input.round_off_amount,
             );
     }
 
@@ -3601,6 +3697,8 @@ export async function recalculateSalesOrderTotals(
             .select(`
         id,
         shipping_amount,
+        invoice_discount_amount,
+        round_off_amount,
         paid_amount
       `)
             .eq("id", id)
@@ -3611,6 +3709,7 @@ export async function recalculateSalesOrderTotals(
             .select(`
         line_subtotal,
         discount_amount,
+        tax_percentage,
         tax_amount,
         line_total
       `)
@@ -3666,40 +3765,134 @@ export async function recalculateSalesOrderTotals(
             ),
         );
 
-    const taxAmount =
+    /*
+     * Merchandise value after item-level discounts and
+     * before VAT.
+     *
+     * Invoice-level discount is allocated proportionally
+     * across these net line values so mixed VAT rates are
+     * handled correctly.
+     */
+    const netItemAmount =
         roundCurrency(
             items.reduce(
                 (total, item) =>
                     total +
-                    Number(item.tax_amount),
-                0,
-            ),
-        );
-
-    const lineTotal =
-        roundCurrency(
-            items.reduce(
-                (total, item) =>
-                    total +
-                    Number(item.line_total),
+                    Number(
+                        item.line_subtotal,
+                    ),
                 0,
             ),
         );
 
     const shippingAmount =
-        Number(
-            orderResult.data
-                .shipping_amount,
+        roundCurrency(
+            Number(
+                orderResult.data
+                    .shipping_amount,
+            ),
+        );
+
+    const invoiceDiscountAmount =
+        roundCurrency(
+            Number(
+                orderResult.data
+                    .invoice_discount_amount,
+            ),
+        );
+
+    const roundOffAmount =
+        roundCurrency(
+            Number(
+                orderResult.data
+                    .round_off_amount,
+            ),
         );
 
     const paidAmount =
-        Number(
-            orderResult.data.paid_amount,
+        roundCurrency(
+            Number(
+                orderResult.data
+                    .paid_amount,
+            ),
+        );
+
+    if (
+        invoiceDiscountAmount >
+        netItemAmount
+    ) {
+        throw new Error(
+            "Invoice discount cannot exceed the net item amount.",
+        );
+    }
+
+    /*
+     * Recalculate header VAT after allocating the
+     * invoice-level discount proportionally across lines.
+     *
+     * Each line's VAT is rounded independently to currency
+     * precision before being accumulated.
+     */
+    const taxAmount =
+        roundCurrency(
+            items.reduce(
+                (total, item) => {
+                    const lineSubtotal =
+                        Number(
+                            item.line_subtotal,
+                        );
+
+                    const taxPercentage =
+                        Number(
+                            item.tax_percentage,
+                        );
+
+                    const allocatedInvoiceDiscount =
+                        netItemAmount > 0
+                            ? (
+                                invoiceDiscountAmount *
+                                lineSubtotal
+                            ) /
+                            netItemAmount
+                            : 0;
+
+                    const adjustedTaxableBase =
+                        Math.max(
+                            lineSubtotal -
+                            allocatedInvoiceDiscount,
+                            0,
+                        );
+
+                    const adjustedLineTax =
+                        roundCurrency(
+                            adjustedTaxableBase *
+                            (
+                                taxPercentage /
+                                100
+                            ),
+                        );
+
+                    return (
+                        total +
+                        adjustedLineTax
+                    );
+                },
+                0,
+            ),
+        );
+
+    const merchandiseAfterInvoiceDiscount =
+        roundCurrency(
+            netItemAmount -
+            invoiceDiscountAmount,
         );
 
     const grandTotal =
         roundCurrency(
-            lineTotal + shippingAmount,
+            merchandiseAfterInvoiceDiscount +
+            taxAmount +
+            shippingAmount +
+            roundOffAmount,
         );
 
     const balanceDue =
@@ -5078,6 +5271,18 @@ export async function confirmSalesOrder(
         );
     }
 
+    /*
+     * Perform one final authoritative totals recalculation
+     * immediately before confirmation.
+     *
+     * This is especially important for header-level invoice
+     * adjustments such as invoice discount, delivery charges
+     * and round-off. It ensures VAT, grand total and balance
+     * due are current before the managed confirmation RPC
+     * posts Revenue / VAT to the General Ledger.
+     */
+    await recalculateSalesOrderTotals(id);
+
     const supabase = await createClient();
 
     const { data, error } =
@@ -5644,3 +5849,5 @@ export async function approveSalesMarginException(
 
     return data;
 }
+
+

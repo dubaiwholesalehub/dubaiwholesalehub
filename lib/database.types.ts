@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       account_transactions: {
@@ -4485,6 +4510,7 @@ export type Database = {
           grand_total: number
           id: string
           internal_notes: string | null
+          invoice_discount_amount: number
           order_date: string
           order_number: string
           paid_amount: number
@@ -4494,6 +4520,7 @@ export type Database = {
           processing_at: string | null
           quotation_id: string | null
           requested_delivery_date: string | null
+          round_off_amount: number
           salesperson_id: string
           shipping_address_id: string | null
           shipping_amount: number
@@ -4528,6 +4555,7 @@ export type Database = {
           grand_total?: number
           id?: string
           internal_notes?: string | null
+          invoice_discount_amount?: number
           order_date?: string
           order_number: string
           paid_amount?: number
@@ -4537,6 +4565,7 @@ export type Database = {
           processing_at?: string | null
           quotation_id?: string | null
           requested_delivery_date?: string | null
+          round_off_amount?: number
           salesperson_id: string
           shipping_address_id?: string | null
           shipping_amount?: number
@@ -4571,6 +4600,7 @@ export type Database = {
           grand_total?: number
           id?: string
           internal_notes?: string | null
+          invoice_discount_amount?: number
           order_date?: string
           order_number?: string
           paid_amount?: number
@@ -4580,6 +4610,7 @@ export type Database = {
           processing_at?: string | null
           quotation_id?: string | null
           requested_delivery_date?: string | null
+          round_off_amount?: number
           salesperson_id?: string
           shipping_address_id?: string | null
           shipping_amount?: number
@@ -9065,6 +9096,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "manager", "sales", "viewer"],

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
 
@@ -106,6 +106,12 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [amountReceived, setAmountReceived] = useState(0);
 
+  const [invoiceDiscountAmount, setInvoiceDiscountAmount] = useState(0);
+
+  const [deliveryCharge, setDeliveryCharge] = useState(0);
+
+  const [roundOffAmount, setRoundOffAmount] = useState(0);
+
   const [paymentReference, setPaymentReference] = useState("");
 
   const [bankName, setBankName] = useState("");
@@ -135,6 +141,31 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
     [items],
   );
   const marginAnalysis = useMemo(() => {
+    /*
+     * Margin protection must use revenue AFTER invoice-level
+     * discount so the browser preview matches the authoritative
+     * sales_order_margin_analysis database view.
+     */
+    const merchandiseRevenue =
+      items.reduce(
+        (total, item) =>
+          total +
+          (
+            item.quantity *
+            item.sellingPrice
+          ),
+        0,
+      );
+
+    const discountToAllocate =
+      Math.min(
+        Math.max(
+          invoiceDiscountAmount,
+          0,
+        ),
+        merchandiseRevenue,
+      );
+
     const lines = items
       .filter((item) => Boolean(item.productId) && item.quantity > 0)
       .map((item) => {
@@ -148,7 +179,25 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             ? item.purchaseCost
             : (stock?.averageUnitCost ?? 0);
 
-        const revenue = item.quantity * item.sellingPrice;
+        const grossRevenue =
+          item.quantity *
+          item.sellingPrice;
+
+        const allocatedInvoiceDiscount =
+          merchandiseRevenue > 0
+            ? (
+                discountToAllocate *
+                grossRevenue
+              ) /
+              merchandiseRevenue
+            : 0;
+
+        const revenue =
+          Math.max(
+            grossRevenue -
+              allocatedInvoiceDiscount,
+            0,
+          );
 
         const cost = item.quantity * unitCost;
 
@@ -247,7 +296,13 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
       lowestMargin,
     };
-  }, [items, warehouseId, options.stock, options.marginPolicy]);
+  }, [
+    items,
+    warehouseId,
+    options.stock,
+    options.marginPolicy,
+    invoiceDiscountAmount,
+  ]);
 
   const compatibleFinancialAccounts = useMemo(
     () =>
@@ -277,9 +332,35 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const vatRate = taxTreatment === "local_5" ? 5 : 0;
 
-  const vatAmount = subtotal * (vatRate / 100);
+  /*
+   * Invoice-level discount reduces the merchandise taxable
+   * base. Keep the browser calculation aligned with the
+   * authoritative Sales Order recalculation on the server.
+   */
+  const effectiveInvoiceDiscount =
+    Math.min(
+      Math.max(invoiceDiscountAmount, 0),
+      subtotal,
+    );
 
-  const grandTotal = subtotal + vatAmount;
+  const merchandiseAfterInvoiceDiscount =
+    Math.max(
+      subtotal - effectiveInvoiceDiscount,
+      0,
+    );
+
+  const vatAmount =
+    merchandiseAfterInvoiceDiscount *
+    (vatRate / 100);
+
+  const grandTotal =
+    Math.max(
+      merchandiseAfterInvoiceDiscount +
+        vatAmount +
+        Math.max(deliveryCharge, 0) +
+        roundOffAmount,
+      0,
+    );
 
   /*
    * Customer advance that can actually be consumed by
@@ -425,6 +506,41 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
     }
 
     if (
+      !Number.isFinite(invoiceDiscountAmount) ||
+      invoiceDiscountAmount < 0 ||
+      invoiceDiscountAmount > subtotal
+    ) {
+      toast.error(
+        "Invoice discount must be between AED 0.00 and the merchandise subtotal.",
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isFinite(deliveryCharge) ||
+      deliveryCharge < 0
+    ) {
+      toast.error(
+        "Delivery charges must be zero or greater.",
+      );
+
+      return;
+    }
+
+    if (
+      !Number.isFinite(roundOffAmount) ||
+      roundOffAmount < -10 ||
+      roundOffAmount > 10
+    ) {
+      toast.error(
+        "Round off must be between AED -10.00 and AED 10.00.",
+      );
+
+      return;
+    }
+
+    if (
       paymentStatus === "paid" &&
       Math.abs(effectiveAmountReceived - remainingAfterAdvance) > 0.01
     ) {
@@ -502,6 +618,13 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           effectiveAmountReceived > 0 ? financialAccountId : undefined,
 
         amountReceived: effectiveAmountReceived,
+
+        invoiceDiscountAmount:
+          effectiveInvoiceDiscount,
+
+        deliveryCharge,
+
+        roundOffAmount,
 
         paymentReference: paymentReference || undefined,
 
@@ -608,7 +731,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                   <option key={customer.id} value={customer.id}>
                     {customer.displayName}
                     {customer.customerNumber
-                      ? ` — ${customer.customerNumber}`
+                      ? ` â€” ${customer.customerNumber}`
                       : ""}
                   </option>
                 ))}
@@ -655,7 +778,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
                 {options.warehouses.map((warehouse) => (
                   <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.code} — {warehouse.name}
+                    {warehouse.code} â€” {warehouse.name}
                   </option>
                 ))}
               </select>
@@ -682,14 +805,14 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 }
                 className={inputClass}
               >
-                <option value="local_5">UAE Local — 5% VAT</option>
+                <option value="local_5">UAE Local â€” 5% VAT</option>
                 <option value="export_verified">
-                  Export — Evidence Verified — 0%
+                  Export â€” Evidence Verified â€” 0%
                 </option>
                 <option value="export_pending">
-                  Export — Evidence Pending
+                  Export â€” Evidence Pending
                 </option>
-                <option value="review">Other — Review Required</option>
+                <option value="review">Other â€” Review Required</option>
               </select>
             </Field>
           </div>
@@ -804,9 +927,9 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                   : item.purchaseCost;
 
               const marginLabel = !lineMargin
-                ? "—"
+                ? "â€”"
                 : lineMargin.margin === null
-                  ? "—"
+                  ? "â€”"
                   : `${lineMargin.margin.toFixed(1)}%`;
 
               const marginClass = !lineMargin
@@ -961,7 +1084,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                     </select>
                   ) : (
                     <div className="flex h-9 items-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 text-xs text-slate-400">
-                      —
+                      â€”
                     </div>
                   )}
 
@@ -1198,9 +1321,9 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         {compatibleFinancialAccounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.accountName}
-                            {" — "}
+                            {" â€” "}
                             {account.accountCode}
-                            {" — "}
+                            {" â€” "}
                             {account.currencyCode}{" "}
                             {account.currentBalance.toFixed(2)}
                           </option>
@@ -1301,7 +1424,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             ) : (
               <div className="px-4 py-3">
                 <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  Credit sale — no customer receipt will be created now. The
+                  Credit sale â€” no customer receipt will be created now. The
                   full sale amount will remain outstanding.
                 </div>
               </div>
@@ -1364,10 +1487,145 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           <div className="mt-6 space-y-4 text-sm">
             <SummaryRow label="Subtotal" value={subtotal} />
 
-            <SummaryRow label={`VAT (${vatRate}%)`} value={vatAmount} />
+            <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-900 p-3">
+              <div className="flex items-center justify-between gap-4">
+                <label
+                  htmlFor="quick-sale-invoice-discount"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Invoice Discount
+                </label>
+
+                <div className="relative w-32">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-500">
+                    AED
+                  </span>
+
+                  <input
+                    id="quick-sale-invoice-discount"
+                    type="number"
+                    min={0}
+                    max={subtotal}
+                    step="0.01"
+                    value={invoiceDiscountAmount}
+                    onChange={(event) =>
+                      setInvoiceDiscountAmount(
+                        Math.max(
+                          Number(event.target.value) || 0,
+                          0,
+                        ),
+                      )
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs text-slate-400">
+                  Taxable Merchandise
+                </span>
+
+                <span className="text-xs font-semibold tabular-nums text-slate-200">
+                  AED {merchandiseAfterInvoiceDiscount.toFixed(2)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <label
+                  htmlFor="quick-sale-delivery-charge"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Delivery Charges
+                </label>
+
+                <div className="relative w-32">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-500">
+                    AED
+                  </span>
+
+                  <input
+                    id="quick-sale-delivery-charge"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={deliveryCharge}
+                    onChange={(event) =>
+                      setDeliveryCharge(
+                        Math.max(
+                          Number(event.target.value) || 0,
+                          0,
+                        ),
+                      )
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <label
+                  htmlFor="quick-sale-round-off"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  Round Off
+                </label>
+
+                <div className="relative w-32">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-500">
+                    AED
+                  </span>
+
+                  <input
+                    id="quick-sale-round-off"
+                    type="number"
+                    min={-10}
+                    max={10}
+                    step="0.01"
+                    value={roundOffAmount}
+                    onChange={(event) =>
+                      setRoundOffAmount(
+                        Number(event.target.value) || 0,
+                      )
+                    }
+                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {effectiveInvoiceDiscount > 0 ? (
+              <SummaryRow
+                label="Invoice Discount"
+                value={-effectiveInvoiceDiscount}
+              />
+            ) : null}
+
+            <SummaryRow
+              label={`VAT (${vatRate}%)`}
+              value={vatAmount}
+            />
+
+            {deliveryCharge > 0 ? (
+              <SummaryRow
+                label="Delivery Charges"
+                value={deliveryCharge}
+              />
+            ) : null}
+
+            {roundOffAmount !== 0 ? (
+              <SummaryRow
+                label="Round Off"
+                value={roundOffAmount}
+              />
+            ) : null}
 
             <div className="border-t border-slate-700 pt-4">
-              <SummaryRow label="Grand Total" value={grandTotal} strong />
+              <SummaryRow
+                label="Grand Total"
+                value={grandTotal}
+                strong
+              />
             </div>
             <div className="border-t border-slate-700 pt-4">
               <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1672,7 +1930,7 @@ function PurchaseReference({
           <p className="mt-1 font-bold text-blue-950">
             {purchaseInfo.lastPurchasePrice !== null
               ? `${purchaseInfo.currencyCode} ${purchaseInfo.lastPurchasePrice.toFixed(2)}`
-              : "—"}
+              : "â€”"}
           </p>
         </div>
 
@@ -1682,7 +1940,7 @@ function PurchaseReference({
           <p className="mt-1 font-bold text-blue-950">
             {purchaseInfo.costPrice !== null
               ? `${purchaseInfo.currencyCode} ${purchaseInfo.costPrice.toFixed(2)}`
-              : "—"}
+              : "â€”"}
           </p>
         </div>
       </div>
@@ -1695,3 +1953,6 @@ const inputClass =
 
 const compactInputClass =
   "h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100";
+
+
+
