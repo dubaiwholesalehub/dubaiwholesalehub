@@ -681,11 +681,6 @@ export default function SalesOrderModificationForm({
         return `${item.itemName}: VAT cannot be negative.`;
       }
     }
-
-    if (calculated.customerCredit > 0) {
-      return "This modification would create a customer credit / refund balance. The current controlled modification engine intentionally blocks this case until the customer-credit workflow is connected.";
-    }
-
     return null;
   }
 
@@ -1415,23 +1410,30 @@ export default function SalesOrderModificationForm({
               {formatCurrency(calculated.difference, order.currencyCode)}
             </p>
           </div>
-
           {calculated.customerCredit > 0 ? (
-            <div className="mt-4 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:bg-red-950/20">
-              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            <div className="mt-4 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 dark:bg-emerald-950/20">
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
 
               <div>
                 <p className="font-semibold">
-                  Customer credit would be created
+                  Customer Credit after correction
                 </p>
 
-                <p className="mt-1">
+                <p className="mt-1 text-base font-semibold">
                   {formatCurrency(
                     calculated.customerCredit,
                     order.currencyCode,
-                  )}{" "}
-                  would become overpaid. This case is intentionally blocked in
-                  the current modification phase.
+                  )}
+                </p>
+
+                <p className="mt-1">
+                  The excess payment will be released from this invoice and
+                  retained as Customer Credit. The original receipt and payment
+                  history remain unchanged.
+                </p>
+
+                <p className="mt-1">
+                  No cash or bank movement is created by this correction.
                 </p>
               </div>
             </div>
@@ -1608,7 +1610,7 @@ export default function SalesOrderModificationForm({
           </Button>
 
           <Button
-            disabled={isPending || !preview || calculated.customerCredit > 0}
+            disabled={isPending || !preview}
             onClick={handleApply}
           >
             {isPending ? (
