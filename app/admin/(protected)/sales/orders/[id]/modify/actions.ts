@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import type { Json } from "@/lib/database.types";
 
@@ -16,7 +16,7 @@ export type SalesOrderModificationType =
   | "exchange_adjustment";
 
 export interface SalesOrderModificationSnapshotItem {
-  id: string;
+  id: string | null;
   product_id: string | null;
   unit_id: string | null;
   warehouse_id: string | null;
@@ -94,7 +94,7 @@ function validateRequest(
     input.afterSnapshot.items.length === 0
   ) {
     throw new Error(
-      "The revised sales order must contain its existing items.",
+      "The revised sales order must contain at least one active item.",
     );
   }
 

@@ -1442,7 +1442,7 @@ export async function getSalesOrderById(
         items:
             (
                 row.sales_order_items ?? []
-            ).map(
+            ).filter((item) => item.is_revision_removed !== true).map(
                 mapSalesOrderItemRow,
             ),
     };

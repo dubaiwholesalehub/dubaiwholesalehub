@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
@@ -9,11 +9,15 @@ import {
   Eye,
   Loader2,
   PackageOpen,
+  Plus,
   ReceiptText,
   RotateCcw,
   Save,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 
+import SmartProductPicker from "@/components/admin/shared/SmartProductPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,8 +37,14 @@ import {
   type SalesOrderModificationType,
 } from "@/app/admin/(protected)/sales/orders/[id]/modify/actions";
 
+import type { SalesOrderWarehouse } from "@/lib/repositories/sales-order.repository";
+import type {
+  SalesQuotationItemProductOption,
+  SalesQuotationItemUnitOption,
+} from "@/lib/repositories/sales-quotation.repository";
+
 interface ModificationItem {
-  id: string;
+  id: string | null;
   lineNumber: number;
   productId: string | null;
   unitId: string | null;
@@ -60,6 +70,7 @@ interface SalesOrderModificationFormProps {
     fulfilmentStatus: string;
     paymentStatus: string;
     customerName: string;
+    defaultWarehouseId: string | null;
     subtotal: number;
     itemDiscountAmount: number;
     invoiceDiscountAmount: number;
@@ -73,9 +84,31 @@ interface SalesOrderModificationFormProps {
     internalNotes: string | null;
     items: ModificationItem[];
   };
+  products: SalesQuotationItemProductOption[];
+  units: SalesQuotationItemUnitOption[];
+  warehouses: SalesOrderWarehouse[];
+  stock: SalesOrderStockOption[];
+  marginPolicy: SalesOrderMarginPolicy;
+}
+
+interface SalesOrderStockOption {
+  warehouseId: string;
+  productId: string;
+  quantityOnHand: number;
+  quantityReserved: number;
+  quantityAvailable: number;
+  averageUnitCost: number;
+}
+
+interface SalesOrderMarginPolicy {
+  warningMarginPercentage: number;
+  minimumMarginPercentage: number;
 }
 
 type EditableItem = ModificationItem & {
+  clientKey: string;
+  isRemoved: boolean;
+  isNew: boolean;
   quantityInput: string;
   unitPriceInput: string;
   discountInput: string;
@@ -170,6 +203,11 @@ function arrayFrom(object: JsonObject | null, keys: string[]): unknown[] {
 
 export default function SalesOrderModificationForm({
   order,
+  products,
+  units,
+  warehouses,
+  stock,
+  marginPolicy,
 }: SalesOrderModificationFormProps) {
   const [modificationType, setModificationType] =
     useState<SalesOrderModificationType>("entry_correction");
@@ -196,12 +234,94 @@ export default function SalesOrderModificationForm({
   const [items, setItems] = useState<EditableItem[]>(
     order.items.map((item) => ({
       ...item,
+      clientKey: item.id ?? crypto.randomUUID(),
+      isRemoved: false,
+      isNew: false,
       quantityInput: String(item.quantity),
       unitPriceInput: String(item.unitPrice),
       discountInput: String(item.discountPercentage),
       taxInput: String(item.taxPercentage),
     })),
   );
+
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [newWarehouseId, setNewWarehouseId] = useState(
+    order.defaultWarehouseId ?? "",
+  );
+  const [newQuantity, setNewQuantity] = useState("1");
+  const [newUnitPrice, setNewUnitPrice] = useState("0");
+  const [newDiscount, setNewDiscount] = useState("0");
+  const [newTax, setNewTax] = useState("5");
+
+  const selectedProduct = useMemo(
+    () => products.find((product) => product.id === selectedProductId) ?? null,
+    [products, selectedProductId],
+  );
+
+  const selectedUnit = useMemo(
+    () => units.find((unit) => unit.id === selectedProduct?.unit_id) ?? null,
+    [units, selectedProduct],
+  );
+
+  const effectiveNewWarehouseId =
+    newWarehouseId || order.defaultWarehouseId || "";
+
+  const selectedStock = useMemo(
+    () =>
+      stock.find(
+        (row) =>
+          row.productId === selectedProductId &&
+          row.warehouseId === effectiveNewWarehouseId,
+      ) ?? null,
+    [stock, selectedProductId, effectiveNewWarehouseId],
+  );
+
+  const newLinePreview = useMemo(() => {
+    const quantity = Math.max(toNumber(newQuantity), 0);
+    const unitPrice = Math.max(toNumber(newUnitPrice), 0);
+    const discountPercentage = Math.min(
+      Math.max(toNumber(newDiscount), 0),
+      100,
+    );
+    const taxPercentage = Math.max(toNumber(newTax), 0);
+    const gross = quantity * unitPrice;
+    const discountAmount = gross * (discountPercentage / 100);
+    const revenue = gross - discountAmount;
+    const taxAmount = revenue * (taxPercentage / 100);
+    const unitCost = selectedStock?.averageUnitCost ?? 0;
+    const totalCost = quantity * unitCost;
+    const profit = revenue - totalCost;
+    const marginPercentage = revenue > 0 ? (profit / revenue) * 100 : 0;
+    const availableQuantity = selectedStock?.quantityAvailable ?? 0;
+    const stockShortage =
+      selectedProduct?.fulfilment_method === "stock" &&
+      quantity > availableQuantity;
+
+    let marginStatus: "healthy" | "warning" | "approval_required" = "healthy";
+    if (marginPercentage < marginPolicy.minimumMarginPercentage) {
+      marginStatus = "approval_required";
+    } else if (marginPercentage < marginPolicy.warningMarginPercentage) {
+      marginStatus = "warning";
+    }
+
+    return {
+      total: revenue + taxAmount,
+      unitCost,
+      profit,
+      marginPercentage,
+      availableQuantity,
+      stockShortage,
+      marginStatus,
+    };
+  }, [
+    newQuantity,
+    newUnitPrice,
+    newDiscount,
+    newTax,
+    selectedStock,
+    selectedProduct,
+    marginPolicy,
+  ]);
 
   const [preview, setPreview] = useState<unknown>(null);
 
@@ -212,7 +332,7 @@ export default function SalesOrderModificationForm({
   const [isPending, startTransition] = useTransition();
 
   const calculated = useMemo(() => {
-    const lines = items.map((item) => {
+    const lines = items.filter((item) => !item.isRemoved).map((item) => {
       const quantity = Math.max(toNumber(item.quantityInput), 0);
 
       const unitPrice = Math.max(toNumber(item.unitPriceInput), 0);
@@ -317,7 +437,7 @@ export default function SalesOrderModificationForm({
   ) {
     setItems((current) =>
       current.map((item) =>
-        item.id === itemId
+        item.clientKey === itemId
           ? {
               ...item,
               [field]: value,
@@ -328,6 +448,135 @@ export default function SalesOrderModificationForm({
 
     setPreview(null);
     setSuccess(null);
+  }
+
+  function resetNewItemEntry() {
+    setSelectedProductId("");
+    setNewWarehouseId(order.defaultWarehouseId ?? "");
+    setNewQuantity("1");
+    setNewUnitPrice("0");
+    setNewDiscount("0");
+    setNewTax("5");
+  }
+
+  function handleAddProduct() {
+    if (modificationType !== "entry_correction") {
+      setError("Adding a product to a posted sale requires Entry Correction.");
+      return;
+    }
+
+    if (!selectedProduct) {
+      setError("Please select a product to add.");
+      return;
+    }
+
+    const quantity = toNumber(newQuantity);
+    const unitPrice = toNumber(newUnitPrice);
+    const discount = toNumber(newDiscount);
+    const tax = toNumber(newTax);
+
+    if (quantity <= 0) {
+      setError("New product quantity must be greater than zero.");
+      return;
+    }
+
+    if (unitPrice < 0) {
+      setError("New product selling price cannot be negative.");
+      return;
+    }
+
+    if (discount < 0 || discount > 100) {
+      setError("New product discount must be between 0% and 100%.");
+      return;
+    }
+
+    if (tax < 0 || tax > 100) {
+      setError("New product VAT must be between 0% and 100%.");
+      return;
+    }
+
+    if (selectedProduct.fulfilment_method === "stock" && !effectiveNewWarehouseId) {
+      setError("Please select a warehouse for this stock product.");
+      return;
+    }
+
+    if (newLinePreview.stockShortage) {
+      setError(
+        `Insufficient stock. Available: ${formatQuantity(
+          newLinePreview.availableQuantity,
+        )}.`,
+      );
+      return;
+    }
+
+    const clientKey = crypto.randomUUID();
+
+    setItems((current) => [
+      ...current,
+      {
+        id: null,
+        clientKey,
+        isRemoved: false,
+        isNew: true,
+        lineNumber: current.length + 1,
+        productId: selectedProduct.id,
+        unitId: selectedProduct.unit_id,
+        warehouseId: effectiveNewWarehouseId || null,
+        sku: selectedProduct.sku,
+        itemName: selectedProduct.name,
+        description: selectedProduct.short_description,
+        quantity,
+        quantityFulfilled: 0,
+        unitPrice,
+        discountPercentage: discount,
+        taxPercentage: tax,
+        fulfilmentMethod: selectedProduct.fulfilment_method,
+        lineNotes: null,
+        quantityInput: String(quantity),
+        unitPriceInput: String(unitPrice),
+        discountInput: String(discount),
+        taxInput: String(tax),
+      },
+    ]);
+
+    resetNewItemEntry();
+    setPreview(null);
+    setSuccess(null);
+    setError(null);
+  }
+
+  function handleRemoveItem(clientKey: string) {
+    if (modificationType !== "entry_correction") {
+      setError("Adding or removing products requires Entry Correction.");
+      return;
+    }
+
+    setItems((current) =>
+      current
+        .map((item) =>
+          item.clientKey === clientKey
+            ? item.isNew
+              ? null
+              : { ...item, isRemoved: true }
+            : item,
+        )
+        .filter((item): item is EditableItem => item !== null),
+    );
+
+    setPreview(null);
+    setSuccess(null);
+    setError(null);
+  }
+
+  function handleRestoreItem(clientKey: string) {
+    setItems((current) =>
+      current.map((item) =>
+        item.clientKey === clientKey ? { ...item, isRemoved: false } : item,
+      ),
+    );
+    setPreview(null);
+    setSuccess(null);
+    setError(null);
   }
 
   function buildSnapshot(): SalesOrderModificationSnapshot {
@@ -344,7 +593,7 @@ export default function SalesOrderModificationForm({
         internal_notes: internalNotes.trim() || null,
       },
 
-      items: items.map((item) => ({
+      items: items.filter((item) => !item.isRemoved).map((item) => ({
         id: item.id,
         product_id: item.productId,
         unit_id: item.unitId,
@@ -393,7 +642,21 @@ export default function SalesOrderModificationForm({
       return "Round Off must be between -10 and +10.";
     }
 
-    for (const item of items) {
+    const hasLineStructureChange = items.some(
+      (item) => item.isNew || item.isRemoved,
+    );
+
+    if (hasLineStructureChange && modificationType !== "entry_correction") {
+      return "Adding or removing products from a posted sale requires Entry Correction.";
+    }
+
+    const activeItems = items.filter((item) => !item.isRemoved);
+
+    if (activeItems.length === 0) {
+      return "The revised sales order must contain at least one product.";
+    }
+
+    for (const item of activeItems) {
       const quantity = toNumber(item.quantityInput);
 
       const unitPrice = toNumber(item.unitPriceInput);
@@ -655,11 +918,163 @@ export default function SalesOrderModificationForm({
           <h2 className="font-semibold">Invoice Items</h2>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            Existing posted lines only. Product identity cannot be replaced
-            here. Change quantity, selling price, item discount or VAT as
-            required.
+            Correct existing lines, add missing products, or remove products
+            entered on the original posted sale. Add/Remove is available only
+            for Entry Correction; actual customer returns must use Sales Return.
           </p>
         </div>
+
+        {modificationType === "entry_correction" ? (
+          <div className="border-b bg-muted/10 p-5">
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold">Add Missing Product</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                The product is added only to the proposed revision. Nothing is
+                posted until Preview is accepted and Apply Modification is used.
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-12">
+              <div className="lg:col-span-5">
+                <label className="mb-2 block text-sm font-medium">Product</label>
+                <SmartProductPicker
+                  products={products}
+                  value={selectedProductId}
+                  onChange={(value) => {
+                    setSelectedProductId(value);
+                    setPreview(null);
+                  }}
+                />
+              </div>
+
+              <div className="lg:col-span-3">
+                <label className="mb-2 block text-sm font-medium">Warehouse</label>
+                <select
+                  value={newWarehouseId}
+                  onChange={(event) => {
+                    setNewWarehouseId(event.target.value);
+                    setPreview(null);
+                  }}
+                  className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+                >
+                  <option value="">Order default</option>
+                  {warehouses.map((warehouse) => (
+                    <option key={warehouse.id} value={warehouse.id}>
+                      {warehouse.code} - {warehouse.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="lg:col-span-2">
+                <span className="mb-2 block text-sm font-medium">Quantity</span>
+                <Input
+                  type="number"
+                  min="0.0001"
+                  step="0.0001"
+                  value={newQuantity}
+                  onChange={(event) => setNewQuantity(event.target.value)}
+                />
+              </label>
+
+              <div className="lg:col-span-2">
+                <span className="mb-2 block text-sm font-medium">Unit</span>
+                <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm">
+                  {selectedUnit?.short_name ?? selectedUnit?.name ?? "—"}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 md:grid-cols-4">
+              <label>
+                <span className="mb-2 block text-sm font-medium">Selling Price</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newUnitPrice}
+                  onChange={(event) => setNewUnitPrice(event.target.value)}
+                />
+              </label>
+
+              <label>
+                <span className="mb-2 block text-sm font-medium">Discount %</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={newDiscount}
+                  onChange={(event) => setNewDiscount(event.target.value)}
+                />
+              </label>
+
+              <label>
+                <span className="mb-2 block text-sm font-medium">VAT %</span>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={newTax}
+                  onChange={(event) => setNewTax(event.target.value)}
+                />
+              </label>
+
+              <div>
+                <span className="mb-2 block text-sm font-medium">Line Total</span>
+                <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm font-semibold">
+                  {formatCurrency(newLinePreview.total, order.currencyCode)}
+                </div>
+              </div>
+            </div>
+
+            {selectedProduct ? (
+              <div className="mt-4 grid gap-3 md:grid-cols-4">
+                <MiniMetric
+                  label="Available Stock"
+                  value={formatQuantity(newLinePreview.availableQuantity)}
+                />
+                <MiniMetric
+                  label="Avg. Unit Cost"
+                  value={formatCurrency(
+                    newLinePreview.unitCost,
+                    order.currencyCode,
+                  )}
+                />
+                <MiniMetric
+                  label="Estimated Profit"
+                  value={formatCurrency(
+                    newLinePreview.profit,
+                    order.currencyCode,
+                  )}
+                />
+                <MiniMetric
+                  label="Margin"
+                  value={`${newLinePreview.marginPercentage.toFixed(2)}%`}
+                />
+              </div>
+            ) : null}
+
+            {selectedProduct && newLinePreview.stockShortage ? (
+              <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Requested quantity exceeds available stock of{" "}
+                <strong>{formatQuantity(newLinePreview.availableQuantity)}</strong>.
+              </div>
+            ) : null}
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                disabled={!selectedProduct || isPending}
+                onClick={handleAddProduct}
+              >
+                <Plus className="size-4" />
+                Add Product to Revision
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1180px] text-sm">
@@ -672,6 +1087,7 @@ export default function SalesOrderModificationForm({
                 <th className="px-4 py-3">Discount %</th>
                 <th className="px-4 py-3">VAT %</th>
                 <th className="px-4 py-3 text-right">Revised Line</th>
+                <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
 
@@ -692,16 +1108,20 @@ export default function SalesOrderModificationForm({
 
                 return (
                   <tr
-                    key={item.id}
+                    key={item.clientKey}
                     className={
-                      quantityChanged
-                        ? "bg-amber-50/50 dark:bg-amber-950/10"
-                        : undefined
+                      item.isRemoved
+                        ? "bg-red-50/60 opacity-70 dark:bg-red-950/10"
+                        : item.isNew
+                          ? "bg-emerald-50/60 dark:bg-emerald-950/10"
+                          : quantityChanged
+                            ? "bg-amber-50/50 dark:bg-amber-950/10"
+                            : undefined
                     }
                   >
                     <td className="px-4 py-4">
                       <p className="font-semibold">
-                        {index + 1}. {item.itemName}
+                        {index + 1}. {item.itemName}{item.isNew ? " (NEW)" : item.isRemoved ? " (REMOVED)" : ""}
                       </p>
 
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -727,10 +1147,11 @@ export default function SalesOrderModificationForm({
                         min="0.0001"
                         step="0.0001"
                         className="w-28"
+                        disabled={item.isRemoved}
                         value={item.quantityInput}
                         onChange={(event) =>
                           updateItem(
-                            item.id,
+                            item.clientKey,
                             "quantityInput",
                             event.target.value,
                           )
@@ -744,10 +1165,11 @@ export default function SalesOrderModificationForm({
                         min="0"
                         step="0.01"
                         className="w-32"
+                        disabled={item.isRemoved}
                         value={item.unitPriceInput}
                         onChange={(event) =>
                           updateItem(
-                            item.id,
+                            item.clientKey,
                             "unitPriceInput",
                             event.target.value,
                           )
@@ -762,10 +1184,11 @@ export default function SalesOrderModificationForm({
                         max="100"
                         step="0.01"
                         className="w-28"
+                        disabled={item.isRemoved}
                         value={item.discountInput}
                         onChange={(event) =>
                           updateItem(
-                            item.id,
+                            item.clientKey,
                             "discountInput",
                             event.target.value,
                           )
@@ -779,15 +1202,40 @@ export default function SalesOrderModificationForm({
                         min="0"
                         step="0.01"
                         className="w-24"
+                        disabled={item.isRemoved}
                         value={item.taxInput}
                         onChange={(event) =>
-                          updateItem(item.id, "taxInput", event.target.value)
+                          updateItem(item.clientKey, "taxInput", event.target.value)
                         }
                       />
                     </td>
 
                     <td className="px-4 py-4 text-right font-semibold">
                       {formatCurrency(revisedLine, order.currencyCode)}
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      {item.isRemoved ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRestoreItem(item.clientKey)}
+                        >
+                          <Undo2 className="size-4" />
+                          Undo
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={modificationType !== "entry_correction"}
+                          onClick={() => handleRemoveItem(item.clientKey)}
+                        >
+                          <Trash2 className="size-4" />
+                          Remove
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -1172,6 +1620,22 @@ export default function SalesOrderModificationForm({
           </Button>
         </div>
       </section>
+    </div>
+  );
+}
+
+
+function MiniMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg border bg-background p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 font-semibold">{value}</p>
     </div>
   );
 }

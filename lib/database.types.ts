@@ -4323,6 +4323,7 @@ export type Database = {
           fulfilment_method: string
           fulfilment_status: string
           id: string
+          is_revision_removed: boolean
           item_name: string
           line_notes: string | null
           line_number: number
@@ -4341,6 +4342,9 @@ export type Database = {
           quantity_reserved: number
           quotation_item_id: string | null
           requested_delivery_date: string | null
+          revision_removed_at: string | null
+          revision_removed_by: string | null
+          revision_removed_revision_id: string | null
           sales_order_id: string
           shortage_quantity: number
           sku: string | null
@@ -4361,6 +4365,7 @@ export type Database = {
           fulfilment_method?: string
           fulfilment_status?: string
           id?: string
+          is_revision_removed?: boolean
           item_name: string
           line_notes?: string | null
           line_number: number
@@ -4379,6 +4384,9 @@ export type Database = {
           quantity_reserved?: number
           quotation_item_id?: string | null
           requested_delivery_date?: string | null
+          revision_removed_at?: string | null
+          revision_removed_by?: string | null
+          revision_removed_revision_id?: string | null
           sales_order_id: string
           shortage_quantity?: number
           sku?: string | null
@@ -4399,6 +4407,7 @@ export type Database = {
           fulfilment_method?: string
           fulfilment_status?: string
           id?: string
+          is_revision_removed?: boolean
           item_name?: string
           line_notes?: string | null
           line_number?: number
@@ -4417,6 +4426,9 @@ export type Database = {
           quantity_reserved?: number
           quotation_item_id?: string | null
           requested_delivery_date?: string | null
+          revision_removed_at?: string | null
+          revision_removed_by?: string | null
+          revision_removed_revision_id?: string | null
           sales_order_id?: string
           shortage_quantity?: number
           sku?: string | null
@@ -4440,6 +4452,20 @@ export type Database = {
             columns: ["quotation_item_id"]
             isOneToOne: false
             referencedRelation: "sales_quotation_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_revision_removed_by_fkey"
+            columns: ["revision_removed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_items_revision_removed_revision_id_fkey"
+            columns: ["revision_removed_revision_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_revisions"
             referencedColumns: ["id"]
           },
           {
