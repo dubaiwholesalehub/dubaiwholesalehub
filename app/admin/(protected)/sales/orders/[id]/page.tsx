@@ -16,6 +16,7 @@ import {
   Truck,
   UserRound,
   WalletCards,
+  FilePenLine,
 } from "lucide-react";
 
 import DetailsCard from "@/components/admin/shared/DetailsCard";
@@ -109,6 +110,27 @@ export default async function SalesOrderDetailsPage({
           >
             <Pencil className="size-4" />
             Edit Sales Order
+          </Link>
+        ) : null}
+        {managementUser &&
+        [
+          "confirmed",
+          "processing",
+          "partially_fulfilled",
+          "fulfilled",
+          "completed",
+        ].includes(order.status) ? (
+          <Link
+            href={`/admin/sales/orders/${order.id}/modify`}
+            className={cn(
+              buttonVariants({
+                variant: "outline",
+                size: "default",
+              }),
+            )}
+          >
+            <FilePenLine className="size-4" />
+            Modify Sale
           </Link>
         ) : null}
         {managementUser &&
@@ -555,7 +577,7 @@ export default async function SalesOrderDetailsPage({
             />
 
             <TotalRow
-              label="Discount"
+              label="Item Discount"
               value={`- ${formatCurrency(
                 order.discount_amount,
                 order.currency_code,
@@ -563,13 +585,29 @@ export default async function SalesOrderDetailsPage({
             />
 
             <TotalRow
-              label="Tax"
+              label="Invoice Discount"
+              value={`- ${formatCurrency(
+                order.invoice_discount_amount,
+                order.currency_code,
+              )}`}
+            />
+
+            <TotalRow
+              label="VAT"
               value={formatCurrency(order.tax_amount, order.currency_code)}
             />
 
             <TotalRow
-              label="Shipping"
+              label="Delivery Charges"
               value={formatCurrency(order.shipping_amount, order.currency_code)}
+            />
+
+            <TotalRow
+              label="Round Off"
+              value={formatCurrency(
+                order.round_off_amount,
+                order.currency_code,
+              )}
             />
 
             <TotalRow
