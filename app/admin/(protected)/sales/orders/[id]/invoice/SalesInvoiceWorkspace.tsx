@@ -520,7 +520,7 @@ export function SalesInvoiceWorkspace({
                 <TemplateButton
                   active={templateType === "uae_tax"}
                   title="UAE Tax Invoice"
-                  description="TRN and VAT presentation"
+                  description="TRN & VAT detailed presentation"
                   onClick={() => applyPreset("uae_tax")}
                 />
 
@@ -534,7 +534,7 @@ export function SalesInvoiceWorkspace({
                 <TemplateButton
                   active={templateType === "export"}
                   title="Export Invoice"
-                  description="Overseas / non-VAT presentation"
+                  description="Overseas / export presentation"
                   onClick={() => applyPreset("export")}
                 />
               </div>
