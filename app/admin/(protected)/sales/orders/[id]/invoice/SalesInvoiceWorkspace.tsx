@@ -1058,7 +1058,7 @@ export function SalesInvoiceWorkspace({
                     ) : null}
 
                     <th className="px-2 py-2.5 text-right font-semibold text-slate-600">
-                      Amount
+                      Amount incl. VAT
                     </th>
                   </tr>
                 </thead>
@@ -1187,9 +1187,19 @@ export function SalesInvoiceWorkspace({
                   />
                 ) : null}
 
+                {salesOrder.invoice_discount_amount > 0 ? (
+                  <TotalRow
+                    label="Invoice Discount"
+                    value={`- ${formatMoney(
+                      salesOrder.invoice_discount_amount,
+                      salesOrder.currency_code,
+                    )}`}
+                  />
+                ) : null}
+
                 {salesOrder.shipping_amount > 0 ? (
                   <TotalRow
-                    label="Shipping"
+                    label="Delivery Charges"
                     value={formatMoney(
                       salesOrder.shipping_amount,
                       salesOrder.currency_code,
@@ -1199,11 +1209,32 @@ export function SalesInvoiceWorkspace({
 
                 {showVat ? (
                   <TotalRow
-                    label="VAT"
+                    label={
+                      salesOrder.invoice_discount_amount > 0
+                        ? "VAT (after discount)"
+                        : "VAT"
+                    }
                     value={formatMoney(
                       salesOrder.tax_amount,
                       salesOrder.currency_code,
                     )}
+                  />
+                ) : null}
+
+                {salesOrder.round_off_amount !== 0 ? (
+                  <TotalRow
+                    label="Round Off"
+                    value={
+                      salesOrder.round_off_amount > 0
+                        ? `+ ${formatMoney(
+                            salesOrder.round_off_amount,
+                            salesOrder.currency_code,
+                          )}`
+                        : `- ${formatMoney(
+                            Math.abs(salesOrder.round_off_amount),
+                            salesOrder.currency_code,
+                          )}`
+                    }
                   />
                 ) : null}
 
