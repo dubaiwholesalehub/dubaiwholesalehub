@@ -244,6 +244,13 @@ export default function SalesOrderModificationForm({
     })),
   );
 
+  const defaultNewTax = useMemo(() => {
+    const taxRates = Array.from(
+      new Set(order.items.map((item) => item.taxPercentage)),
+    );
+
+    return taxRates.length === 1 ? String(taxRates[0]) : "";
+  }, [order.items]);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [newWarehouseId, setNewWarehouseId] = useState(
     order.defaultWarehouseId ?? "",
@@ -251,7 +258,7 @@ export default function SalesOrderModificationForm({
   const [newQuantity, setNewQuantity] = useState("1");
   const [newUnitPrice, setNewUnitPrice] = useState("0");
   const [newDiscount, setNewDiscount] = useState("0");
-  const [newTax, setNewTax] = useState("5");
+  const [newTax, setNewTax] = useState(defaultNewTax);
 
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId) ?? null,
@@ -332,31 +339,33 @@ export default function SalesOrderModificationForm({
   const [isPending, startTransition] = useTransition();
 
   const calculated = useMemo(() => {
-    const lines = items.filter((item) => !item.isRemoved).map((item) => {
-      const quantity = Math.max(toNumber(item.quantityInput), 0);
+    const lines = items
+      .filter((item) => !item.isRemoved)
+      .map((item) => {
+        const quantity = Math.max(toNumber(item.quantityInput), 0);
 
-      const unitPrice = Math.max(toNumber(item.unitPriceInput), 0);
+        const unitPrice = Math.max(toNumber(item.unitPriceInput), 0);
 
-      const discountPercentage = Math.min(
-        Math.max(toNumber(item.discountInput), 0),
-        100,
-      );
+        const discountPercentage = Math.min(
+          Math.max(toNumber(item.discountInput), 0),
+          100,
+        );
 
-      const taxPercentage = Math.max(toNumber(item.taxInput), 0);
+        const taxPercentage = Math.max(toNumber(item.taxInput), 0);
 
-      const gross = quantity * unitPrice;
+        const gross = quantity * unitPrice;
 
-      const discount = gross * (discountPercentage / 100);
+        const discount = gross * (discountPercentage / 100);
 
-      const net = gross - discount;
+        const net = gross - discount;
 
-      return {
-        gross,
-        discount,
-        net,
-        taxPercentage,
-      };
-    });
+        return {
+          gross,
+          discount,
+          net,
+          taxPercentage,
+        };
+      });
 
     const grossSubtotal = lines.reduce((sum, line) => sum + line.gross, 0);
 
@@ -456,7 +465,7 @@ export default function SalesOrderModificationForm({
     setNewQuantity("1");
     setNewUnitPrice("0");
     setNewDiscount("0");
-    setNewTax("5");
+    setNewTax(defaultNewTax);
   }
 
   function handleAddProduct() {
@@ -467,6 +476,13 @@ export default function SalesOrderModificationForm({
 
     if (!selectedProduct) {
       setError("Please select a product to add.");
+      return;
+    }
+
+    if (newTax.trim() === "") {
+      setError(
+        "Please enter the VAT rate for the new product. This order contains mixed VAT rates.",
+      );
       return;
     }
 
@@ -495,7 +511,10 @@ export default function SalesOrderModificationForm({
       return;
     }
 
-    if (selectedProduct.fulfilment_method === "stock" && !effectiveNewWarehouseId) {
+    if (
+      selectedProduct.fulfilment_method === "stock" &&
+      !effectiveNewWarehouseId
+    ) {
       setError("Please select a warehouse for this stock product.");
       return;
     }
@@ -593,27 +612,29 @@ export default function SalesOrderModificationForm({
         internal_notes: internalNotes.trim() || null,
       },
 
-      items: items.filter((item) => !item.isRemoved).map((item) => ({
-        id: item.id,
-        product_id: item.productId,
-        unit_id: item.unitId,
-        warehouse_id: item.warehouseId,
-        sku: item.sku,
-        item_name: item.itemName,
-        description: item.description,
+      items: items
+        .filter((item) => !item.isRemoved)
+        .map((item) => ({
+          id: item.id,
+          product_id: item.productId,
+          unit_id: item.unitId,
+          warehouse_id: item.warehouseId,
+          sku: item.sku,
+          item_name: item.itemName,
+          description: item.description,
 
-        quantity: toNumber(item.quantityInput),
+          quantity: toNumber(item.quantityInput),
 
-        unit_price: toNumber(item.unitPriceInput),
+          unit_price: toNumber(item.unitPriceInput),
 
-        discount_percentage: toNumber(item.discountInput),
+          discount_percentage: toNumber(item.discountInput),
 
-        tax_percentage: toNumber(item.taxInput),
+          tax_percentage: toNumber(item.taxInput),
 
-        fulfilment_method: item.fulfilmentMethod,
+          fulfilment_method: item.fulfilmentMethod,
 
-        line_notes: item.lineNotes,
-      })),
+          line_notes: item.lineNotes,
+        })),
     };
   }
 
@@ -931,7 +952,9 @@ export default function SalesOrderModificationForm({
 
             <div className="grid gap-4 lg:grid-cols-12">
               <div className="lg:col-span-5">
-                <label className="mb-2 block text-sm font-medium">Product</label>
+                <label className="mb-2 block text-sm font-medium">
+                  Product
+                </label>
                 <SmartProductPicker
                   products={products}
                   value={selectedProductId}
@@ -943,7 +966,9 @@ export default function SalesOrderModificationForm({
               </div>
 
               <div className="lg:col-span-3">
-                <label className="mb-2 block text-sm font-medium">Warehouse</label>
+                <label className="mb-2 block text-sm font-medium">
+                  Warehouse
+                </label>
                 <select
                   value={newWarehouseId}
                   onChange={(event) => {
@@ -982,7 +1007,9 @@ export default function SalesOrderModificationForm({
 
             <div className="mt-4 grid gap-4 md:grid-cols-4">
               <label>
-                <span className="mb-2 block text-sm font-medium">Selling Price</span>
+                <span className="mb-2 block text-sm font-medium">
+                  Selling Price
+                </span>
                 <Input
                   type="number"
                   min="0"
@@ -993,7 +1020,9 @@ export default function SalesOrderModificationForm({
               </label>
 
               <label>
-                <span className="mb-2 block text-sm font-medium">Discount %</span>
+                <span className="mb-2 block text-sm font-medium">
+                  Discount %
+                </span>
                 <Input
                   type="number"
                   min="0"
@@ -1017,7 +1046,9 @@ export default function SalesOrderModificationForm({
               </label>
 
               <div>
-                <span className="mb-2 block text-sm font-medium">Line Total</span>
+                <span className="mb-2 block text-sm font-medium">
+                  Line Total
+                </span>
                 <div className="flex h-10 items-center rounded-md border bg-muted/30 px-3 text-sm font-semibold">
                   {formatCurrency(newLinePreview.total, order.currencyCode)}
                 </div>
@@ -1054,7 +1085,10 @@ export default function SalesOrderModificationForm({
             {selectedProduct && newLinePreview.stockShortage ? (
               <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 Requested quantity exceeds available stock of{" "}
-                <strong>{formatQuantity(newLinePreview.availableQuantity)}</strong>.
+                <strong>
+                  {formatQuantity(newLinePreview.availableQuantity)}
+                </strong>
+                .
               </div>
             ) : null}
 
@@ -1116,7 +1150,12 @@ export default function SalesOrderModificationForm({
                   >
                     <td className="px-4 py-4">
                       <p className="font-semibold">
-                        {index + 1}. {item.itemName}{item.isNew ? " (NEW)" : item.isRemoved ? " (REMOVED)" : ""}
+                        {index + 1}. {item.itemName}
+                        {item.isNew
+                          ? " (NEW)"
+                          : item.isRemoved
+                            ? " (REMOVED)"
+                            : ""}
                       </p>
 
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -1200,7 +1239,11 @@ export default function SalesOrderModificationForm({
                         disabled={item.isRemoved}
                         value={item.taxInput}
                         onChange={(event) =>
-                          updateItem(item.clientKey, "taxInput", event.target.value)
+                          updateItem(
+                            item.clientKey,
+                            "taxInput",
+                            event.target.value,
+                          )
                         }
                       />
                     </td>
@@ -1609,10 +1652,7 @@ export default function SalesOrderModificationForm({
             Preview Changes
           </Button>
 
-          <Button
-            disabled={isPending || !preview}
-            onClick={handleApply}
-          >
+          <Button disabled={isPending || !preview} onClick={handleApply}>
             {isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
@@ -1626,14 +1666,7 @@ export default function SalesOrderModificationForm({
   );
 }
 
-
-function MiniMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function MiniMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border bg-background p-3">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
