@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { uploadWholesaleCollectionImages } from "@/app/admin/(protected)/wholesale-collections/[id]/image-actions";
 import { optimizeWholesaleImage } from "@/lib/wholesale-image-optimizer";
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 1;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -161,11 +161,24 @@ export default function WholesaleCollectionUploader({
           return;
         }
 
-        const result = await uploadWholesaleCollectionImages(formData);
+        try {
+          const result = await uploadWholesaleCollectionImages(formData);
 
-        if (!result.success) {
+          if (!result.success) {
+            setUploadedCount(completed);
+            setError(result.message);
+            router.refresh();
+            return;
+          }
+        } catch (uploadError) {
+          console.error("Wholesale collection upload failed:", uploadError);
+
           setUploadedCount(completed);
-          setError(result.message);
+          setError(
+            `Upload stopped after ${completed} of ${files.length} photos. ` +
+              "The server rejected the next photo. Please try uploading the remaining photos again.",
+          );
+
           router.refresh();
           return;
         }
