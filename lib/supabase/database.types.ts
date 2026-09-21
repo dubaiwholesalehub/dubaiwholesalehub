@@ -4923,6 +4923,7 @@ export type Database = {
           after_snapshot: Json
           applied_at: string | null
           applied_by: string | null
+          approval_snapshot_hash: string | null
           before_snapshot: Json
           cancelled_at: string | null
           cancelled_by: string | null
@@ -4953,6 +4954,7 @@ export type Database = {
           after_snapshot: Json
           applied_at?: string | null
           applied_by?: string | null
+          approval_snapshot_hash?: string | null
           before_snapshot: Json
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -4983,6 +4985,7 @@ export type Database = {
           after_snapshot?: Json
           applied_at?: string | null
           applied_by?: string | null
+          approval_snapshot_hash?: string | null
           before_snapshot?: Json
           cancelled_at?: string | null
           cancelled_by?: string | null
@@ -7372,6 +7375,74 @@ export type Database = {
           postal_code?: string | null
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      wholesale_collection_images: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          is_available: boolean
+          reference_number: number
+          sort_order: number
+          storage_path: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          reference_number?: never
+          sort_order?: number
+          storage_path: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          is_available?: boolean
+          reference_number?: never
+          sort_order?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesale_collection_images_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_collections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesale_collections: {
+        Row: {
+          created_at: string
+          id: string
+          is_published: boolean
+          slug: string
+          title: string
+          updated_at: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
