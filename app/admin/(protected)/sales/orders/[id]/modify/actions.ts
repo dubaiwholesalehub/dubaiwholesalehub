@@ -134,6 +134,214 @@ export async function previewSalesOrderModificationAction(
   return data;
 }
 
+export interface SalesOrderRevisionMarginApprovalRequest {
+  salesOrderId: string;
+  afterSnapshot: SalesOrderModificationSnapshot;
+  reason: string;
+}
+
+function validateMarginApprovalRequest(
+  input: SalesOrderRevisionMarginApprovalRequest,
+): SalesOrderRevisionMarginApprovalRequest {
+  const salesOrderId = input.salesOrderId?.trim();
+  const reason = input.reason?.trim();
+
+  if (!salesOrderId) {
+    throw new Error("Sales Order ID is required.");
+  }
+
+  if (!reason || reason.length < 3) {
+    throw new Error(
+      "Please enter a clear margin approval reason of at least 3 characters.",
+    );
+  }
+
+  if (
+    !input.afterSnapshot ||
+    !Array.isArray(input.afterSnapshot.items) ||
+    input.afterSnapshot.items.length === 0
+  ) {
+    throw new Error(
+      "The proposed Sales Order revision must contain at least one active item.",
+    );
+  }
+
+  return {
+    salesOrderId,
+    afterSnapshot: input.afterSnapshot,
+    reason,
+  };
+}
+
+export async function analyzeSalesOrderRevisionMarginAction(input: {
+  salesOrderId: string;
+  afterSnapshot: SalesOrderModificationSnapshot;
+}) {
+  await requireModificationAccess();
+
+  const salesOrderId = input.salesOrderId?.trim();
+
+  if (!salesOrderId) {
+    throw new Error("Sales Order ID is required.");
+  }
+
+  if (
+    !input.afterSnapshot ||
+    !Array.isArray(input.afterSnapshot.items) ||
+    input.afterSnapshot.items.length === 0
+  ) {
+    throw new Error(
+      "The proposed Sales Order revision must contain at least one active item.",
+    );
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "analyze_sales_order_revision_margin",
+    {
+      p_sales_order_id: salesOrderId,
+      p_after_snapshot: input.afterSnapshot as unknown as Json,
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        "Unable to analyze the proposed revision margin.",
+    );
+  }
+
+  return data;
+}
+
+export async function requestSalesOrderRevisionMarginApprovalAction(
+  input: SalesOrderRevisionMarginApprovalRequest,
+) {
+  await requireModificationAccess();
+
+  const validated = validateMarginApprovalRequest(input);
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "request_sales_order_revision_margin_approval",
+    {
+      p_sales_order_id: validated.salesOrderId,
+      p_after_snapshot: validated.afterSnapshot as unknown as Json,
+      p_reason: validated.reason,
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        "Unable to request margin approval for this revision.",
+    );
+  }
+
+  revalidatePath(
+    `/admin/sales/orders/${validated.salesOrderId}/modify`,
+  );
+
+  return data;
+}
+
+export async function approveSalesOrderRevisionMarginExceptionAction(input: {
+  approvalId: string;
+  decisionNotes?: string | null;
+}) {
+  await requireModificationAccess();
+
+  const approvalId = input.approvalId?.trim();
+
+  if (!approvalId) {
+    throw new Error("Margin approval ID is required.");
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "approve_sales_order_revision_margin_exception",
+    {
+      p_approval_id: approvalId,
+      p_decision_notes: input.decisionNotes?.trim() || "",
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        "Unable to approve the revision margin exception.",
+    );
+  }
+
+  return data;
+}
+
+export async function rejectSalesOrderRevisionMarginExceptionAction(input: {
+  approvalId: string;
+  decisionNotes?: string | null;
+}) {
+  await requireModificationAccess();
+
+  const approvalId = input.approvalId?.trim();
+
+  if (!approvalId) {
+    throw new Error("Margin approval ID is required.");
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "reject_sales_order_revision_margin_exception",
+    {
+      p_approval_id: approvalId,
+      p_decision_notes: input.decisionNotes?.trim() || "",
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        "Unable to reject the revision margin exception.",
+    );
+  }
+
+  return data;
+}
+
+export async function hasValidSalesOrderRevisionMarginApprovalAction(input: {
+  salesOrderId: string;
+  afterSnapshot: SalesOrderModificationSnapshot;
+}) {
+  await requireModificationAccess();
+
+  const salesOrderId = input.salesOrderId?.trim();
+
+  if (!salesOrderId) {
+    throw new Error("Sales Order ID is required.");
+  }
+
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc(
+    "has_valid_sales_order_revision_margin_approval",
+    {
+      p_sales_order_id: salesOrderId,
+      p_after_snapshot: input.afterSnapshot as unknown as Json,
+    },
+  );
+
+  if (error) {
+    throw new Error(
+      error.message ||
+        "Unable to validate the revision margin approval.",
+    );
+  }
+
+  return data;
+}
+
 export async function applySalesOrderModificationAction(
   input: SalesOrderModificationRequest & {
     idempotencyKey: string;

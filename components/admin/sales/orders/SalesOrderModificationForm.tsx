@@ -30,11 +30,16 @@ import {
 } from "@/components/ui/select";
 
 import {
+  analyzeSalesOrderRevisionMarginAction,
   applySalesOrderModificationAction,
+  approveSalesOrderRevisionMarginExceptionAction,
   previewSalesOrderModificationAction,
+  rejectSalesOrderRevisionMarginExceptionAction,
+  requestSalesOrderRevisionMarginApprovalAction,
   type SalesOrderModificationRequest,
   type SalesOrderModificationSnapshot,
   type SalesOrderModificationType,
+  hasValidSalesOrderRevisionMarginApprovalAction,
 } from "@/app/admin/(protected)/sales/orders/[id]/modify/actions";
 
 import type { SalesOrderWarehouse } from "@/lib/repositories/sales-order.repository";
@@ -214,6 +219,16 @@ export default function SalesOrderModificationForm({
 
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [marginAnalysis, setMarginAnalysis] = useState<JsonObject | null>(null);
+  const [marginApprovalId, setMarginApprovalId] = useState<string | null>(null);
+
+  const [marginApprovalStatus, setMarginApprovalStatus] = useState<
+    "not_required" | "required" | "pending" | "approved" | "rejected"
+  >("not_required");
+
+  const [marginApprovalReason, setMarginApprovalReason] = useState("");
+  const [marginDecisionNotes, setMarginDecisionNotes] = useState("");
 
   const [invoiceDiscountInput, setInvoiceDiscountInput] = useState(
     String(order.invoiceDiscountAmount),
@@ -598,6 +613,14 @@ export default function SalesOrderModificationForm({
     setError(null);
   }
 
+  function resetMarginApprovalState() {
+    setMarginAnalysis(null);
+    setMarginApprovalId(null);
+    setMarginApprovalStatus("not_required");
+    setMarginApprovalReason("");
+    setMarginDecisionNotes("");
+  }
+
   function buildSnapshot(): SalesOrderModificationSnapshot {
     return {
       header: {
@@ -726,14 +749,45 @@ export default function SalesOrderModificationForm({
     setError(null);
     setSuccess(null);
 
+    resetMarginApprovalState();
+
+    const request = buildRequest();
+
     startTransition(async () => {
       try {
-        const result =
-          await previewSalesOrderModificationAction(buildRequest());
+        const [previewResult, marginResult] = await Promise.all([
+          previewSalesOrderModificationAction(request),
 
-        setPreview(result);
+          analyzeSalesOrderRevisionMarginAction({
+            salesOrderId: order.id,
+            afterSnapshot: request.afterSnapshot,
+          }),
+        ]);
+
+        setPreview(previewResult);
+
+        const analysis = asObject(marginResult);
+
+        setMarginAnalysis(analysis);
+
+        const requiresApproval = analysis?.requiresApproval === true;
+
+        if (requiresApproval) {
+          const hasExistingApproval =
+            await hasValidSalesOrderRevisionMarginApprovalAction({
+              salesOrderId: request.salesOrderId,
+              afterSnapshot: request.afterSnapshot,
+            });
+
+          setMarginApprovalStatus(
+            hasExistingApproval ? "approved" : "required",
+          );
+        } else {
+          setMarginApprovalStatus("not_required");
+        }
       } catch (caught) {
         setPreview(null);
+        resetMarginApprovalState();
 
         setError(
           caught instanceof Error
@@ -744,9 +798,121 @@ export default function SalesOrderModificationForm({
     });
   }
 
+  function handleRequestMarginApproval() {
+    if (!preview || !marginAnalysis) {
+      setError("Preview the modification before requesting margin approval.");
+      return;
+    }
+
+    if (marginApprovalReason.trim().length < 3) {
+      setError(
+        "Please enter a clear margin approval reason of at least 3 characters.",
+      );
+      return;
+    }
+
+    const request = buildRequest();
+
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      try {
+        const approvalId = await requestSalesOrderRevisionMarginApprovalAction({
+          salesOrderId: order.id,
+          afterSnapshot: request.afterSnapshot,
+          reason: marginApprovalReason.trim(),
+        });
+
+        setMarginApprovalId(approvalId);
+        setMarginApprovalStatus("pending");
+
+        setSuccess(
+          "Margin exception approval requested for this exact proposed revision.",
+        );
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to request margin approval.",
+        );
+      }
+    });
+  }
+
+  function handleApproveMarginException() {
+    if (!marginApprovalId) {
+      setError("Request margin approval before approving the exception.");
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      try {
+        await approveSalesOrderRevisionMarginExceptionAction({
+          approvalId: marginApprovalId,
+          decisionNotes: marginDecisionNotes.trim() || null,
+        });
+
+        setMarginApprovalStatus("approved");
+
+        setSuccess(
+          "Margin exception approved for this exact proposed revision.",
+        );
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to approve the margin exception.",
+        );
+      }
+    });
+  }
+
+  function handleRejectMarginException() {
+    if (!marginApprovalId) {
+      setError("No pending margin approval was found.");
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    startTransition(async () => {
+      try {
+        await rejectSalesOrderRevisionMarginExceptionAction({
+          approvalId: marginApprovalId,
+          decisionNotes: marginDecisionNotes.trim() || null,
+        });
+
+        setMarginApprovalStatus("rejected");
+
+        setSuccess("Margin exception rejected.");
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to reject the margin exception.",
+        );
+      }
+    });
+  }
+
   function handleApply() {
     if (!preview) {
       setError("Preview the modification before applying it.");
+      return;
+    }
+
+    if (
+      marginAnalysis?.requiresApproval === true &&
+      marginApprovalStatus !== "approved"
+    ) {
+      setError(
+        "This proposed revision requires approved margin authorization before it can be applied.",
+      );
       return;
     }
 
@@ -828,6 +994,22 @@ export default function SalesOrderModificationForm({
     ]) ??
     numberFrom(previewDifference, ["total_difference", "totalDifference"]) ??
     calculated.difference;
+
+  const marginRequiresApproval = marginAnalysis?.requiresApproval === true;
+
+  const lowestRevisionMargin = numberFrom(marginAnalysis, [
+    "lowestMarginPercentage",
+  ]);
+
+  const marginWarningCount = numberFrom(marginAnalysis, ["warningCount"]) ?? 0;
+
+  const marginBlockedCount = numberFrom(marginAnalysis, ["blockedCount"]) ?? 0;
+
+  const marginMissingCostCount =
+    numberFrom(marginAnalysis, ["missingCostCount"]) ?? 0;
+
+  const canApplyMargin =
+    !marginRequiresApproval || marginApprovalStatus === "approved";
 
   return (
     <div className="space-y-6">
@@ -1624,6 +1806,172 @@ export default function SalesOrderModificationForm({
         </section>
       ) : null}
 
+      {preview && marginAnalysis ? (
+        <section
+          className={`rounded-2xl border p-5 ${
+            marginRequiresApproval
+              ? "border-amber-300 bg-amber-50/70 dark:bg-amber-950/10"
+              : marginWarningCount > 0
+                ? "border-amber-200 bg-amber-50/40 dark:bg-amber-950/10"
+                : "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/10"
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            {marginRequiresApproval ? (
+              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-700" />
+            ) : (
+              <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-700" />
+            )}
+
+            <div>
+              <h2 className="font-semibold">
+                {marginRequiresApproval
+                  ? "Margin Approval Required"
+                  : marginWarningCount > 0
+                    ? "Margin Warning"
+                    : "Margin Check Passed"}
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                {lowestRevisionMargin !== null
+                  ? `Lowest proposed margin: ${lowestRevisionMargin.toFixed(2)}%.`
+                  : "A margin percentage could not be calculated for every stock line."}
+              </p>
+
+              {marginBlockedCount > 0 ? (
+                <p className="mt-1 text-sm">
+                  {marginBlockedCount} line
+                  {marginBlockedCount === 1 ? "" : "s"} below the minimum
+                  margin.
+                </p>
+              ) : null}
+
+              {marginMissingCostCount > 0 ? (
+                <p className="mt-1 text-sm">
+                  {marginMissingCostCount} stock line
+                  {marginMissingCostCount === 1 ? "" : "s"} missing a valid
+                  cost.
+                </p>
+              ) : null}
+
+              {!marginRequiresApproval && marginWarningCount > 0 ? (
+                <p className="mt-1 text-sm">
+                  {marginWarningCount} line
+                  {marginWarningCount === 1 ? "" : "s"} is inside the warning
+                  margin range. Approval is not required.
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          {marginRequiresApproval ? (
+            <div className="mt-5 space-y-4 rounded-xl border bg-background p-4">
+              <div>
+                <p className="text-sm font-semibold">
+                  Approval Status: {formatLabel(marginApprovalStatus)}
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Approval applies only to this exact proposed revision.
+                  Changing the commercial proposal requires a new Preview and
+                  matching approval.
+                </p>
+              </div>
+
+              {marginApprovalStatus === "required" ? (
+                <>
+                  <label className="block space-y-2">
+                    <span className="text-sm font-medium">
+                      Margin Approval Reason *
+                    </span>
+
+                    <Textarea
+                      value={marginApprovalReason}
+                      onChange={(event) =>
+                        setMarginApprovalReason(event.target.value)
+                      }
+                      placeholder="Example: Strategic customer price approved for this order..."
+                    />
+                  </label>
+
+                  <Button
+                    type="button"
+                    disabled={isPending}
+                    onClick={handleRequestMarginApproval}
+                  >
+                    {isPending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <AlertTriangle className="size-4" />
+                    )}
+                    Request Approval
+                  </Button>
+                </>
+              ) : null}
+
+              {marginApprovalStatus === "pending" ? (
+                <>
+                  <label className="block space-y-2">
+                    <span className="text-sm font-medium">
+                      Approval Decision Notes
+                    </span>
+
+                    <Textarea
+                      value={marginDecisionNotes}
+                      onChange={(event) =>
+                        setMarginDecisionNotes(event.target.value)
+                      }
+                      placeholder="Optional approval or rejection notes..."
+                    />
+                  </label>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      disabled={isPending}
+                      onClick={handleApproveMarginException}
+                    >
+                      <CheckCircle2 className="size-4" />
+                      Approve Exception
+                    </Button>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isPending}
+                      onClick={handleRejectMarginException}
+                    >
+                      <AlertTriangle className="size-4" />
+                      Reject
+                    </Button>
+                  </div>
+                </>
+              ) : null}
+
+              {marginApprovalStatus === "approved" ? (
+                <div className="flex gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:bg-emerald-950/20">
+                  <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+                  <p>
+                    Approved for this exact revision. You may now apply the
+                    modification.
+                  </p>
+                </div>
+              ) : null}
+
+              {marginApprovalStatus === "rejected" ? (
+                <div className="flex gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/20">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+                  <p>
+                    This margin exception was rejected. Change the proposal and
+                    Preview again before requesting another approval.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <section className="flex flex-col gap-3 rounded-2xl border bg-background p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           Preview is required before the modification can be applied.
@@ -1652,7 +2000,10 @@ export default function SalesOrderModificationForm({
             Preview Changes
           </Button>
 
-          <Button disabled={isPending || !preview} onClick={handleApply}>
+          <Button
+            disabled={isPending || !preview || !canApplyMargin}
+            onClick={handleApply}
+          >
             {isPending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (

@@ -671,6 +671,119 @@ export type Database = {
           },
         ]
       }
+      customer_receipt_allocation_adjustments: {
+        Row: {
+          adjustment_type: string
+          allocation_id: string
+          amount: number
+          created_at: string
+          created_by: string | null
+          gl_journal_entry_id: string | null
+          id: string
+          reason: string
+          receipt_id: string
+          sales_order_id: string
+          sales_order_revision_id: string | null
+        }
+        Insert: {
+          adjustment_type: string
+          allocation_id: string
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          gl_journal_entry_id?: string | null
+          id?: string
+          reason: string
+          receipt_id: string
+          sales_order_id: string
+          sales_order_revision_id?: string | null
+        }
+        Update: {
+          adjustment_type?: string
+          allocation_id?: string
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          gl_journal_entry_id?: string | null
+          id?: string
+          reason?: string
+          receipt_id?: string
+          sales_order_id?: string
+          sales_order_revision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_receipt_allocation_adjust_sales_order_revision_id_fkey"
+            columns: ["sales_order_revision_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustment_gl_journal_entry_id_fkey"
+            columns: ["gl_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_balance"
+            referencedColumns: ["journal_entry_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustment_gl_journal_entry_id_fkey"
+            columns: ["gl_journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "gl_journal_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_allocation_id_fkey"
+            columns: ["allocation_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receipt_allocations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_allocation_id_fkey"
+            columns: ["allocation_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receipt_effective_allocations"
+            referencedColumns: ["allocation_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocation_adjustments_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_receipt_allocation_repair_audit: {
         Row: {
           allocation_id: string
@@ -4678,6 +4791,132 @@ export type Database = {
           },
         ]
       }
+      sales_order_revision_margin_approvals: {
+        Row: {
+          after_snapshot: Json
+          approved_at: string | null
+          approved_by: string | null
+          consumed_at: string | null
+          consumed_by_revision_id: string | null
+          created_at: string
+          decision_notes: string | null
+          id: string
+          lowest_margin_percentage: number | null
+          policy_minimum_percentage: number | null
+          policy_warning_percentage: number | null
+          rejected_at: string | null
+          rejected_by: string | null
+          requested_at: string
+          requested_by: string | null
+          requested_reason: string
+          sales_order_id: string
+          snapshot_hash: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          after_snapshot: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          consumed_at?: string | null
+          consumed_by_revision_id?: string | null
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          lowest_margin_percentage?: number | null
+          policy_minimum_percentage?: number | null
+          policy_warning_percentage?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          requested_reason: string
+          sales_order_id: string
+          snapshot_hash: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          after_snapshot?: Json
+          approved_at?: string | null
+          approved_by?: string | null
+          consumed_at?: string | null
+          consumed_by_revision_id?: string | null
+          created_at?: string
+          decision_notes?: string | null
+          id?: string
+          lowest_margin_percentage?: number | null
+          policy_minimum_percentage?: number | null
+          policy_warning_percentage?: number | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          requested_reason?: string
+          sales_order_id?: string
+          snapshot_hash?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_order_revision_margin_approv_consumed_by_revision_id_fkey"
+            columns: ["consumed_by_revision_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_revisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_rejected_by_fkey"
+            columns: ["rejected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "sales_order_revision_margin_approvals_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales_order_revisions: {
         Row: {
           additional_amount_due: number
@@ -7205,6 +7444,54 @@ export type Database = {
           },
         ]
       }
+      customer_receipt_effective_allocations: {
+        Row: {
+          adjustment_amount: number | null
+          allocation_id: string | null
+          created_at: string | null
+          effective_amount: number | null
+          original_amount: number | null
+          receipt_id: string | null
+          sales_order_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_receipt_allocations_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "customer_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_by_sales_order"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "profitability_sales_lines"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_order_margin_analysis"
+            referencedColumns: ["sales_order_id"]
+          },
+          {
+            foreignKeyName: "customer_receipt_allocations_sales_order_id_fkey"
+            columns: ["sales_order_id"]
+            isOneToOne: false
+            referencedRelation: "sales_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_receivable_summary: {
         Row: {
           available_credit: number | null
@@ -7915,6 +8202,10 @@ export type Database = {
         }
         Returns: string
       }
+      analyze_sales_order_revision_margin: {
+        Args: { p_after_snapshot: Json; p_sales_order_id: string }
+        Returns: Json
+      }
       apply_customer_advance_to_sales_order: {
         Args: { p_sales_order_id: string }
         Returns: number
@@ -7966,6 +8257,10 @@ export type Database = {
       }
       approve_sales_margin_exception: {
         Args: { p_decision_notes: string; p_sales_order_id: string }
+        Returns: string
+      }
+      approve_sales_order_revision_margin_exception: {
+        Args: { p_approval_id: string; p_decision_notes: string }
         Returns: string
       }
       approve_sales_return: {
@@ -8501,6 +8796,10 @@ export type Database = {
         Args: { p_customer_opening_balance_id: string }
         Returns: number
       }
+      get_effective_customer_receipt_allocation: {
+        Args: { p_allocation_id: string }
+        Returns: number
+      }
       get_expense_category_gl_account: {
         Args: { p_expense_category_id: string }
         Returns: string
@@ -8653,6 +8952,10 @@ export type Database = {
       }
       has_valid_sales_margin_approval: {
         Args: { p_sales_order_id: string }
+        Returns: boolean
+      }
+      has_valid_sales_order_revision_margin_approval: {
+        Args: { p_after_snapshot: Json; p_sales_order_id: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
@@ -9037,6 +9340,10 @@ export type Database = {
         Args: { p_decision_notes: string; p_sales_order_id: string }
         Returns: string
       }
+      reject_sales_order_revision_margin_exception: {
+        Args: { p_approval_id: string; p_decision_notes: string }
+        Returns: string
+      }
       reject_supplier_quotation: {
         Args: { rejection_reason?: string; target_quotation_id: string }
         Returns: {
@@ -9088,6 +9395,14 @@ export type Database = {
       }
       request_sales_margin_approval: {
         Args: { p_reason: string; p_sales_order_id: string }
+        Returns: string
+      }
+      request_sales_order_revision_margin_approval: {
+        Args: {
+          p_after_snapshot: Json
+          p_reason: string
+          p_sales_order_id: string
+        }
         Returns: string
       }
       restore_product_supplier: {
@@ -9155,6 +9470,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      sales_order_revision_snapshot_hash: {
+        Args: { p_after_snapshot: Json }
+        Returns: string
       }
       send_rfq: {
         Args: { target_rfq_id: string }
@@ -9328,6 +9647,10 @@ export type Database = {
         Returns: undefined
       }
       validate_sales_order_margin: {
+        Args: { p_sales_order_id: string }
+        Returns: Json
+      }
+      validate_sales_order_revision_margin: {
         Args: { p_sales_order_id: string }
         Returns: Json
       }
