@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Zap } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { requireSalesAccess } from "@/lib/auth/require-admin";
 
@@ -216,8 +216,8 @@ export default async function QuickSalePage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 pb-16">
-      <div>
+    <div className="mx-auto max-w-[1600px] space-y-4 pb-16">
+      <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/admin/sales/orders"
           className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-amber-600"
@@ -225,25 +225,9 @@ export default async function QuickSalePage() {
           <ArrowLeft className="h-4 w-4" />
           Sales Orders
         </Link>
-
-        <div className="mt-5 flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-            <Zap className="h-6 w-6" />
-          </div>
-
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-950">
-              Quick Sale
-            </h1>
-
-            <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
-              Enter multiple products, stock or local purchases, VAT/export
-              treatment, payment and delivery from one screen.
-            </p>
-          </div>
-        </div>
+        <span className="h-5 w-px bg-slate-300" />
+        <h1 className="text-xl font-bold tracking-tight text-slate-950">Quick Sale</h1>
       </div>
-
       <QuickSaleForm options={options} />
     </div>
   );

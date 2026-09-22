@@ -45,217 +45,83 @@ const navigationGroups = [
   {
     label: "Overview",
     items: [
-      {
-        label: "Dashboard",
-        href: "/admin",
-        icon: Gauge,
-      },
+      { label: "Dashboard", href: "/admin", icon: Gauge },
     ],
   },
-
   {
     label: "Sales",
     items: [
-      {
-        label: "Quick Sale",
-        href: "/admin/sales/quick-sale",
-        icon: Zap,
-      },
-      {
-        label: "Quotations",
-        href: "/admin/sales/quotations",
-        icon: FileText,
-      },
-      {
-        label: "Sales Orders",
-        href: "/admin/sales/orders",
-        icon: ClipboardList,
-      },
-      {
-        label: "Deliveries",
-        href: "/admin/sales/deliveries",
-        icon: Truck,
-      },
-      {
-        label: "Customer Receipts",
-        href: "/admin/sales/receipts",
-        icon: ReceiptText,
-      },
-      {
-        label: "Sales Returns",
-        href: "/admin/sales/returns",
-        icon: ArrowLeftRight,
-      },
-      {
-        label: "Salesperson Performance",
-        href: "/admin/sales/salesperson-performance",
-        icon: TrendingUp,
-      },
-      {
-        label: "Customers",
-        href: "/admin/customers",
-        icon: Users,
-      },
+      { label: "Sales Dashboard", href: "/admin/sales", icon: Gauge },
+      { label: "Quick Sale", href: "/admin/sales/quick-sale", icon: Zap },
+      { label: "Quotations", href: "/admin/sales/quotations", icon: FileText },
+      { label: "Sales Orders", href: "/admin/sales/orders", icon: ClipboardList },
+      { label: "Deliveries", href: "/admin/sales/deliveries", icon: Truck },
+      { label: "Customer Receipts", href: "/admin/sales/receipts", icon: ReceiptText },
+      { label: "Sales Returns", href: "/admin/sales/returns", icon: ArrowLeftRight },
+      { label: "Customer Statement", href: "/admin/sales/customer-statement", icon: BookOpenText },
+      { label: "Salesperson Performance", href: "/admin/sales/salesperson-performance", icon: TrendingUp },
     ],
   },
-
   {
     label: "Purchasing",
     items: [
-      {
-        label: "Quick Purchase",
-        href: "/admin/purchasing/quick-purchase",
-        icon: ShoppingBag,
-      },
-      {
-        label: "Purchase Orders",
-        href: "/admin/purchase-orders",
-        icon: ShoppingCart,
-      },
-      {
-        label: "Goods Receipts",
-        href: "/admin/goods-receipts",
-        icon: PackageCheck,
-      },
-      {
-        label: "Supplier Payments",
-        href: "/admin/purchasing/supplier-payments",
-        icon: HandCoins,
-      },
-      {
-        label: "Supplier Returns",
-        href: "/admin/purchasing/returns",
-        icon: ArrowLeftRight,
-      },
-      {
-        label: "Suppliers",
-        href: "/admin/suppliers",
-        icon: Building2,
-      },
+      { label: "Purchasing Dashboard", href: "/admin/purchasing", icon: Gauge },
+      { label: "Quick Purchase", href: "/admin/purchasing/quick-purchase", icon: ShoppingBag },
+      { label: "Purchase Orders", href: "/admin/purchase-orders", icon: ShoppingCart },
+      { label: "Goods Receipts", href: "/admin/goods-receipts", icon: PackageCheck },
+      { label: "Supplier Payments", href: "/admin/purchasing/supplier-payments", icon: HandCoins },
+      { label: "Supplier Returns", href: "/admin/purchasing/returns", icon: ArrowLeftRight },
+      { label: "Supplier Statement", href: "/admin/purchasing/supplier-statement", icon: BookOpenText },
+      { label: "Reorder Intelligence", href: "/admin/purchasing/reorder", icon: TrendingUp },
+      { label: "Supplier Comparison", href: "/admin/purchasing/supplier-comparison", icon: Scale },
     ],
   },
-
   {
     label: "Inventory",
     items: [
-      {
-        label: "Warehouse Stock",
-        href: "/admin/inventory/stock",
-        icon: Boxes,
-      },
-      {
-        label: "Inventory Operations",
-        href: "/admin/inventory/operations",
-        icon: ClipboardCheck,
-      },
-      {
-        label: "Transfers",
-        href: "/admin/inventory/transfers",
-        icon: ArrowLeftRight,
-      },
+      { label: "Inventory Dashboard", href: "/admin/inventory", icon: Gauge },
+      { label: "Warehouse Stock", href: "/admin/inventory/stock", icon: Boxes },
+      { label: "Inventory Operations", href: "/admin/inventory/operations", icon: ClipboardCheck },
+      { label: "Inventory Transactions", href: "/admin/inventory/transactions", icon: ClipboardList },
+      { label: "Warehouses", href: "/admin/inventory/warehouses", icon: Building2 },
     ],
   },
-
   {
-    label: "Accounts & Reports",
+    label: "Accounts",
     items: [
-      {
-        label: "Cash & Bank",
-        href: "/admin/accounts/cash-bank",
-        icon: Landmark,
-      },
-      {
-        label: "Opening Balances",
-        href: "/admin/accounts/opening-balances",
-        icon: BookOpenText,
-      },
-      {
-        label: "Expenses",
-        href: "/admin/accounts/expenses",
-        icon: ReceiptText,
-      },
-      {
-        label: "Profitability",
-        href: "/admin/accounts/profitability",
-        icon: TrendingUp,
-      },
-      {
-        label: "Customer Statement",
-        href: "/admin/sales/customer-statement",
-        icon: BookOpenText,
-      },
-      {
-        label: "Supplier Statement",
-        href: "/admin/purchasing/supplier-statement",
-        icon: BookOpenText,
-      },
+      { label: "Accounts Dashboard", href: "/admin/accounts", icon: Gauge },
+      { label: "Cash & Bank", href: "/admin/accounts/cash-bank", icon: Landmark },
+      { label: "Receivables & Payables", href: "/admin/accounts/receivables-payables", icon: HandCoins },
+      { label: "Expenses", href: "/admin/accounts/expenses", icon: ReceiptText },
+      { label: "Transfers", href: "/admin/accounts/transfers", icon: ArrowLeftRight },
+      { label: "Chart of Accounts", href: "/admin/accounts/chart-of-accounts", icon: BookOpenText },
+      { label: "Opening Balances", href: "/admin/accounts/opening-balances", icon: BookOpenText },
+      { label: "Profitability", href: "/admin/accounts/profitability", icon: TrendingUp },
+      { label: "Profit & Loss", href: "/admin/accounts/reports/profit-and-loss", icon: FileText },
+      { label: "Balance Sheet", href: "/admin/accounts/reports/balance-sheet", icon: Scale },
+      { label: "Trial Balance", href: "/admin/accounts/reports/trial-balance", icon: ClipboardList },
+      { label: "Journal Register", href: "/admin/accounts/reports/journal-register", icon: BookOpenText },
+      { label: "Accounting Periods", href: "/admin/accounts/accounting-periods", icon: ClipboardCheck },
     ],
   },
-
   {
-    label: "Products",
+    label: "Master Data",
     items: [
-      {
-        label: "Products",
-        href: "/admin/products",
-        icon: PackageSearch,
-      },
-      {
-        label: "Categories",
-        href: "/admin/categories",
-        icon: Boxes,
-      },
-      {
-        label: "Brands",
-        href: "/admin/brands",
-        icon: Tags,
-      },
+      { label: "Products", href: "/admin/products", icon: PackageSearch },
+      { label: "Categories", href: "/admin/categories", icon: Boxes },
+      { label: "Brands", href: "/admin/brands", icon: Tags },
+      { label: "Units", href: "/admin/units", icon: Ruler },
+      { label: "Customers", href: "/admin/customers", icon: Users },
+      { label: "Suppliers", href: "/admin/suppliers", icon: Building2 },
+      { label: "Wholesale Collections", href: "/admin/wholesale-collections", icon: Layers3 },
     ],
   },
-
   {
     label: "Advanced",
     items: [
-      {
-        label: "RFQs",
-        href: "/admin/rfqs",
-        icon: FileQuestion,
-      },
-      {
-        label: "Reorder Intelligence",
-        href: "/admin/purchasing/reorder",
-        icon: TrendingUp,
-      },
-      {
-        label: "Supplier Comparison",
-        href: "/admin/purchasing/supplier-comparison",
-        icon: Scale,
-      },
-      {
-        label: "Product Mapping",
-        href: "/admin/product-suppliers",
-        icon: Layers3,
-      },
-      {
-        label: "Inventory Transactions",
-        href: "/admin/inventory/transactions",
-        icon: ClipboardList,
-      },
-      {
-        label: "Units",
-        href: "/admin/units",
-        icon: Ruler,
-      },
-      {
-        label: "Users & Salespeople",
-        href: "/admin/settings/users",
-        icon: Users,
-      },
-      {
-        label: "Settings",
-        href: "/admin/settings",
-        icon: Settings,
-      },
+      { label: "RFQs", href: "/admin/rfqs", icon: FileQuestion },
+      { label: "Users & Salespeople", href: "/admin/settings/users", icon: Users },
+      { label: "Company Profile", href: "/admin/settings/company-profile", icon: Settings },
     ],
   },
 ];
@@ -263,6 +129,16 @@ const navigationGroups = [
 function isActiveRoute(pathname: string, href: string) {
   if (href === "/admin") {
     return pathname === "/admin";
+  }
+
+  // Section dashboards should only highlight on their exact landing page.
+  if (
+    href === "/admin/sales" ||
+    href === "/admin/purchasing" ||
+    href === "/admin/inventory" ||
+    href === "/admin/accounts"
+  ) {
+    return pathname === href;
   }
 
   return pathname.startsWith(href);
