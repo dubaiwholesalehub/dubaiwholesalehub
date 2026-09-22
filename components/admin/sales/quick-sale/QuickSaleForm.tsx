@@ -122,7 +122,11 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("now");
 
-  const [items, setItems] = useState<QuickSaleItem[]>([createEmptyItem()]);
+  const [items, setItems] = useState<QuickSaleItem[]>(() =>
+    Array.from({ length: 10 }, () => createEmptyItem()),
+  );
+
+  const [detailsItemId, setDetailsItemId] = useState<string | null>(null);
 
   const newProductPickerRef = useRef<QuickSaleProductPickerHandle | null>(null);
 
@@ -414,24 +418,20 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
     );
   }
 
-  function addItem() {
-    const newItem = createEmptyItem();
-
-    setItems((current) => [...current, newItem]);
-
-    window.requestAnimationFrame(() => {
-      newProductPickerRef.current?.focus();
-    });
+  function addRows(count = 10) {
+    setItems((current) => [
+      ...current,
+      ...Array.from({ length: count }, () => createEmptyItem()),
+    ]);
   }
 
   function removeItem(id: string) {
     setItems((current) => {
-      if (current.length === 1) {
-        return [createEmptyItem()];
-      }
-
-      return current.filter((item) => item.id !== id);
+      const next = current.filter((item) => item.id !== id);
+      return next.length > 0 ? next : [createEmptyItem()];
     });
+
+    setDetailsItemId((current) => (current === id ? null : current));
   }
 
   function getProduct(productId: string) {
@@ -674,26 +674,8 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
       {/* ---------------------------------------------------------
           QUICK SALE V2 - COMPACT TRANSACTION HEADER
           --------------------------------------------------------- */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-2 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <ReceiptText className="h-5 w-5 text-amber-600" />
-              <h2 className="text-base font-bold text-slate-950">Quick Sale</h2>
-            </div>
-
-            <p className="mt-1 text-xs text-slate-500">
-              Fast transaction entry
-            </p>
-          </div>
-
-          <div className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-            {items.filter((item) => item.productId).length} item
-            {items.filter((item) => item.productId).length === 1 ? "" : "s"}
-          </div>
-        </div>
-
-        <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-12">
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-12">
           <div className="xl:col-span-3">
             <Field label="Customer">
               <select
@@ -731,7 +713,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                   <option key={customer.id} value={customer.id}>
                     {customer.displayName}
                     {customer.customerNumber
-                      ? ` â€” ${customer.customerNumber}`
+                      ? ` - ${customer.customerNumber}`
                       : ""}
                   </option>
                 ))}
@@ -778,7 +760,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
 
                 {options.warehouses.map((warehouse) => (
                   <option key={warehouse.id} value={warehouse.id}>
-                    {warehouse.code} â€” {warehouse.name}
+                    {warehouse.code} - {warehouse.name}
                   </option>
                 ))}
               </select>
@@ -805,14 +787,14 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 }
                 className={inputClass}
               >
-                <option value="local_5">UAE Local â€” 5% VAT</option>
+                <option value="local_5">UAE Local - 5% VAT</option>
                 <option value="export_verified">
-                  Export â€” Evidence Verified â€” 0%
+                  Export - Evidence Verified - 0%
                 </option>
                 <option value="export_pending">
-                  Export â€” Evidence Pending
+                  Export - Evidence Pending
                 </option>
-                <option value="review">Other â€” Review Required</option>
+                <option value="review">Other - Review Required</option>
               </select>
             </Field>
           </div>
@@ -869,350 +851,124 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
       </section>
 
       {/* ---------------------------------------------------------
-          QUICK SALE V2 - COMPACT ITEM GRID
+          QUICK SALE V3 - DENSE 10-ROW ENTRY GRID
           --------------------------------------------------------- */}
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
           <div className="flex items-center gap-2">
-            <PackagePlus className="h-5 w-5 text-amber-600" />
-
-            <div>
-              <h2 className="text-sm font-bold text-slate-950">Sale Items</h2>
-
-              <p className="text-xs text-slate-500">
-                Stock and local-purchase items can be mixed in one sale.
-              </p>
-            </div>
+            <PackagePlus className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-bold text-slate-950">Sale Items</h2>
           </div>
-
-          <button
-            type="button"
-            onClick={addItem}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-xs font-semibold text-white transition hover:bg-amber-600"
-          >
-            <Plus className="h-4 w-4" />
-            Add Row
-          </button>
+          <span className="text-[11px] font-medium text-slate-400">{items.length} rows ready</span>
         </div>
 
         <div className="overflow-x-auto">
-          <div className="min-w-[1180px]">
-            <div className="grid grid-cols-[42px_minmax(250px,1fr)_72px_140px_190px_105px_105px_110px_115px_42px] items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
-              <div className="text-center">#</div>
-              <div>Product</div>
-              <div>Qty</div>
-              <div>Fulfilment</div>
-              <div>Supplier</div>
-              <div className="text-right">Cost</div>
-              <div className="text-right">Sell Price</div>
-              <div className="text-right">Total</div>
-              <div className="text-center">Margin</div>
-              <div />
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-[36px_minmax(340px,1fr)_80px_120px_120px_42px] items-center gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <div className="text-center">#</div><div>Product</div><div>Qty</div>
+              <div className="text-right">Sell Price</div><div className="text-right">Amount</div><div />
             </div>
 
             {items.map((item, index) => {
               const product = getProduct(item.productId);
               const stock = getStock(item.productId);
-              const purchaseInfo = getPurchaseInfo(item.productId);
-
               const lineTotal = item.quantity * item.sellingPrice;
-
-              const lineMargin = marginAnalysis.lines.find(
-                (line) => line.itemId === item.id,
-              );
-
-              const displayedCost =
-                item.fulfilment === "stock"
-                  ? (stock?.averageUnitCost ?? 0)
-                  : item.purchaseCost;
-
-              const marginLabel = !lineMargin
-                ? "â€”"
-                : lineMargin.margin === null
-                  ? "â€”"
-                  : `${lineMargin.margin.toFixed(1)}%`;
-
-              const marginClass = !lineMargin
-                ? "bg-slate-100 text-slate-500"
-                : lineMargin.status === "healthy"
-                  ? "bg-emerald-100 text-emerald-800"
-                  : lineMargin.status === "warning"
-                    ? "bg-amber-100 text-amber-800"
-                    : lineMargin.status === "at_cost"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-red-100 text-red-800";
+              const lineMargin = marginAnalysis.lines.find((line) => line.itemId === item.id);
 
               return (
-                <div
-                  key={item.id}
-                  className="grid grid-cols-[42px_minmax(250px,1fr)_72px_140px_190px_105px_105px_110px_115px_42px] items-start gap-2 border-b border-slate-100 px-3 py-2.5 last:border-b-0 hover:bg-slate-50/70"
-                >
-                  <div className="flex h-10 items-center justify-center text-xs font-bold text-slate-400">
-                    {index + 1}
-                  </div>
-
+                <div key={item.id} className="grid grid-cols-[36px_minmax(340px,1fr)_80px_120px_120px_42px] items-start gap-2 border-b border-slate-100 px-3 py-2 last:border-b-0 hover:bg-slate-50/70">
+                  <div className="flex h-9 items-center justify-center text-xs font-bold text-slate-400">{index + 1}</div>
                   <div>
                     <QuickSaleProductPicker
-                      ref={
-                        index === items.length - 1
-                          ? newProductPickerRef
-                          : undefined
-                      }
+                      ref={index === items.length - 1 ? newProductPickerRef : undefined}
                       products={options.products}
                       value={item.productId}
                       onChange={(productId) => {
                         const selectedProduct = getProduct(productId);
-
                         const selectedPurchaseInfo = getPurchaseInfo(productId);
-
-                        const nextFulfilment =
-                          selectedProduct?.defaultFulfilmentMethod ===
-                          "local_purchase"
-                            ? "local_purchase"
-                            : "stock";
-
+                        const nextFulfilment = selectedProduct?.defaultFulfilmentMethod === "local_purchase" ? "local_purchase" : "stock";
                         updateItem(item.id, {
                           productId,
-
                           fulfilment: nextFulfilment,
-
-                          supplierId:
-                            nextFulfilment === "local_purchase"
-                              ? (selectedPurchaseInfo?.supplierId ?? "")
-                              : "",
-
-                          purchaseCost:
-                            nextFulfilment === "local_purchase"
-                              ? (selectedPurchaseInfo?.suggestedPurchasePrice ??
-                                0)
-                              : 0,
+                          supplierId: nextFulfilment === "local_purchase" ? (selectedPurchaseInfo?.supplierId ?? "") : "",
+                          purchaseCost: nextFulfilment === "local_purchase" ? (selectedPurchaseInfo?.suggestedPurchasePrice ?? 0) : 0,
                         });
+                        if (productId && index === items.length - 1) addRows(10);
                       }}
                     />
-
                     {product ? (
-                      <div className="mt-1 flex min-h-4 flex-wrap items-center gap-x-2 gap-y-0.5 px-1 text-[10px] text-slate-500">
+                      <div className="mt-0.5 flex min-h-3 flex-wrap items-center gap-x-2 px-1 text-[10px] leading-3 text-slate-500">
                         {product.sku ? <span>SKU: {product.sku}</span> : null}
-
-                        <span>
-                          Unit:{" "}
-                          {product.unitShortName ?? product.unitName ?? "PCS"}
-                        </span>
-
+                        <span>{product.unitShortName ?? product.unitName ?? "PCS"}</span>
                         {item.fulfilment === "stock" ? (
-                          <span
-                            className={
-                              (stock?.quantityAvailable ?? 0) < item.quantity
-                                ? "font-bold text-red-600"
-                                : "font-semibold text-emerald-700"
-                            }
-                          >
-                            Avail: {stock?.quantityAvailable ?? 0}
-                          </span>
-                        ) : purchaseInfo?.supplierName ? (
-                          <span className="font-medium text-blue-700">
-                            Preferred: {purchaseInfo.supplierName}
-                          </span>
-                        ) : null}
+                          <span className={(stock?.quantityAvailable ?? 0) < item.quantity ? "font-bold text-red-600" : "font-semibold text-emerald-700"}>Stock: {stock?.quantityAvailable ?? 0}</span>
+                        ) : (
+                          <button type="button" onClick={() => setDetailsItemId(item.id)} className="font-bold text-blue-700 hover:text-blue-900">Local Buy</button>
+                        )}
+                        {lineMargin?.status === "approval_required" || lineMargin?.status === "cost_missing" ? <span className="font-bold text-red-600">Margin review</span> : lineMargin?.status === "warning" ? <span className="font-semibold text-amber-700">Low margin</span> : lineMargin?.status === "at_cost" ? <span className="font-semibold text-blue-700">At cost</span> : null}
                       </div>
-                    ) : (
-                      <div className="mt-1 h-4" />
-                    )}
+                    ) : null}
                   </div>
-
-                  <input
-                    type="number"
-                    min={1}
-                    step="1"
-                    value={item.quantity}
-                    onChange={(event) =>
-                      updateItem(item.id, {
-                        quantity: Math.max(Number(event.target.value) || 1, 1),
-                      })
-                    }
-                    className={compactInputClass}
-                    aria-label={`Quantity for item ${index + 1}`}
-                  />
-
-                  <select
-                    value={item.fulfilment}
-                    onChange={(event) => {
-                      const nextFulfilment = event.target
-                        .value as ItemFulfilment;
-
-                      updateItem(item.id, {
-                        fulfilment: nextFulfilment,
-
-                        supplierId:
-                          nextFulfilment === "local_purchase"
-                            ? item.supplierId || purchaseInfo?.supplierId || ""
-                            : "",
-
-                        purchaseCost:
-                          nextFulfilment === "local_purchase"
-                            ? item.purchaseCost ||
-                              purchaseInfo?.suggestedPurchasePrice ||
-                              0
-                            : item.purchaseCost,
-                      });
-                    }}
-                    className={compactInputClass}
-                    aria-label={`Fulfilment for item ${index + 1}`}
-                  >
-                    <option value="stock">Stock</option>
-                    <option value="local_purchase">Local Buy</option>
-                  </select>
-
-                  {item.fulfilment === "local_purchase" ? (
-                    <select
-                      value={item.supplierId}
-                      onChange={(event) =>
-                        updateItem(item.id, {
-                          supplierId: event.target.value,
-                        })
-                      }
-                      className={compactInputClass}
-                      aria-label={`Supplier for item ${index + 1}`}
-                    >
-                      <option value="">Supplier optional</option>
-
-                      {options.suppliers.map((supplier) => (
-                        <option key={supplier.id} value={supplier.id}>
-                          {supplier.companyName}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="flex h-9 items-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 text-xs text-slate-400">
-                      â€”
-                    </div>
-                  )}
-
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={displayedCost}
-                    readOnly={item.fulfilment === "stock"}
-                    onChange={(event) =>
-                      updateItem(item.id, {
-                        purchaseCost: Number(event.target.value) || 0,
-                      })
-                    }
-                    className={`${compactInputClass} text-right ${
-                      item.fulfilment === "stock"
-                        ? "bg-slate-50 text-slate-500"
-                        : ""
-                    }`}
-                    aria-label={`Cost for item ${index + 1}`}
-                  />
-
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={item.sellingPrice}
-                    onChange={(event) =>
-                      updateItem(item.id, {
-                        sellingPrice: Number(event.target.value) || 0,
-                      })
-                    }
-                    className={`${compactInputClass} text-right font-semibold`}
-                    aria-label={`Selling price for item ${index + 1}`}
-                  />
-
-                  <div className="flex h-9 items-center justify-end rounded-lg bg-slate-50 px-2 text-sm font-bold tabular-nums text-slate-900">
-                    {lineTotal.toFixed(2)}
-                  </div>
-
+                  <input type="number" min={1} step="1" value={item.quantity} onChange={(event) => updateItem(item.id, { quantity: Math.max(Number(event.target.value) || 1, 1) })} className={`${compactInputClass} text-center font-semibold`} aria-label={`Quantity for item ${index + 1}`} />
+                  <input type="number" min={0} step="0.01" value={item.sellingPrice} onChange={(event) => updateItem(item.id, { sellingPrice: Number(event.target.value) || 0 })} className={`${compactInputClass} text-right font-bold focus:border-amber-500 focus:ring-2 focus:ring-amber-100`} aria-label={`Selling price for item ${index + 1}`} />
+                  <div className="flex h-9 items-center justify-end rounded-lg bg-slate-50 px-2 text-sm font-bold tabular-nums text-slate-950">{lineTotal.toFixed(2)}</div>
                   <div className="flex h-9 items-center justify-center">
-                    <span
-                      className={`inline-flex min-w-[72px] justify-center rounded-full px-2 py-1 text-[10px] font-bold ${marginClass}`}
-                      title={
-                        lineMargin
-                          ? `Estimated cost AED ${lineMargin.cost.toFixed(
-                              2,
-                            )}; gross profit AED ${lineMargin.profit.toFixed(
-                              2,
-                            )}`
-                          : "Select a product to calculate margin"
-                      }
-                    >
-                      {marginLabel}
-                    </span>
+                    <button type="button" onClick={() => setDetailsItemId(item.id)} disabled={!item.productId} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 disabled:cursor-default disabled:opacity-20" aria-label={`Item details for row ${index + 1}`} title="Item details">...</button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.id)}
-                    className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                    aria-label={`Remove item ${index + 1}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={addItem}
-            className="inline-flex h-9 items-center justify-center gap-2 self-start rounded-lg border border-slate-300 bg-white px-4 text-xs font-semibold text-slate-700 transition hover:border-amber-400 hover:text-amber-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Row
-          </button>
-
-          <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
-            <span>
-              Qty:{" "}
-              <strong className="text-slate-900">
-                {items
-                  .filter((item) => item.productId)
-                  .reduce((total, item) => total + item.quantity, 0)}
-              </strong>
-            </span>
-
-            <span>
-              Estimated Cost:{" "}
-              <strong className="text-slate-900">
-                AED {marginAnalysis.estimatedCost.toFixed(2)}
-              </strong>
-            </span>
-
-            <span>
-              Gross Profit:{" "}
-              <strong
-                className={
-                  marginAnalysis.estimatedGrossProfit < 0
-                    ? "text-red-600"
-                    : "text-emerald-700"
-                }
-              >
-                AED {marginAnalysis.estimatedGrossProfit.toFixed(2)}
-              </strong>
-            </span>
-
-            <span>
-              Margin:{" "}
-              <strong
-                className={
-                  marginAnalysis.requiresApproval
-                    ? "text-red-600"
-                    : marginAnalysis.hasWarning
-                      ? "text-amber-700"
-                      : "text-slate-900"
-                }
-              >
-                {marginAnalysis.estimatedMargin.toFixed(1)}%
-              </strong>
-            </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/70 px-4 py-2">
+          <button type="button" onClick={() => addRows(10)} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-amber-400 hover:text-amber-700"><Plus className="h-3.5 w-3.5" />Add 10 More Rows</button>
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 text-xs text-slate-600">
+            <span>Qty: <strong className="text-slate-900">{items.filter((item) => item.productId).reduce((total, item) => total + item.quantity, 0)}</strong></span>
+            {marginAnalysis.requiresApproval ? <span className="font-bold text-red-600">Margin approval required</span> : marginAnalysis.hasAtCost ? <span className="font-semibold text-blue-700">At-cost item</span> : marginAnalysis.hasWarning ? <span className="font-semibold text-amber-700">Low margin</span> : null}
           </div>
         </div>
       </section>
+
+      {detailsItemId ? (() => {
+        const detailItem = items.find((item) => item.id === detailsItemId);
+        if (!detailItem) return null;
+        const detailProduct = getProduct(detailItem.productId);
+        const detailStock = getStock(detailItem.productId);
+        const detailPurchaseInfo = getPurchaseInfo(detailItem.productId);
+        const detailMargin = marginAnalysis.lines.find((line) => line.itemId === detailItem.id);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetailsItemId(null); }}>
+            <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
+              <div className="flex items-start justify-between border-b border-slate-200 px-5 py-4">
+                <div><h3 className="text-base font-bold text-slate-950">Item Details</h3><p className="mt-0.5 text-xs text-slate-500">{detailProduct?.name ?? "Selected product"}</p></div>
+                <button type="button" onClick={() => setDetailsItemId(null)} className="rounded-lg px-2 py-1 text-sm font-bold text-slate-400 hover:bg-slate-100 hover:text-slate-900">Close</button>
+              </div>
+              <div className="grid gap-4 p-5 sm:grid-cols-2">
+                <Field label="Fulfilment">
+                  <select value={detailItem.fulfilment} onChange={(event) => { const nextFulfilment = event.target.value as ItemFulfilment; updateItem(detailItem.id, { fulfilment: nextFulfilment, supplierId: nextFulfilment === "local_purchase" ? detailItem.supplierId || detailPurchaseInfo?.supplierId || "" : "", purchaseCost: nextFulfilment === "local_purchase" ? detailItem.purchaseCost || detailPurchaseInfo?.suggestedPurchasePrice || 0 : detailItem.purchaseCost }); }} className={compactInputClass}>
+                    <option value="stock">Stock</option><option value="local_purchase">Local Buy</option>
+                  </select>
+                </Field>
+                <Field label="Supplier">
+                  {detailItem.fulfilment === "local_purchase" ? (
+                    <select value={detailItem.supplierId} onChange={(event) => updateItem(detailItem.id, { supplierId: event.target.value })} className={compactInputClass}>
+                      <option value="">Supplier optional</option>{options.suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.companyName}</option>)}
+                    </select>
+                  ) : <div className="flex h-9 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-400">Not required for stock</div>}
+                </Field>
+                <Field label="Cost">
+                  <input type="number" min={0} step="0.01" value={detailItem.fulfilment === "stock" ? (detailStock?.averageUnitCost ?? 0) : detailItem.purchaseCost} readOnly={detailItem.fulfilment === "stock"} onChange={(event) => updateItem(detailItem.id, { purchaseCost: Number(event.target.value) || 0 })} className={`${compactInputClass} text-right ${detailItem.fulfilment === "stock" ? "bg-slate-100 text-slate-500" : ""}`} />
+                </Field>
+                <Field label="Estimated Margin">
+                  <div className={`flex h-9 items-center justify-end rounded-lg border px-3 text-xs font-bold ${!detailMargin || detailMargin.margin === null ? "border-slate-200 bg-slate-50 text-slate-400" : detailMargin.status === "healthy" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : detailMargin.status === "warning" ? "border-amber-200 bg-amber-50 text-amber-800" : detailMargin.status === "at_cost" ? "border-blue-200 bg-blue-50 text-blue-800" : "border-red-200 bg-red-50 text-red-700"}`}>{detailMargin?.margin == null ? "-" : `${detailMargin.margin.toFixed(1)}%`}</div>
+                </Field>
+                {detailItem.fulfilment === "local_purchase" && detailPurchaseInfo?.supplierName ? <p className="text-xs text-slate-500 sm:col-span-2">Preferred supplier: {detailPurchaseInfo.supplierName}</p> : null}
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
 
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <div className="space-y-4">
@@ -1222,15 +978,8 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <WalletCards className="h-4.5 w-4.5 text-amber-600" />
-
-                <div>
-                  <h2 className="text-sm font-bold text-slate-950">Payment</h2>
-
-                  <p className="text-[11px] text-slate-500">
-                    Record customer payment for this sale.
-                  </p>
-                </div>
+                <WalletCards className="h-4 w-4 text-amber-600" />
+                <h2 className="text-sm font-bold text-slate-950">Payment</h2>
               </div>
 
               <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -1321,9 +1070,9 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         {compatibleFinancialAccounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.accountName}
-                            {" â€” "}
+                            {" - "}
                             {account.accountCode}
-                            {" â€” "}
+                            {" - "}
                             {account.currencyCode}{" "}
                             {account.currentBalance.toFixed(2)}
                           </option>
@@ -1421,14 +1170,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                   </>
                 ) : null}
               </div>
-            ) : (
-              <div className="px-4 py-3">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-                  Credit sale â€” no customer receipt will be created now. The
-                  full sale amount will remain outstanding.
-                </div>
-              </div>
-            )}
+            ) : null}
           </section>
 
           {/* ---------------------------------------------------------
@@ -1437,15 +1179,8 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           <section className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <Truck className="h-4.5 w-4.5 text-amber-600" />
-
-                <div>
-                  <h2 className="text-sm font-bold text-slate-950">Delivery</h2>
-
-                  <p className="text-[11px] text-slate-500">
-                    Complete now or keep delivery pending.
-                  </p>
-                </div>
+                <Truck className="h-4 w-4 text-amber-600" />
+                <h2 className="text-sm font-bold text-slate-950">Delivery</h2>
               </div>
 
               <div className="inline-flex w-fit rounded-lg border border-slate-200 bg-slate-50 p-1">
@@ -1477,21 +1212,20 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
           </section>
         </div>
 
-        <aside className="h-fit rounded-2xl bg-slate-950 p-6 text-white shadow-lg xl:sticky xl:top-24">
+        <aside className="h-fit rounded-xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm xl:sticky xl:top-20">
           <div className="flex items-center gap-3">
-            <Calculator className="h-5 w-5 text-amber-400" />
-
-            <h2 className="text-lg font-bold">Sale Summary</h2>
+            <Calculator className="h-4 w-4 text-amber-600" />
+            <h2 className="text-sm font-bold">Totals</h2>
           </div>
 
-          <div className="mt-6 space-y-4 text-sm">
+          <div className="mt-4 space-y-3 text-sm">
             <SummaryRow label="Subtotal" value={subtotal} />
 
-            <div className="space-y-3 rounded-xl border border-slate-700 bg-slate-900 p-3">
+            <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <div className="flex items-center justify-between gap-4">
                 <label
                   htmlFor="quick-sale-invoice-discount"
-                  className="text-xs font-medium text-slate-300"
+                  className="text-xs font-medium text-slate-600"
                 >
                   Invoice Discount
                 </label>
@@ -1516,17 +1250,17 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         ),
                       )
                     }
-                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                    className="h-8 w-full rounded-md border border-slate-300 bg-white pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                   />
                 </div>
               </div>
 
               <div className="flex items-center justify-between gap-4">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500">
                   Taxable Merchandise
                 </span>
 
-                <span className="text-xs font-semibold tabular-nums text-slate-200">
+                <span className="text-xs font-semibold tabular-nums text-slate-800">
                   AED {merchandiseAfterInvoiceDiscount.toFixed(2)}
                 </span>
               </div>
@@ -1534,7 +1268,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               <div className="flex items-center justify-between gap-4">
                 <label
                   htmlFor="quick-sale-delivery-charge"
-                  className="text-xs font-medium text-slate-300"
+                  className="text-xs font-medium text-slate-600"
                 >
                   Delivery Charges
                 </label>
@@ -1558,7 +1292,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         ),
                       )
                     }
-                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                    className="h-8 w-full rounded-md border border-slate-300 bg-white pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                   />
                 </div>
               </div>
@@ -1566,7 +1300,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               <div className="flex items-center justify-between gap-4">
                 <label
                   htmlFor="quick-sale-round-off"
-                  className="text-xs font-medium text-slate-300"
+                  className="text-xs font-medium text-slate-600"
                 >
                   Round Off
                 </label>
@@ -1588,7 +1322,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                         Number(event.target.value) || 0,
                       )
                     }
-                    className="h-9 w-full rounded-lg border border-slate-700 bg-slate-950 pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-white outline-none transition focus:border-amber-400"
+                    className="h-8 w-full rounded-md border border-slate-300 bg-white pl-10 pr-2 text-right text-xs font-semibold tabular-nums text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100"
                   />
                 </div>
               </div>
@@ -1620,52 +1354,53 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               />
             ) : null}
 
-            <div className="border-t border-slate-700 pt-4">
+            <div className="border-t border-slate-200 pt-3">
               <SummaryRow
                 label="Grand Total"
                 value={grandTotal}
                 strong
               />
             </div>
-            <div className="border-t border-slate-700 pt-4">
-              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">
-                Margin Analysis
-              </p>
+            <details className="border-t border-slate-200 pt-3">
+              <summary className="cursor-pointer select-none text-xs font-semibold text-slate-500 hover:text-slate-900">
+                Advanced Details
+              </summary>
 
-              <SummaryRow
-                label="Estimated Cost"
-                value={marginAnalysis.estimatedCost}
-              />
+              <div className="mt-3 space-y-2">
+                <SummaryRow
+                  label="Estimated Cost"
+                  value={marginAnalysis.estimatedCost}
+                />
 
-              <SummaryRow
-                label="Estimated Gross Profit"
-                value={marginAnalysis.estimatedGrossProfit}
-              />
+                <SummaryRow
+                  label="Estimated Gross Profit"
+                  value={marginAnalysis.estimatedGrossProfit}
+                />
 
-              <div className="flex items-center justify-between">
-                <span className="text-slate-400">Estimated Margin</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Estimated Margin</span>
 
-                <span
-                  className={
-                    marginAnalysis.estimatedMargin < 0
-                      ? "font-bold text-red-400"
-                      : "font-bold text-white"
-                  }
-                >
-                  {marginAnalysis.estimatedMargin.toFixed(2)}%
-                </span>
-              </div>
-
-              {marginAnalysis.lowestMargin !== null ? (
-                <div className="mt-2 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">Lowest Line Margin</span>
-
-                  <span className="font-semibold text-slate-300">
-                    {marginAnalysis.lowestMargin.toFixed(2)}%
+                  <span
+                    className={
+                      marginAnalysis.estimatedMargin < 0
+                        ? "font-bold text-red-600"
+                        : "font-bold text-slate-900"
+                    }
+                  >
+                    {marginAnalysis.estimatedMargin.toFixed(2)}%
                   </span>
                 </div>
-              ) : null}
-            </div>
+
+                {marginAnalysis.lowestMargin !== null ? (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500">Lowest Line Margin</span>
+                    <span className="font-semibold text-slate-700">
+                      {marginAnalysis.lowestMargin.toFixed(2)}%
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </details>
 
             {isLoadingAdvance ? (
               <div className="flex items-center justify-between text-slate-400">
@@ -1693,16 +1428,13 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             <SummaryRow label="Outstanding" value={outstanding} strong />
           </div>
 
-          <div className="mt-6 rounded-xl bg-slate-900 p-4 text-xs leading-5 text-slate-300">
-            Completing this sale will create the Sales Order, process inventory
-            and delivery, and record any customer payment as a posted receipt.
-          </div>
+
 
           {marginAnalysis.requiresApproval ? (
-            <div className="rounded-xl border border-red-500/40 bg-red-950/40 p-4">
-              <p className="font-bold text-red-200">Admin Approval Required</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="font-bold text-red-800">Admin Approval Required</p>
 
-              <p className="mt-1 text-xs leading-5 text-red-300/80">
+              <p className="mt-1 text-xs leading-5 text-red-700">
                 One or more items are below the configured minimum margin or
                 require cost review.
                 {marginAnalysis.lowestMargin !== null
@@ -1717,7 +1449,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
                 onChange={(event) =>
                   setMarginApprovalReason(event.target.value)
                 }
-                className="mt-3 h-11 w-full rounded-xl border border-red-700 bg-slate-950 px-3 text-sm text-white"
+                className="mt-3 h-9 w-full rounded-lg border border-red-300 bg-white px-3 text-sm text-slate-900"
               >
                 <option value="">Select approval reason</option>
 
@@ -1737,12 +1469,12 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
               </select>
             </div>
           ) : marginAnalysis.hasAtCost ? (
-            <div className="rounded-xl border border-blue-500/30 bg-blue-950/30 p-3 text-xs text-blue-200">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
               At-cost sale detected. No gross profit will be earned on at least
               one line.
             </div>
           ) : marginAnalysis.hasWarning ? (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-950/30 p-3 text-xs text-amber-200">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               Low-margin sale detected. Confirmation is allowed.
             </div>
           ) : null}
@@ -1751,7 +1483,7 @@ export default function QuickSaleForm({ options }: QuickSaleFormProps) {
             type="button"
             disabled={isPosting || isLoadingAdvance}
             onClick={handleCompleteSale}
-            className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-slate-950 transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-slate-950 text-sm font-bold text-white transition hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Zap className="h-5 w-5" />
             {isLoadingAdvance
@@ -1800,8 +1532,8 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-semibold text-slate-700">
+    <label className="block space-y-1.5">
+      <span className="text-xs font-semibold text-slate-600">
         {label}
 
         {required ? <span className="ml-1 text-red-500">*</span> : null}
@@ -1857,9 +1589,13 @@ function SummaryRow({
         strong ? "text-base font-bold" : "",
       ].join(" ")}
     >
-      <span className="text-slate-300">{label}</span>
+      <span className={strong ? "text-slate-900" : "text-slate-500"}>
+        {label}
+      </span>
 
-      <span>AED {value.toFixed(2)}</span>
+      <span className={strong ? "text-slate-950" : "text-slate-800"}>
+        AED {value.toFixed(2)}
+      </span>
     </div>
   );
 }
@@ -1930,7 +1666,7 @@ function PurchaseReference({
           <p className="mt-1 font-bold text-blue-950">
             {purchaseInfo.lastPurchasePrice !== null
               ? `${purchaseInfo.currencyCode} ${purchaseInfo.lastPurchasePrice.toFixed(2)}`
-              : "â€”"}
+              : "-"}
           </p>
         </div>
 
@@ -1940,7 +1676,7 @@ function PurchaseReference({
           <p className="mt-1 font-bold text-blue-950">
             {purchaseInfo.costPrice !== null
               ? `${purchaseInfo.currencyCode} ${purchaseInfo.costPrice.toFixed(2)}`
-              : "â€”"}
+              : "-"}
           </p>
         </div>
       </div>
@@ -1949,7 +1685,7 @@ function PurchaseReference({
 }
 
 const inputClass =
-  "h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
+  "h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-sm text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-100";
 
 const compactInputClass =
   "h-9 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-100";
