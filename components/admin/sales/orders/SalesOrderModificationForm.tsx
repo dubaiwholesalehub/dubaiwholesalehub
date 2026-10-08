@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -347,6 +347,11 @@ export default function SalesOrderModificationForm({
 
   const [preview, setPreview] = useState<unknown>(null);
 
+  const [previewedRequest, setPreviewedRequest] =
+    useState<SalesOrderModificationRequest | null>(null);
+
+  const previewVersionRef = useRef(0);
+
   const [error, setError] = useState<string | null>(null);
 
   const [success, setSuccess] = useState<string | null>(null);
@@ -470,7 +475,7 @@ export default function SalesOrderModificationForm({
       ),
     );
 
-    setPreview(null);
+    invalidatePreview();
     setSuccess(null);
   }
 
@@ -574,7 +579,7 @@ export default function SalesOrderModificationForm({
     ]);
 
     resetNewItemEntry();
-    setPreview(null);
+    invalidatePreview();
     setSuccess(null);
     setError(null);
   }
@@ -597,7 +602,7 @@ export default function SalesOrderModificationForm({
         .filter((item): item is EditableItem => item !== null),
     );
 
-    setPreview(null);
+    invalidatePreview();
     setSuccess(null);
     setError(null);
   }
@@ -608,7 +613,7 @@ export default function SalesOrderModificationForm({
         item.clientKey === clientKey ? { ...item, isRemoved: false } : item,
       ),
     );
-    setPreview(null);
+    invalidatePreview();
     setSuccess(null);
     setError(null);
   }
@@ -619,6 +624,15 @@ export default function SalesOrderModificationForm({
     setMarginApprovalStatus("not_required");
     setMarginApprovalReason("");
     setMarginDecisionNotes("");
+  }
+
+  function invalidatePreview() {
+    previewVersionRef.current += 1;
+
+    setPreview(null);
+    setPreviewedRequest(null);
+    resetMarginApprovalState();
+    setSuccess(null);
   }
 
   function buildSnapshot(): SalesOrderModificationSnapshot {
@@ -749,8 +763,9 @@ export default function SalesOrderModificationForm({
     setError(null);
     setSuccess(null);
 
-    resetMarginApprovalState();
+    invalidatePreview();
 
+    const requestVersion = previewVersionRef.current;
     const request = buildRequest();
 
     startTransition(async () => {
@@ -764,7 +779,12 @@ export default function SalesOrderModificationForm({
           }),
         ]);
 
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
         setPreview(previewResult);
+        setPreviewedRequest(request);
 
         const analysis = asObject(marginResult);
 
@@ -779,6 +799,10 @@ export default function SalesOrderModificationForm({
               afterSnapshot: request.afterSnapshot,
             });
 
+          if (requestVersion !== previewVersionRef.current) {
+            return;
+          }
+
           setMarginApprovalStatus(
             hasExistingApproval ? "approved" : "required",
           );
@@ -786,8 +810,11 @@ export default function SalesOrderModificationForm({
           setMarginApprovalStatus("not_required");
         }
       } catch (caught) {
-        setPreview(null);
-        resetMarginApprovalState();
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
+        invalidatePreview();
 
         setError(
           caught instanceof Error
@@ -811,7 +838,14 @@ export default function SalesOrderModificationForm({
       return;
     }
 
-    const request = buildRequest();
+    const request = previewedRequest;
+
+    if (!preview || !request) {
+      setError("Preview the modification before requesting approval.");
+      return;
+    }
+
+    const requestVersion = previewVersionRef.current;
 
     setError(null);
     setSuccess(null);
@@ -824,6 +858,9 @@ export default function SalesOrderModificationForm({
           reason: marginApprovalReason.trim(),
         });
 
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
         setMarginApprovalId(approvalId);
         setMarginApprovalStatus("pending");
 
@@ -831,6 +868,9 @@ export default function SalesOrderModificationForm({
           "Margin exception approval requested for this exact proposed revision.",
         );
       } catch (caught) {
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
         setError(
           caught instanceof Error
             ? caught.message
@@ -846,6 +886,8 @@ export default function SalesOrderModificationForm({
       return;
     }
 
+    const requestVersion = previewVersionRef.current;
+
     setError(null);
     setSuccess(null);
 
@@ -856,12 +898,20 @@ export default function SalesOrderModificationForm({
           decisionNotes: marginDecisionNotes.trim() || null,
         });
 
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
         setMarginApprovalStatus("approved");
 
         setSuccess(
           "Margin exception approved for this exact proposed revision.",
         );
       } catch (caught) {
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
         setError(
           caught instanceof Error
             ? caught.message
@@ -877,6 +927,8 @@ export default function SalesOrderModificationForm({
       return;
     }
 
+    const requestVersion = previewVersionRef.current;
+
     setError(null);
     setSuccess(null);
 
@@ -887,10 +939,18 @@ export default function SalesOrderModificationForm({
           decisionNotes: marginDecisionNotes.trim() || null,
         });
 
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
         setMarginApprovalStatus("rejected");
 
         setSuccess("Margin exception rejected.");
       } catch (caught) {
+        if (requestVersion !== previewVersionRef.current) {
+          return;
+        }
+
         setError(
           caught instanceof Error
             ? caught.message
@@ -901,7 +961,7 @@ export default function SalesOrderModificationForm({
   }
 
   function handleApply() {
-    if (!preview) {
+    if (!preview || !previewedRequest) {
       setError("Preview the modification before applying it.");
       return;
     }
@@ -952,7 +1012,7 @@ export default function SalesOrderModificationForm({
     startTransition(async () => {
       try {
         await applySalesOrderModificationAction({
-          ...buildRequest(),
+          ...previewedRequest,
           idempotencyKey,
         });
 
@@ -960,7 +1020,7 @@ export default function SalesOrderModificationForm({
           "Sales Order modification applied successfully. The order, inventory and accounting records have been updated through the controlled revision workflow.",
         );
 
-        setPreview(null);
+        invalidatePreview();
 
         window.location.href = `/admin/sales/orders/${order.id}`;
       } catch (caught) {
@@ -1057,7 +1117,7 @@ export default function SalesOrderModificationForm({
               value={modificationType}
               onValueChange={(value) => {
                 setModificationType(value as SalesOrderModificationType);
-                setPreview(null);
+                invalidatePreview();
               }}
             >
               <SelectTrigger className="w-full">
@@ -1093,7 +1153,7 @@ export default function SalesOrderModificationForm({
               value={reason}
               onChange={(event) => {
                 setReason(event.target.value);
-                setPreview(null);
+                invalidatePreview();
               }}
               placeholder="Example: Correct quantity entered as 96 instead of 95"
             />
@@ -1142,7 +1202,7 @@ export default function SalesOrderModificationForm({
                   value={selectedProductId}
                   onChange={(value) => {
                     setSelectedProductId(value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </div>
@@ -1155,7 +1215,7 @@ export default function SalesOrderModificationForm({
                   value={newWarehouseId}
                   onChange={(event) => {
                     setNewWarehouseId(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                   className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                 >
@@ -1481,7 +1541,7 @@ export default function SalesOrderModificationForm({
                   value={invoiceDiscountInput}
                   onChange={(event) => {
                     setInvoiceDiscountInput(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </label>
@@ -1496,7 +1556,7 @@ export default function SalesOrderModificationForm({
                   value={shippingInput}
                   onChange={(event) => {
                     setShippingInput(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </label>
@@ -1512,7 +1572,7 @@ export default function SalesOrderModificationForm({
                   value={roundOffInput}
                   onChange={(event) => {
                     setRoundOffInput(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </label>
@@ -1530,7 +1590,7 @@ export default function SalesOrderModificationForm({
                   value={customerNotes}
                   onChange={(event) => {
                     setCustomerNotes(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </label>
@@ -1542,7 +1602,7 @@ export default function SalesOrderModificationForm({
                   value={internalNotes}
                   onChange={(event) => {
                     setInternalNotes(event.target.value);
-                    setPreview(null);
+                    invalidatePreview();
                   }}
                 />
               </label>
@@ -2001,7 +2061,9 @@ export default function SalesOrderModificationForm({
           </Button>
 
           <Button
-            disabled={isPending || !preview || !canApplyMargin}
+            disabled={
+              isPending || !preview || !previewedRequest || !canApplyMargin
+            }
             onClick={handleApply}
           >
             {isPending ? (
