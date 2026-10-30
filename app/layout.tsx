@@ -3,7 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { GoogleAnalytics } from "@next/third-parties/google";
+import Script from "next/script";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -75,8 +75,20 @@ export default function RootLayout({
             duration={3000}
           />
         </ThemeProvider>
+
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-ZJDCWBB5LG"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-ZJDCWBB5LG');
+          `}
+        </Script>
       </body>
-        <GoogleAnalytics gaId="G-ZJDCWBB5LG" />
     </html>
   );
 }
