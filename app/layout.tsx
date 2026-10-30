@@ -3,6 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -75,6 +76,7 @@ export default function RootLayout({
           />
         </ThemeProvider>
       </body>
+        <GoogleAnalytics gaId="G-ZJDCWBB5LG" />
     </html>
   );
 }
